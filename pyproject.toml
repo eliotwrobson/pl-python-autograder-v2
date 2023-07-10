@@ -8,7 +8,7 @@ packages = [{include = "pl_python_autograder_v2"}]
 
 [tool.poetry.dependencies]
 python = "^3.9"
-
+jsonargparse = "^4.22.1"
 
 [build-system]
 requires = ["poetry-core"]
