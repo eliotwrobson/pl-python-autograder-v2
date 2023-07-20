@@ -7,7 +7,7 @@ readme = "README.md"
 packages = [{include = "pl_python_autograder_v2"}]
 
 [tool.poetry.dependencies]
-python = "^3.9"
+python = ">=3.8,<3.12"
 jsonargparse = "^4.22.1"
 
 [build-system]
