@@ -10,6 +10,12 @@ packages = [{include = "pl_python_autograder_v2"}]
 python = ">=3.8,<3.12"
 jsonargparse = "^4.22.1"
 
+[tool.poetry.group.test]
+optional = true
+
+[tool.poetry.group.test.dependencies]
+pytest = "^6.0.0"
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
@@ -26,7 +32,7 @@ envlist = py37, py38, py39, py310, mypy
 [testenv]
 allowlist_externals = poetry
 commands_pre =
-    poetry install --no-root --sync
+    poetry install --no-root --sync --with test
 commands =
     poetry run pytest tests/ --import-mode importlib
 
