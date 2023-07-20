@@ -13,3 +13,25 @@ jsonargparse = "^4.22.1"
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+# Setup actions with this: https://github.com/ymyzk/tox-gh-actions
+[tool.tox]
+legacy_tox_ini = """
+[tox]
+isolated_build = true
+envlist = py37, py38, py39, py310, mypy
+
+[testenv]
+allowlist_externals = poetry
+commands_pre =
+    poetry install --no-root --sync
+commands =
+    poetry run pytest tests/ --import-mode importlib
+
+[gh-actions]
+python =
+    3.7: py37
+    3.8: py38
+    3.9: py39
+    3.10: py310, mypy
+"""
