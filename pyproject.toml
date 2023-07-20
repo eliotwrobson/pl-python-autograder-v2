@@ -34,6 +34,7 @@ isolated_build = true
 envlist = py37, py38, py39, py310, mypy
 
 [testenv]
+changedir = tests
 allowlist_externals = poetry
 commands_pre =
     poetry install --no-root --sync --with test

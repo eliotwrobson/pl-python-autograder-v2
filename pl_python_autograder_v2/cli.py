@@ -3,6 +3,7 @@ from jsonargparse import ArgumentParser, ActionConfigFile
 # TODO use this https://dev.to/bowmanjd/build-command-line-tools-with-python-poetry-4mnc
 # https://pypi.org/project/cli-test-helpers/
 # https://medium.com/clarityai-engineering/how-to-create-and-distribute-a-minimalist-cli-tool-with-python-poetry-click-and-pipx-c0580af4c026
+# https://www.pluralsight.com/tech-blog/python-cli-utilities-with-poetry-and-typer/
 
 def main() -> None:
     parser = ArgumentParser(
