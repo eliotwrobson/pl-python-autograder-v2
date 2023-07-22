@@ -54,3 +54,5 @@ python_files = "verify_*.py"
 python_classes = "Verify"
 python_functions = "verify_*"
 testpaths = "tests/"
+
+#TODO convert this layout with this guide: https://browniebroke.com/blog/convert-existing-poetry-to-src-layout/
