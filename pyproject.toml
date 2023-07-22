@@ -18,6 +18,9 @@ optional = true
 [tool.poetry.group.test.dependencies]
 pytest = "^7.4.0"
 
+[tool.poetry.group.typecheck.dependencies]
+mypy = "1.4.1"
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
@@ -41,6 +44,13 @@ commands_pre =
     poetry install --no-root --sync --with test
 commands =
     poetry run pytest tests --import-mode importlib
+
+[testenv:mypy]
+skip_install = true
+commands_pre =
+    poetry install --no-root --sync --with typecheck
+commands =
+    poetry run mypy src/
 
 [gh-actions]
 python =
