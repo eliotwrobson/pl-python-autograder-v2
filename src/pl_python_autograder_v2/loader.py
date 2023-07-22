@@ -10,6 +10,6 @@ class PLTestLoader(unittest.TestLoader):
     # Allow passing in desired suite class
     # TODO define suite_class as base class,
     # inherited classes will change how tests are run
-    def __init__(self, suite_class: t.Type[unittest.TestSuite]) -> None:
+    def __init__(self, suite_class: t.Type[PLTestSuite]) -> None:
         super().__init__()
         self.suiteClass = suite_class
