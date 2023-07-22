@@ -1,5 +1,5 @@
 
-def unit_test_function():
+def unit_test_function() -> int:
     return 1
 
 '''

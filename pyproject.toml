@@ -12,11 +12,16 @@ packages = [
 python = ">=3.8,<3.12"
 jsonargparse = "^4.22.1"
 
+# Define testing dependencies and make optional
 [tool.poetry.group.test]
 optional = true
 
 [tool.poetry.group.test.dependencies]
 pytest = "^7.4.0"
+
+# Define typechecking dependencies and make optional
+[tool.poetry.group.typecheck]
+optional = true
 
 [tool.poetry.group.typecheck.dependencies]
 mypy = "1.4.1"
@@ -25,7 +30,7 @@ mypy = "1.4.1"
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
-# Grade
+# Define main CLI entrypoint
 [tool.poetry.scripts]
 pl_grade = "pl_pythot_autograder_v2.cli:main"
 
@@ -67,5 +72,8 @@ python_classes = "Verify"
 python_functions = "verify_*"
 testpaths = "tests/"
 pythonpath = ["src"]
+
+[tool.mypy]
+disallow_untyped_defs = true
 
 #TODO convert this layout with this guide: https://browniebroke.com/blog/convert-existing-poetry-to-src-layout/
