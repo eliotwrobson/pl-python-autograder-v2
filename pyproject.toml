@@ -47,3 +47,10 @@ python =
     3.9: py39
     3.10: py310, mypy
 """
+
+# Using verify instead of test to avoid conflicts with autograder code
+[tool.pytest.ini_options]
+python_files = "verify_*.py"
+python_classes = "Verify"
+python_functions = "verify_*"
+testpaths = "tests/"
