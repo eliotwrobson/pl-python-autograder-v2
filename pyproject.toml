@@ -53,7 +53,7 @@ pl_grade = "pl_pythot_autograder_v2.cli:main"
 legacy_tox_ini = """
 [tox]
 isolated_build = true
-envlist = py37, py38, py39, py310, mypy
+envlist = py37, py38, py39, py310, mypy, lint
 
 [testenv]
 allowlist_externals = poetry
