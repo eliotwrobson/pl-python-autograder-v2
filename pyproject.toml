@@ -97,11 +97,14 @@ disallow_untyped_defs = true
 
 [tool.flake8]
 # Black compatibility
-max-line-length = 88
+max-line-length = 120
 extend-ignore = ["E203", "W503"]
 
 # Per <https://black.readthedocs.io/en/stable/guides/using_black_with_other_tools.html#profile>
 [tool.isort]
 profile = "black"
+
+[tool.black]
+line-length = 120
 
 #TODO convert this layout with this guide: https://browniebroke.com/blog/convert-existing-poetry-to-src-layout/
