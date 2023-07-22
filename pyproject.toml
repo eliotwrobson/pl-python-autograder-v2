@@ -4,7 +4,9 @@ version = "0.1.0"
 description = ""
 authors = ["Eliot Robson <eliot.robson24@gmail.com>"]
 readme = "README.md"
-packages = [{include = "pl_python_autograder_v2"}]
+packages = [
+    {include = "pl_python_autograder_v2", from = "src"}
+]
 
 [tool.poetry.dependencies]
 python = ">=3.8,<3.12"
@@ -14,7 +16,7 @@ jsonargparse = "^4.22.1"
 optional = true
 
 [tool.poetry.group.test.dependencies]
-pytest = "^6.0.0"
+pytest = "^7.0.0"
 
 [build-system]
 requires = ["poetry-core"]
@@ -54,5 +56,6 @@ python_files = "verify_*.py"
 python_classes = "Verify"
 python_functions = "verify_*"
 testpaths = "tests/"
+pythonpath = ["src"]
 
 #TODO convert this layout with this guide: https://browniebroke.com/blog/convert-existing-poetry-to-src-layout/
