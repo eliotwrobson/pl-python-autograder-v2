@@ -26,6 +26,18 @@ optional = true
 [tool.poetry.group.typecheck.dependencies]
 mypy = "1.4.1"
 
+# Define linting dependencies and make optional
+[tool.poetry.group.lint]
+optional = true
+
+[tool.poetry.group.lint.dependencies]
+flake8 = "6.0.0"
+flake8-black = "0.3.6"
+flake8-isort = "6.0.0"
+Flake8-pyproject = "1.2.3"
+black = "23.3.0"
+isort = "5.10.1"
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
@@ -57,12 +69,19 @@ commands_pre =
 commands =
     poetry run mypy src/
 
+[testenv:lint]
+skip_install = true
+commands_pre =
+    poetry install --no-root --sync --with lint
+commands =
+    poetry run flake8p
+
 [gh-actions]
 python =
     3.7: py37
     3.8: py38
     3.9: py39
-    3.10: py310, mypy
+    3.10: py310, mypy, lint
 """
 
 # Using verify instead of test to avoid conflicts with autograder code
@@ -75,5 +94,14 @@ pythonpath = ["src"]
 
 [tool.mypy]
 disallow_untyped_defs = true
+
+[tool.flake8]
+# Black compatibility
+max-line-length = 88
+extend-ignore = ["E203", "W503"]
+
+# Per <https://black.readthedocs.io/en/stable/guides/using_black_with_other_tools.html#profile>
+[tool.isort]
+profile = "black"
 
 #TODO convert this layout with this guide: https://browniebroke.com/blog/convert-existing-poetry-to-src-layout/
