@@ -3,11 +3,14 @@
 # from pl_unit_test import PLTestCase
 import unittest
 
+from pl_python_autograder_v2 import loader
+
 
 class Test(unittest.TestCase):
     # @points(1)
     # @name("area")
     def test_0(self):
+        loader.PLTestLoader()
         self.assertTrue(True)
         # if Feedback.check_scalar("area", self.ref.area, self.st.area):
         #    Feedback.set_score(1)
