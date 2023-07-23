@@ -31,5 +31,6 @@ def execute_tests(
 
     loader = unittest.TestLoader()
     tests = loader.loadTestsFromModule(test_module)
-    print(tests)
-    print(student_code_path)
+    result = unittest.TestResult()
+    tests.run(result)
+    print(result)

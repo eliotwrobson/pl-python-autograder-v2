@@ -2,6 +2,8 @@ import typing as t
 import unittest
 
 
+# https://stackoverflow.com/questions/4710142/can-pythons-unittest-test-in-parallel-like-nose-can/17059844#17059844
+# https://stackoverflow.com/questions/13605669/python-unittest-can-we-repeat-unit-test-case-execution-for-a-configurable-numbe/13606054#13606054
 class PLTestSuite(unittest.TestSuite):
     pass
 
