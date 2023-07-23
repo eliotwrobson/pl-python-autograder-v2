@@ -9,6 +9,8 @@ class PLTestCase(ut.TestCase):
     def __init__(self, *args: t.Any, **kwargs: t.Any) -> None:
         super().__init__(*args, **kwargs)
 
+    # TODO actually, we want these values to be passed in by the test runner instead
+    # of the constructor (so, a collection of test cases can be run against different student code).
     def callStudentCode(self) -> None:
         """
         Call student code and load student and answer tuples.
