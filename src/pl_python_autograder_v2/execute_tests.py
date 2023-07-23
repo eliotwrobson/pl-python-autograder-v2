@@ -5,7 +5,7 @@ from pathlib import Path
 from types import ModuleType
 
 
-def get_test_module(test_file_path: str) -> ModuleType:
+def get_test_module(test_file_path: Path) -> ModuleType:
     """
     Import test file located at test_file_path as a module. This is so we can use the
     unittest test loader function loadTestsFromModule.
@@ -25,7 +25,7 @@ def execute_tests(
     test_file_path: Path,
     student_code_path: Path,
 ) -> None:
-    test_module = get_test_module(str(test_file_path))
+    test_module = get_test_module(test_file_path)
     # test_code = test_file_path.read_text()
     # test_module = import_module(str(test_file_path))
 
