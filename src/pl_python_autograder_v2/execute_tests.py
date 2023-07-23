@@ -4,6 +4,8 @@ import unittest
 from pathlib import Path
 from types import ModuleType
 
+from .test_result import PLTestResult
+
 # Custom test result class modeled after
 # https://github.com/gradescope/gradescope-utils/blob/master/gradescope_utils/autograder_utils/json_test_runner.py
 
@@ -34,6 +36,8 @@ def execute_tests(
 
     loader = unittest.TestLoader()
     tests = loader.loadTestsFromModule(test_module)
-    result = unittest.TestResult()
+    result = PLTestResult()
     tests.run(result)
+
     print(result)
+    print(result.successes[0], type(result.successes[0]))
