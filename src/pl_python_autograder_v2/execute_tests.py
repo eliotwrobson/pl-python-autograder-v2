@@ -1,14 +1,10 @@
 import importlib.machinery
 import importlib.util
-import unittest
 from pathlib import Path
 from types import ModuleType
 
 from .loader import PLTestLoader, PLTestSuite
 from .test_result import PLTestResult
-
-# Custom test result class modeled after
-# https://github.com/gradescope/gradescope-utils/blob/master/gradescope_utils/autograder_utils/json_test_runner.py
 
 
 def get_test_module(test_file_path: Path) -> ModuleType:
