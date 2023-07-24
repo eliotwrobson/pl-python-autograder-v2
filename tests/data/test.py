@@ -9,6 +9,7 @@ class Test(test_case.PLTestCase):
     # @name("area")
     def test_0(self) -> None:
         loader.PLTestLoader(loader.PLTestSuite)
+        print(self.st)
         self.assertTrue(True)
         # if Feedback.check_scalar("area", self.ref.area, self.st.area):
         #    Feedback.set_score(1)

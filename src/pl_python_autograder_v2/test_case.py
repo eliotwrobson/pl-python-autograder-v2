@@ -1,10 +1,13 @@
-import collections as c
 import typing as t
 import unittest as ut
 
 
 # Modeled after this: https://github.com/PrairieLearn/PrairieLearn/blob/master/graders/python/python_autograder/pl_unit_test.py
 class PLTestCase(ut.TestCase):
+    # Legacy variable names
+    st: t.NamedTuple
+    ref: t.NamedTuple
+
     # TODO pass in safe executor class for student code here.
     def __init__(self, *args: t.Any, **kwargs: t.Any) -> None:
         super().__init__(*args, **kwargs)
@@ -20,9 +23,10 @@ class PLTestCase(ut.TestCase):
         ref_result: t.Dict = {}
         student_result: t.Dict = {}
 
-        answerTuple = c.namedtuple("answerTuple", ref_result.keys())  # type: ignore
+        # TODO these variable names suck, support them for legacy cases but redefine as something better.
+        answerTuple = t.NamedTuple("answerTuple", ref_result.keys())  # type: ignore
         self.ref = answerTuple(**ref_result)
-        studentTuple = c.namedtuple("studentTuple", student_result.keys())  # type: ignore
+        studentTuple = t.NamedTuple("studentTuple", student_result.keys())  # type: ignore
         self.st = studentTuple(**student_result)
 
     def _callSetUp(self) -> None:
