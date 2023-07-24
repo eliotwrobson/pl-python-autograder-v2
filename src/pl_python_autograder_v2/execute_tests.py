@@ -4,6 +4,7 @@ import unittest
 from pathlib import Path
 from types import ModuleType
 
+from .loader import PLTestLoader, PLTestSuite
 from .test_result import PLTestResult
 
 # Custom test result class modeled after
@@ -34,10 +35,12 @@ def execute_tests(
     # test_code = test_file_path.read_text()
     # test_module = import_module(str(test_file_path))
 
-    loader = unittest.TestLoader()
-    tests = loader.loadTestsFromModule(test_module)
+    loader = PLTestLoader(PLTestSuite)
+    suite = loader.loadTestsFromModule(test_module)
     result = PLTestResult()
-    tests.run(result)
+    suite.runWithCode(result)
 
     print(result)
-    print(result.successes[0], type(result.successes[0]))
+    print(result.successes)
+    print(result.errors)
+    # print(result.successes[0], type(result.successes[0]))
