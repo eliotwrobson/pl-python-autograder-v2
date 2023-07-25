@@ -11,6 +11,9 @@ def get_test_module(test_file_path: Path) -> ModuleType:
     """
     Import test file located at test_file_path as a module. This is so we can use the
     unittest test loader function loadTestsFromModule.
+
+    Modeled after code here: https://stackoverflow.com/a/41595552/2923069
+    TODO use cleaned up version given there.
     """
     import_loader = importlib.machinery.SourceFileLoader("test", str(test_file_path))
     spec = importlib.util.spec_from_loader("test", import_loader)
