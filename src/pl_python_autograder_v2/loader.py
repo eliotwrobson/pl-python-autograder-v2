@@ -22,7 +22,7 @@ class PLTestSuite(ut.TestSuite):
             test_suite_or_case = work_stack.pop()
 
             if isinstance(test_suite_or_case, PLTestCase):
-                test_suite_or_case.setTestCaseCode(dict(), student_code_executor.get_defined_symbols())
+                test_suite_or_case.setTestCaseCode(RestrictedExecutor(""), student_code_executor)
             elif isinstance(test_suite_or_case, PLTestSuite):
                 work_stack.extend(test_suite_or_case)
 

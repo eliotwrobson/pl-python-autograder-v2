@@ -8,10 +8,11 @@ class Test(test_case.PLTestCase):
     # @points(1)
     # @name("area")
     def test_0(self) -> None:
-        loader.PLTestLoader(loader.PLTestSuite)
-        print("hey", self.st)
-        self.assertTrue(True)
+        self.assertEqual(self.st.x, 10)
         # if Feedback.check_scalar("area", self.ref.area, self.st.area):
         #    Feedback.set_score(1)
         # else:
         #    Feedback.set_score(0)
+
+    def test_1(self) -> None:
+        self.assertEqual(self.st.f(), 20)
