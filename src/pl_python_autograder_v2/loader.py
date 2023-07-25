@@ -2,6 +2,7 @@ import typing as t
 import unittest as ut
 from types import ModuleType
 
+from .restricted_execution import RestrictedExecutor
 from .test_case import PLTestCase
 
 
@@ -10,10 +11,7 @@ from .test_case import PLTestCase
 # https://github.com/testing-cabal/testtools/blob/master/testtools/testsuite.py
 class PLTestSuite(ut.TestSuite):
     # TODO change the type signature of this class so it can only take in PLTestSuites and PLTestCases
-    def runWithCode(
-        self,
-        result: ut.TestResult,
-    ) -> ut.TestResult:
+    def runWithCode(self, result: ut.TestResult, student_code_executor: RestrictedExecutor) -> ut.TestResult:
         """
         Call run() for each test, but first set executor objects on each one.
         """
@@ -24,7 +22,7 @@ class PLTestSuite(ut.TestSuite):
             test_suite_or_case = work_stack.pop()
 
             if isinstance(test_suite_or_case, PLTestCase):
-                test_suite_or_case.setTestCaseCode(dict(), dict())
+                test_suite_or_case.setTestCaseCode(dict(), student_code_executor.get_defined_symbols())
             elif isinstance(test_suite_or_case, PLTestSuite):
                 work_stack.extend(test_suite_or_case)
 

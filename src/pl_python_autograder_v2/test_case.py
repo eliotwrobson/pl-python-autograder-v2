@@ -1,5 +1,6 @@
 import typing as t
 import unittest as ut
+from collections import namedtuple
 
 
 # Modeled after this: https://github.com/PrairieLearn/PrairieLearn/blob/master/graders/python/python_autograder/pl_unit_test.py
@@ -29,14 +30,14 @@ class PLTestCase(ut.TestCase):
         Call student code and load student and answer tuples.
         Called during the setUp phase during each test.
         """
-        print()
+
         if self.ref_result is None or self.student_result is None:
             raise ValueError("Executor objects are None. Did you forget to call setTestCaseCode?")
 
         # TODO these variable names suck, support them for legacy cases but redefine as something better.
-        answerTuple = t.NamedTuple("answerTuple", self.ref_result.keys())  # type: ignore
+        answerTuple = namedtuple("answerTuple", self.ref_result.keys())  # type: ignore
         self.ref = answerTuple(**self.ref_result)
-        studentTuple = t.NamedTuple("studentTuple", self.student_result.keys())  # type: ignore
+        studentTuple = namedtuple("studentTuple", self.student_result.keys())  # type: ignore
         self.st = studentTuple(**self.student_result)
 
     def _callSetUp(self) -> None:

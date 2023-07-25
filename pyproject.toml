@@ -11,6 +11,7 @@ packages = [
 [tool.poetry.dependencies]
 python = ">=3.8.1,<3.12"
 jsonargparse = "^4.22.1"
+RestrictedPython = "6.1"
 
 # Define testing dependencies and make optional
 [tool.poetry.group.test]
@@ -94,6 +95,13 @@ pythonpath = ["src"]
 
 [tool.mypy]
 disallow_untyped_defs = true
+
+# TODO remove this override and add stub file
+[[tool.mypy.overrides]]
+module = [
+  "RestrictedPython.*",
+]
+ignore_missing_imports = true
 
 [tool.flake8]
 # Black compatibility

@@ -4,6 +4,7 @@ from pathlib import Path
 from types import ModuleType
 
 from .loader import PLTestLoader, PLTestSuite
+from .restricted_execution import RestrictedExecutor
 from .test_result import PLTestResult
 
 
@@ -34,10 +35,14 @@ def execute_tests(
     # test_code = test_file_path.read_text()
     # test_module = import_module(str(test_file_path))
 
+    restricted_student_code = RestrictedExecutor(student_code_path.read_text())
+    restricted_student_code.execute()
+    print(restricted_student_code.get_defined_symbols())
+
     loader = PLTestLoader(PLTestSuite)
     suite = loader.loadTestsFromModule(test_module)
     result = PLTestResult()
-    suite.runWithCode(result)
+    suite.runWithCode(result, restricted_student_code)
 
     print(result)
     print(result.successes)
