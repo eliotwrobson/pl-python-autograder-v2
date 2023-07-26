@@ -434,6 +434,21 @@ files = [
 ]
 
 [[package]]
+name = "restrictedpython"
+version = "6.1"
+description = "RestrictedPython is a defined subset of the Python language which allows to provide a program input into a trusted environment."
+optional = false
+python-versions = ">=3.6, <3.12"
+files = [
+    {file = "RestrictedPython-6.1-py3-none-any.whl", hash = "sha256:0b2f1e54730ee29ac87a5dc684159bf163806038b02aa8561aaea840a8256a9f"},
+    {file = "RestrictedPython-6.1.tar.gz", hash = "sha256:7e58ea15cc92a0b916e0c8ca295e8b2c6d40fee4d12e1a2b5063d86efc279a9c"},
+]
+
+[package.extras]
+docs = ["Sphinx", "sphinx-rtd-theme"]
+test = ["pytest", "pytest-mock"]
+
+[[package]]
 name = "tomli"
 version = "2.0.1"
 description = "A lil' TOML parser"
@@ -458,4 +473,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.8.1,<3.12"
-content-hash = "a728d1b5e1284a4497ce7750d52aa42329a589325934ebc85eaa1712baa7cc74"
+content-hash = "9f27006588bbe310dc5c388eefd09f44d7475268160331280df5a80d36e3c529"
