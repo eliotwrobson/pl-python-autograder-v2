@@ -4,6 +4,8 @@ from copy import deepcopy
 from RestrictedPython import CompileResult, compile_restricted_exec
 from RestrictedPython.Guards import safe_globals
 
+from .restricted_import import _safe_import
+
 
 class RestrictedExecutor:
     compile_result: CompileResult
@@ -14,6 +16,9 @@ class RestrictedExecutor:
 
     def execute(self) -> None:
         global_dict = deepcopy(safe_globals)
+
+        global_dict["__builtins__"].update({"__import__": _safe_import(__import__, [])})
+
         exec(self.compile_result.code, global_dict)
 
         for key in safe_globals:
