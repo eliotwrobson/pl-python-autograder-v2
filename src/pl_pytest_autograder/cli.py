@@ -6,7 +6,7 @@ from _pytest._io import TerminalWriter
 from _pytest.config import Config
 from _pytest.config.findpaths import locate_config
 
-from pytest_benchmark.csv import CSVResults
+from pl_pytest_autograder.csv import CSVResults
 
 from . import plugin
 from .logger import Logger

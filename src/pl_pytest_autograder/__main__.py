@@ -1,4 +1,4 @@
-from pytest_benchmark.cli import main
+from pl_pytest_autograder.cli import main
 
 if __name__ == '__main__':
     main()
