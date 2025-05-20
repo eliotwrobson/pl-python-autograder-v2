@@ -5,7 +5,7 @@ description = "A pytest plugin for autograding Python code."
 readme = "README.md"
 authors = [{ name = "Eliot Robson", email = "eliot.robson24@gmail.com" }]
 requires-python = ">=3.10"
-dependencies = []
+dependencies = ["pytest"]
 license = { file = "LICENSE" }
 
 [build-system]
@@ -62,5 +62,5 @@ mark-parentheses = false
 forced-separate = ["conftest"]
 force-single-line = true
 
-[tool.ruff.format]
-quote-style = "single"
+[project.scripts]
+pl-pytest-autograder = "pl_pytest_autograder.cli:main"
