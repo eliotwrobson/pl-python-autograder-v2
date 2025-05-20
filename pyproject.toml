@@ -62,5 +62,8 @@ mark-parentheses = false
 forced-separate = ["conftest"]
 force-single-line = true
 
+[project.entry-points.pytest11]
+pl_pytest_autograder = "pl_pytest_autograder.plugin"
+
 [project.scripts]
 pl-pytest-autograder = "pl_pytest_autograder.cli:main"

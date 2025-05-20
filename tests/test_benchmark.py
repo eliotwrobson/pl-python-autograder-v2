@@ -7,8 +7,8 @@ pytest_plugins = ("pytester",)
 platform  # noqa: B018
 
 
-def test_help(testdir):
-    result = testdir.runpytest_subprocess("--help")
+def test_help(pytester):
+    result = pytester.runpytest_subprocess("--help")
     result.stdout.fnmatch_lines(
         [
             "*",
