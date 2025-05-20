@@ -53,7 +53,7 @@ class BenchmarkFixture:
         self.name = node.name
         self.fullname = node._nodeid
         self.disabled = disabled
-        if hasattr(node, 'callspec'):
+        if hasattr(node, "callspec"):
             self.param = node.callspec.id
             self.params = node.callspec.params
         else:
@@ -91,8 +91,8 @@ class BenchmarkFixture:
             timer_precision = self._precisions[timer]
         else:
             timer_precision = self._precisions[timer] = compute_timer_precision(timer)
-            self._logger.debug('')
-            self._logger.debug(f'Computing precision for {NameWrapper(timer)} ... {format_time(timer_precision)}s.', blue=True, bold=True)
+            self._logger.debug("")
+            self._logger.debug(f"Computing precision for {NameWrapper(timer)} ... {format_time(timer_precision)}s.", blue=True, bold=True)
         return timer_precision
 
     def _make_runner(self, function_to_benchmark, args, kwargs):
@@ -126,12 +126,12 @@ class BenchmarkFixture:
             self,
             iterations=iterations,
             options={
-                'disable_gc': self._disable_gc,
-                'timer': self._timer,
-                'min_rounds': self._min_rounds,
-                'max_time': self._max_time,
-                'min_time': self._min_time,
-                'warmup': self._warmup,
+                "disable_gc": self._disable_gc,
+                "timer": self._timer,
+                "min_rounds": self._min_rounds,
+                "max_time": self._max_time,
+                "min_time": self._min_time,
+                "warmup": self._warmup,
             },
         )
         self._add_stats(bench_stats)
@@ -142,17 +142,17 @@ class BenchmarkFixture:
         stats = pstats.Stats(profile)
         self.stats.cprofile_stats = stats
         if self.cprofile_dump:
-            output_file = Path(f'{self.cprofile_dump}-{slugify(self.name)}.prof')
+            output_file = Path(f"{self.cprofile_dump}-{slugify(self.name)}.prof")
             output_file.parent.mkdir(parents=True, exist_ok=True)
             stats.dump_stats(output_file)
-            self._logger.info(f'Saved profile: {output_file}', bold=True)
+            self._logger.info(f"Saved profile: {output_file}", bold=True)
 
     def __call__(self, function_to_benchmark, *args, **kwargs):
         if self._mode:
             self.has_error = True
-            raise FixtureAlreadyUsed(f'Fixture can only be used once. Previously it was used in {self._mode} mode.')
+            raise FixtureAlreadyUsed(f"Fixture can only be used once. Previously it was used in {self._mode} mode.")
         try:
-            self._mode = 'benchmark(...)'
+            self._mode = "benchmark(...)"
             return self._raw(function_to_benchmark, *args, **kwargs)
         except Exception:
             self.has_error = True
@@ -161,9 +161,9 @@ class BenchmarkFixture:
     def pedantic(self, target, args=(), kwargs=None, setup=None, teardown=None, rounds=1, warmup_rounds=0, iterations=1):
         if self._mode:
             self.has_error = True
-            raise FixtureAlreadyUsed(f'Fixture can only be used once. Previously it was used in {self._mode} mode.')
+            raise FixtureAlreadyUsed(f"Fixture can only be used once. Previously it was used in {self._mode} mode.")
         try:
-            self._mode = 'benchmark.pedantic(...)'
+            self._mode = "benchmark.pedantic(...)"
             return self._raw_pedantic(
                 target,
                 args=args,
@@ -193,16 +193,16 @@ class BenchmarkFixture:
 
             stats = self._make_stats(iterations)
 
-            self._logger.debug(f'  Running {rounds} rounds x {iterations} iterations ...', yellow=True, bold=True)
+            self._logger.debug(f"  Running {rounds} rounds x {iterations} iterations ...", yellow=True, bold=True)
             run_start = time.time()
             if self._warmup:
                 warmup_rounds = min(rounds, max(1, int(self._warmup / iterations)))
-                self._logger.debug(f'  Warmup {warmup_rounds} rounds x {iterations} iterations ...')
+                self._logger.debug(f"  Warmup {warmup_rounds} rounds x {iterations} iterations ...")
                 for _ in range(warmup_rounds):
                     runner(loops_range)
             for _ in range(rounds):
                 stats.update(runner(loops_range))
-            self._logger.debug(f'  Ran for {format_time(time.time() - run_start)}s.', yellow=True, bold=True)
+            self._logger.debug(f"  Ran for {format_time(time.time() - run_start)}s.", yellow=True, bold=True)
         if self.cprofile_loops is None:
             cprofile_loops = loops_range or range(1)
         else:
@@ -223,13 +223,13 @@ class BenchmarkFixture:
         has_args = bool(args or kwargs)
 
         if not isinstance(iterations, int) or iterations < 1:
-            raise ValueError('Must have positive int for `iterations`.')
+            raise ValueError("Must have positive int for `iterations`.")
 
         if not isinstance(rounds, int) or rounds < 1:
-            raise ValueError('Must have positive int for `rounds`.')
+            raise ValueError("Must have positive int for `rounds`.")
 
         if not isinstance(warmup_rounds, int) or warmup_rounds < 0:
-            raise ValueError('Must have positive int for `warmup_rounds`.')
+            raise ValueError("Must have positive int for `warmup_rounds`.")
 
         if iterations > 1 and setup:
             raise ValueError("Can't use more than 1 `iterations` with a `setup` function.")
@@ -298,7 +298,7 @@ class BenchmarkFixture:
         try:
             import aspectlib
         except ImportError as exc:
-            raise ImportError(exc.args, 'Please install aspectlib or pytest-benchmark[aspect]') from exc
+            raise ImportError(exc.args, "Please install aspectlib or pytest-benchmark[aspect]") from exc
 
         def aspect(function):
             def wrapper(*args, **kwargs):
@@ -315,16 +315,16 @@ class BenchmarkFixture:
             callback = self._cleanup_callbacks.pop()
             callback()
         if not self._mode and not self.skipped:
-            self._logger.warning('Benchmark fixture was not used at all in this test!', warner=self._warner, suspend=True)
+            self._logger.warning("Benchmark fixture was not used at all in this test!", warner=self._warner, suspend=True)
 
     def _calibrate_timer(self, runner):
         timer_precision = self._get_precision(self._timer)
         min_time = max(self._min_time, timer_precision * self._calibration_precision)
         min_time_estimate = min_time * 5 / self._calibration_precision
-        self._logger.debug('')
+        self._logger.debug("")
         self._logger.debug(
-            f'  Calibrating to target round {format_time(min_time)}s; will estimate when reaching {format_time(min_time_estimate)}s '
-            f'(using: {NameWrapper(self._timer)}, precision: {format_time(timer_precision)}s).',
+            f"  Calibrating to target round {format_time(min_time)}s; will estimate when reaching {format_time(min_time_estimate)}s "
+            f"(using: {NameWrapper(self._timer)}, precision: {format_time(timer_precision)}s).",
             yellow=True,
             bold=True,
         )
@@ -341,16 +341,16 @@ class BenchmarkFixture:
                     duration = min(duration, runner(loops_range))
                     warmup_rounds += 1
                     warmup_iterations += loops
-                self._logger.debug(f'    Warmup: {format_time(time.time() - warmup_start)}s ({warmup_rounds} x {loops} iterations).')
+                self._logger.debug(f"    Warmup: {format_time(time.time() - warmup_start)}s ({warmup_rounds} x {loops} iterations).")
 
-            self._logger.debug(f'    Measured {loops} iterations: {format_time(duration)}s.', yellow=True)
+            self._logger.debug(f"    Measured {loops} iterations: {format_time(duration)}s.", yellow=True)
             if duration >= min_time:
                 break
 
             if duration >= min_time_estimate:
                 # coarse estimation of the number of loops
                 loops = int(ceil(min_time * loops / duration))
-                self._logger.debug(f'    Estimating {loops} iterations.', green=True)
+                self._logger.debug(f"    Estimating {loops} iterations.", green=True)
                 if loops == 1:
                     # If we got a single loop then bail early - nothing to calibrate if the the
                     # test function is 100 times slower than the timer resolution.
