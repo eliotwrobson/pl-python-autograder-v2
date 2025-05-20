@@ -10,20 +10,26 @@ jobs:
       fail-fast: false
       matrix:
         python-version: ["3.10"]
-        # Removed to save actions credits during early dev: "3.8", "3.9",
-        # poetry-version: ["1.5.1"]
         os: [ubuntu-latest]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v4
-        with:
-          python-version: ${{ matrix.python-version }}
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install tox tox-gh-actions poetry
-      - name: Test with tox
-        run: tox
-#      - name: Upload coverage
-#        uses: codecov/codecov-action@v3
+      - uses: actions/checkout@v4
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+      - name: Check lockfile
+        run: uv lock --check
+      # - name: Lint with ruff
+      #   run: |
+      #     # Fail if codebase contains any of these issues
+      #     uv run ruff check .
+      #     uv run ruff format --check .
+      # - name: Static Typechecking with mypy
+      #   run: |
+      #     uv run mypy --config-file pyproject.toml src tests
+      - name: Test with pytest
+        run: uv run pytest tests
+
+        # |
+        #   uv pip install -e .
+        #   set -o pipefail
+        #   uv run pytest --cache-clear --cov | tee pytest-coverage.txt
