@@ -3,6 +3,8 @@ import platform
 pytest_plugins = ("pytester",)
 platform  # noqa: B018
 
+student_code_name = "hey.py"
+
 
 def test_temp(benchmark):
     print(type(benchmark))

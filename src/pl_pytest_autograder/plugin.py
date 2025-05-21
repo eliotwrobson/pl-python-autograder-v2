@@ -53,7 +53,10 @@ def pytest_generate_tests(metafunc: pytest.Metafunc):
     TODO this is where the parameterization inside the folder is happening
     """
     print("HERE in metafunc", type(metafunc))
-    # exit()
+    # TODO read in student code and leading/trailing code
+    # patterns from metafunc by magically named variables
+    # in the testing module.
+    # print(metafunc.module.__dict__["student_code_name"])
 
     # 1. Get the module object associated with the test function
     test_module = metafunc.module
