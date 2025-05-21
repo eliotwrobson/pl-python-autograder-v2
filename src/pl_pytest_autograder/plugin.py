@@ -13,7 +13,6 @@ import pytest
 
 from . import __version__
 from .fixture import BenchmarkFixture
-from .fixture import StudentFixture
 from .session import BenchmarkSession
 from .session import PerformanceRegression
 from .timers import default_timer
@@ -177,6 +176,19 @@ def datadir(request: pytest.FixtureRequest, tmp_path: Path) -> Path:
     return result
 
 
+class StudentFixture:
+    def __init__(self, leading_file: Path, trailing_file: Path, student_code_file: Path) -> None:
+        self.leading_file = leading_file
+        self.trailing_file = trailing_file
+        self.student_code_file = student_code_file
+
+    # TODO add functions that let instructors use the student fixture
+    # use the stuff pete set up here: https://github.com/reteps/pytest-autograder-prototype
+
+    def __repr__(self) -> str:
+        return f"StudentFixture(leading_file={self.leading_file}, trailing_file={self.trailing_file}, student_code_file={self.student_code_file})"
+
+
 def pytest_generate_tests(metafunc: pytest.Metafunc):
     """
     TODO this is where the parameterization inside the folder is happening
@@ -209,8 +221,11 @@ def pytest_generate_tests(metafunc: pytest.Metafunc):
             # Find a specific data file, e.g., 'test_data.txt'
             leading_file = data_dir / "leading_code.py"
             trailing_file = data_dir / "trailing_code.py"
+            # TODO parameterize this accross multiple of these files if the exist
+            # conforming to the same naming scheme
+            student_code_file = data_dir / "student_code.py"
 
-            metafunc.parametrize("benchmark", [leading_file, trailing_file])
+            metafunc.parametrize("benchmark", [StudentFixture(leading_file, trailing_file, student_code_file)])
             # else:
             #    pass
             # pytest.skip(f"Data file '{data_file.name}' not found in '{data_dir}'")

@@ -8,6 +8,7 @@ def test_temp(benchmark):
     print(type(benchmark))
     # This is a test to check if the benchmark fixture is working
     assert benchmark is not None
+    print(repr(benchmark))
     assert False
 
 
