@@ -35,6 +35,67 @@ from .utils import parse_warmup
 from .utils import time_unit
 
 
+class StudentFixture:
+    def __init__(self, leading_file: Path, trailing_file: Path, student_code_file: Path) -> None:
+        self.leading_file = leading_file
+        self.trailing_file = trailing_file
+        self.student_code_file = student_code_file
+
+    # TODO add functions that let instructors use the student fixture
+    # use the stuff pete set up here: https://github.com/reteps/pytest-autograder-prototype
+
+    def __repr__(self) -> str:
+        return f"StudentFixture(leading_file={self.leading_file}, trailing_file={self.trailing_file}, student_code_file={self.student_code_file})"
+
+
+def pytest_generate_tests(metafunc: pytest.Metafunc):
+    """
+    TODO this is where the parameterization inside the folder is happening
+    """
+    print("HERE in metafunc", type(metafunc))
+    # exit()
+
+    # 1. Get the module object associated with the test function
+    test_module = metafunc.module
+
+    if test_module is None:
+        # IN case the test is not in a module (e.g., it is a class method)
+        # or a standalone function, you can skip this step
+        return
+
+    # print(test_module)
+    # 2. Access the __file__ attribute of the module
+    # This gives you the string path to the .py file where the test function is defined
+    module_filepath_str = test_module.__file__
+
+    # 3. Convert it to a pathlib.Path object for easier manipulation
+    module_path = Path(module_filepath_str)
+
+    if "benchmark" in metafunc.fixturenames:
+        # Let's assume you have a 'data' directory next to your test file
+        data_dir = module_path.parent / module_path.stem
+
+        if data_dir.is_dir():
+            print("IN THE DATA DIR")
+            # Find a specific data file, e.g., 'test_data.txt'
+            leading_file = data_dir / "leading_code.py"
+            trailing_file = data_dir / "trailing_code.py"
+            # TODO parameterize this accross multiple of these files if the exist
+            # conforming to the same naming scheme
+            student_code_file = data_dir / "student_code.py"
+
+            metafunc.parametrize("benchmark", [StudentFixture(leading_file, trailing_file, student_code_file)])
+            # else:
+            #    pass
+            # pytest.skip(f"Data file '{data_file.name}' not found in '{data_dir}'")
+        else:
+            pass
+            # pytest.skip(f"Data directory '{data_dir}' not found.")
+
+
+### TODO delete all of the old stuff below here as much as we can ###
+
+
 def pytest_report_header(config):
     bs = config._benchmarksession
 
@@ -174,74 +235,6 @@ def datadir(request: pytest.FixtureRequest, tmp_path: Path) -> Path:
     else:
         result.mkdir()
     return result
-
-
-class StudentFixture:
-    def __init__(self, leading_file: Path, trailing_file: Path, student_code_file: Path) -> None:
-        self.leading_file = leading_file
-        self.trailing_file = trailing_file
-        self.student_code_file = student_code_file
-
-    # TODO add functions that let instructors use the student fixture
-    # use the stuff pete set up here: https://github.com/reteps/pytest-autograder-prototype
-
-    def __repr__(self) -> str:
-        return f"StudentFixture(leading_file={self.leading_file}, trailing_file={self.trailing_file}, student_code_file={self.student_code_file})"
-
-
-def pytest_generate_tests(metafunc: pytest.Metafunc):
-    """
-    TODO this is where the parameterization inside the folder is happening
-    """
-    print("HERE in metafunc", type(metafunc))
-    # exit()
-
-    # 1. Get the module object associated with the test function
-    test_module = metafunc.module
-
-    if test_module is None:
-        # IN case the test is not in a module (e.g., it is a class method)
-        # or a standalone function, you can skip this step
-        return
-
-    # print(test_module)
-    # 2. Access the __file__ attribute of the module
-    # This gives you the string path to the .py file where the test function is defined
-    module_filepath_str = test_module.__file__
-
-    # 3. Convert it to a pathlib.Path object for easier manipulation
-    module_path = Path(module_filepath_str)
-
-    if "benchmark" in metafunc.fixturenames:
-        # Let's assume you have a 'data' directory next to your test file
-        data_dir = module_path.parent / module_path.stem
-
-        if data_dir.is_dir():
-            print("IN THE DATA DIR")
-            # Find a specific data file, e.g., 'test_data.txt'
-            leading_file = data_dir / "leading_code.py"
-            trailing_file = data_dir / "trailing_code.py"
-            # TODO parameterize this accross multiple of these files if the exist
-            # conforming to the same naming scheme
-            student_code_file = data_dir / "student_code.py"
-
-            metafunc.parametrize("benchmark", [StudentFixture(leading_file, trailing_file, student_code_file)])
-            # else:
-            #    pass
-            # pytest.skip(f"Data file '{data_file.name}' not found in '{data_dir}'")
-        else:
-            pass
-            # pytest.skip(f"Data directory '{data_dir}' not found.")
-
-    print(module_path)
-    # exit()
-    """
-    print(metafunc.fixturenames)
-    if "benchmark" in metafunc.fixturenames:
-        metafunc.parametrize("stringinput", metafunc.config.getoption("stringinput"))
-
-    exit()
-    """
 
 
 def pytest_addoption(parser):
