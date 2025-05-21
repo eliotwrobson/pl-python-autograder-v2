@@ -59,6 +59,8 @@ async def main():
     """
     Main function to start the asyncio TCP server.
     """
+    print("In the subprocess")
+    exit()
     server = await asyncio.start_server(handle_client, HOST, PORT)
 
     addrs = ", ".join(str(sock.getsockname()) for sock in server.sockets)

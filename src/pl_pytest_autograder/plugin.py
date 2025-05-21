@@ -2,11 +2,13 @@ import argparse
 import operator
 import platform
 import shutil
+import subprocess
 import sys
 import traceback
 from collections import defaultdict
 from datetime import datetime
 from datetime import timezone
+from importlib.resources import files
 from pathlib import Path
 
 import pytest
@@ -40,6 +42,14 @@ class StudentFixture:
         self.leading_file = leading_file
         self.trailing_file = trailing_file
         self.student_code_file = student_code_file
+
+        script_path = str(files("pl_pytest_autograder").joinpath("_student_code_runner.py"))
+
+        process = subprocess.Popen([sys.executable, script_path], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        stdout, stderr = process.communicate()
+        print(stdout.decode())
+        print(stderr.decode())
+        exit()
 
     # TODO add functions that let instructors use the student fixture
     # use the stuff pete set up here: https://github.com/reteps/pytest-autograder-prototype
