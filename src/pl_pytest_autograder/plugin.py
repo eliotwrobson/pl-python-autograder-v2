@@ -1,16 +1,19 @@
 import argparse
 import operator
 import platform
+import shutil
 import sys
 import traceback
 from collections import defaultdict
 from datetime import datetime
 from datetime import timezone
+from pathlib import Path
 
 import pytest
 
 from . import __version__
 from .fixture import BenchmarkFixture
+from .fixture import StudentFixture
 from .session import BenchmarkSession
 from .session import PerformanceRegression
 from .timers import default_timer
@@ -161,6 +164,69 @@ def add_global_options(addoption, prefix="benchmark-"):
             dest="importmode",
             help="How to attempt loading hooks from conftest. Akin to pytest's --import-mode. Default: %(default)r.",
         )
+
+
+@pytest.fixture
+def datadir(request: pytest.FixtureRequest, tmp_path: Path) -> Path:
+    original_datadir = request.path.parent / request.path.stem
+    result = tmp_path / original_datadir.stem
+    if original_datadir.is_dir():
+        shutil.copytree(_win32_longpath(str(original_datadir)), _win32_longpath(str(result)))
+    else:
+        result.mkdir()
+    return result
+
+
+def pytest_generate_tests(metafunc: pytest.Metafunc):
+    """
+    TODO this is where the parameterization inside the folder is happening
+    """
+    print("HERE in metafunc", type(metafunc))
+    # exit()
+
+    # 1. Get the module object associated with the test function
+    test_module = metafunc.module
+
+    if test_module is None:
+        # IN case the test is not in a module (e.g., it is a class method)
+        # or a standalone function, you can skip this step
+        return
+
+    # print(test_module)
+    # 2. Access the __file__ attribute of the module
+    # This gives you the string path to the .py file where the test function is defined
+    module_filepath_str = test_module.__file__
+
+    # 3. Convert it to a pathlib.Path object for easier manipulation
+    module_path = Path(module_filepath_str)
+
+    if "benchmark" in metafunc.fixturenames:
+        # Let's assume you have a 'data' directory next to your test file
+        data_dir = module_path.parent / module_path.stem
+
+        if data_dir.is_dir():
+            print("IN THE DATA DIR")
+            # Find a specific data file, e.g., 'test_data.txt'
+            leading_file = data_dir / "leading_code.py"
+            trailing_file = data_dir / "trailing_code.py"
+
+            metafunc.parametrize("benchmark", [leading_file, trailing_file])
+            # else:
+            #    pass
+            # pytest.skip(f"Data file '{data_file.name}' not found in '{data_dir}'")
+        else:
+            pass
+            # pytest.skip(f"Data directory '{data_dir}' not found.")
+
+    print(module_path)
+    # exit()
+    """
+    print(metafunc.fixturenames)
+    if "benchmark" in metafunc.fixturenames:
+        metafunc.parametrize("stringinput", metafunc.config.getoption("stringinput"))
+
+    exit()
+    """
 
 
 def pytest_addoption(parser):
@@ -456,28 +522,48 @@ def pytest_benchmark_generate_json(config, benchmarks, include_data, machine_inf
     return output_json
 
 
-@pytest.fixture
-def benchmark(request):
-    bs: BenchmarkSession = request.config._benchmarksession
+import os
 
-    if bs.skip:
-        pytest.skip("Benchmarks are skipped (--benchmark-skip was used).")
+
+def _win32_longpath(path):
+    """
+    Helper function to add the long path prefix for Windows, so that shutil.copytree
+     won't fail while working with paths with 255+ chars.
+    TODO move this to the utils module.
+    From https://github.com/gabrielcnr/pytest-datadir/blob/master/src/pytest_datadir/plugin.py
+    """
+    if sys.platform == "win32":
+        # The use of os.path.normpath here is necessary since "the "\\?\" prefix
+        # to a path string tells the Windows APIs to disable all string parsing
+        # and to send the string that follows it straight to the file system".
+        # (See https://docs.microsoft.com/pt-br/windows/desktop/FileIO/naming-a-file)
+        normalized = os.path.normpath(path)
+        if not normalized.startswith("\\\\?\\"):
+            is_unc = normalized.startswith("\\\\")
+            # see https://en.wikipedia.org/wiki/Path_(computing)#Universal_Naming_Convention
+            if is_unc:  # then we need to insert an additional "UNC\" to the longpath prefix
+                normalized = normalized.replace("\\\\", "\\\\?\\UNC\\")
+            else:
+                normalized = "\\\\?\\" + normalized
+        return normalized
     else:
-        node = request.node
-        marker = node.get_closest_marker("benchmark")
-        options: dict[str, object] = dict(marker.kwargs) if marker else {}
-        if "timer" in options:
-            options["timer"] = NameWrapper(options["timer"])
-        fixture = BenchmarkFixture(
-            node,
-            add_stats=bs.benchmarks.append,
-            logger=bs.logger,
-            warner=request.node.warn,
-            disabled=bs.disabled,
-            **dict(bs.options, **options),
-        )
-        yield fixture
-        fixture._cleanup()
+        return path
+
+
+@pytest.fixture
+def benchmark(request, datadir: Path) -> StudentFixture:
+    # bs: BenchmarkSession = request.config._benchmarksession
+    print("HERE")
+    for item in datadir.iterdir():
+        print(item.name)
+    node = request.node
+    marker = node.get_closest_marker("benchmark")
+    options: dict[str, object] = dict(marker.kwargs) if marker else {}
+    if "timer" in options:
+        options["timer"] = NameWrapper(options["timer"])
+    fixture = StudentFixture(node.name)
+    return fixture
+    # fixture._cleanup()
 
 
 @pytest.fixture
@@ -513,12 +599,13 @@ def pytest_runtest_makereport(item, call):
     if hasattr(item, "funcargs"):
         fixture = item.funcargs.get("benchmark")
     if fixture is not None and not isinstance(fixture, BenchmarkFixture):
-        raise TypeError(
-            f"unexpected type for `benchmark` in funcargs, {fixture!r} must be a BenchmarkFixture instance. "
-            "You should not use other plugins that define a `benchmark` fixture, or return and unexpected value if you do redefine it."
-        )
-    if fixture:
-        fixture.skipped = outcome.get_result().outcome == "skipped"
+        pass
+        # raise TypeError(
+        #     f"unexpected type for `benchmark` in funcargs, {fixture!r} must be a BenchmarkFixture instance. "
+        #     "You should not use other plugins that define a `benchmark` fixture, or return and unexpected value if you do redefine it."
+        # )
+    # if fixture:
+    #     fixture.skipped = outcome.get_result().outcome == "skipped"
 
 
 @pytest.hookimpl(trylast=True)  # force the other plugins to initialise, fixes issue with capture not being properly initialised

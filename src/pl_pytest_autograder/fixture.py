@@ -23,6 +23,11 @@ else:
     from .stats import Metadata
 
 
+class StudentFixture:
+    def __init__(self, name: str) -> None:
+        pass
+
+
 class FixtureAlreadyUsed(Exception):
     pass
 

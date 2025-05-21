@@ -4,6 +4,13 @@ pytest_plugins = ("pytester",)
 platform  # noqa: B018
 
 
+def test_temp(benchmark):
+    print(type(benchmark))
+    # This is a test to check if the benchmark fixture is working
+    assert benchmark is not None
+    assert False
+
+
 def test_help(pytester):
     result = pytester.runpytest_subprocess("--help")
     result.stdout.fnmatch_lines(
