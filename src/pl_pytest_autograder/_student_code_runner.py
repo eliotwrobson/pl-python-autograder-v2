@@ -64,9 +64,14 @@ async def main() -> None:
                 # Execute the student code for the first time and load
                 # variables into the student_code_vars dictionary
                 student_code = json_message["student_code"]
+
+                # First, compile student code. Make sure to handle errors in this later
                 # TODO have a better filename
                 code_setup = compile(student_code, "StudentCodeFile", "exec")
-                exec(code_setup, student_code_vars)
+
+                await asyncio.wait_for(asyncio.get_event_loop().run_in_executor(executor, exec, code_setup, student_code_vars), timeout=2)
+
+                # exec(code_setup, student_code_vars)
 
                 # await writer.drain()
                 writer.write(json.dumps({"status": "success", "message": "Student code executed."}).encode() + b"\n")
