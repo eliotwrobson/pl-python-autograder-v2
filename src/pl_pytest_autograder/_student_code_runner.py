@@ -1,5 +1,6 @@
 import asyncio
 import concurrent.futures
+import json
 import sys
 
 # Global ThreadPoolExecutor for CPU-bound tasks
@@ -55,8 +56,10 @@ async def main() -> None:
             if not line:  # Handle empty lines
                 continue
 
-            print(f"Server received: '{line}'", file=sys.stderr)
+            json_message = json.loads(line)
 
+            # TODO handle cases of different payloads
+            # The first payload should be student code
             if line.lower() == "exit":
                 response = "Goodbye!\n"
                 writer.write(response.encode())

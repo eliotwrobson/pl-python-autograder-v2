@@ -59,7 +59,11 @@ class StudentFixture:
         )
 
     def try_message(self, message: str) -> str:
-        stdout, stderr = self.process.communicate(message.encode("utf-8"), timeout=2)
+        import json
+
+        json_message = json.dumps({"message": message})
+
+        stdout, stderr = self.process.communicate(json_message.encode("utf-8"), timeout=2)
         return stdout.decode("utf-8")
 
     # TODO add functions that let instructors use the student fixture
