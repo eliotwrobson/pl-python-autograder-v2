@@ -55,7 +55,12 @@ class StudentFixture:
         script_path = str(files("pl_pytest_autograder").joinpath("_student_code_runner.py"))
 
         self.process = subprocess.Popen([sys.executable, script_path], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        stdout, stderr = self.process.communicate()
+        self.stdout, stderr = self.process.communicate()
+
+    def get_output(self) -> str:
+        return self.stdout.decode("utf-8")
+
+    def try_message(self, message: str) -> None:
 
     # TODO add functions that let instructors use the student fixture
     # use the stuff pete set up here: https://github.com/reteps/pytest-autograder-prototype
