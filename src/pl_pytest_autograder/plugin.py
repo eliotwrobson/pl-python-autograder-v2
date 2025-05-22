@@ -1,15 +1,16 @@
 import argparse
 import operator
 import platform
-import shutil
 import subprocess
 import sys
 import traceback
 from collections import defaultdict
+from collections.abc import Iterable
 from datetime import datetime
 from datetime import timezone
 from importlib.resources import files
 from pathlib import Path
+from typing import NamedTuple
 
 import pytest
 
@@ -37,28 +38,48 @@ from .utils import parse_warmup
 from .utils import time_unit
 
 
+class StudentFiles(NamedTuple):
+    leading_file: Path | None
+    trailing_file: Path | None
+    student_code_file: Path
+
+
 class StudentFixture:
-    def __init__(self, leading_file: Path, trailing_file: Path, student_code_file: Path) -> None:
-        self.leading_file = leading_file
-        self.trailing_file = trailing_file
-        self.student_code_file = student_code_file
+    process: subprocess.Popen | None
+
+    def __init__(self, file_names: StudentFiles) -> None:
+        self.leading_file = file_names.leading_file
+        self.trailing_file = file_names.trailing_file
+        self.student_code_file = file_names.student_code_file
 
         script_path = str(files("pl_pytest_autograder").joinpath("_student_code_runner.py"))
 
-        process = subprocess.Popen([sys.executable, script_path], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        stdout, stderr = process.communicate()
-        print(stdout.decode())
-        print(stderr.decode())
-        exit()
+        self.process = subprocess.Popen([sys.executable, script_path], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        stdout, stderr = self.process.communicate()
 
     # TODO add functions that let instructors use the student fixture
     # use the stuff pete set up here: https://github.com/reteps/pytest-autograder-prototype
+    def _cleanup(self) -> None:
+        if self.process:
+            self.process.terminate()
+            self.process.wait()
+            self.process = None
 
     def __repr__(self) -> str:
         return f"StudentFixture(leading_file={self.leading_file}, trailing_file={self.trailing_file}, student_code_file={self.student_code_file})"
 
 
-def pytest_generate_tests(metafunc: pytest.Metafunc):
+# TODO rename this!
+
+
+@pytest.fixture
+def benchmark(request: pytest.FixtureRequest) -> Iterable[StudentFixture]:
+    fixture = StudentFixture(request.param)
+    yield fixture
+    fixture._cleanup()
+
+
+def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
     """
     TODO this is where the parameterization inside the folder is happening
     """
@@ -98,7 +119,9 @@ def pytest_generate_tests(metafunc: pytest.Metafunc):
             # conforming to the same naming scheme
             student_code_file = data_dir / "student_code.py"
 
-            metafunc.parametrize("benchmark", [StudentFixture(leading_file, trailing_file, student_code_file)])
+            file_tup = StudentFiles(leading_file, trailing_file, student_code_file)
+
+            metafunc.parametrize("benchmark", [file_tup], indirect=True)
             # else:
             #    pass
             # pytest.skip(f"Data file '{data_file.name}' not found in '{data_dir}'")
@@ -238,17 +261,6 @@ def add_global_options(addoption, prefix="benchmark-"):
             dest="importmode",
             help="How to attempt loading hooks from conftest. Akin to pytest's --import-mode. Default: %(default)r.",
         )
-
-
-@pytest.fixture
-def datadir(request: pytest.FixtureRequest, tmp_path: Path) -> Path:
-    original_datadir = request.path.parent / request.path.stem
-    result = tmp_path / original_datadir.stem
-    if original_datadir.is_dir():
-        shutil.copytree(_win32_longpath(str(original_datadir)), _win32_longpath(str(result)))
-    else:
-        result.mkdir()
-    return result
 
 
 def pytest_addoption(parser):
@@ -570,22 +582,6 @@ def _win32_longpath(path):
         return normalized
     else:
         return path
-
-
-@pytest.fixture
-def benchmark(request, datadir: Path) -> StudentFixture:
-    # bs: BenchmarkSession = request.config._benchmarksession
-    print("HERE")
-    for item in datadir.iterdir():
-        print(item.name)
-    node = request.node
-    marker = node.get_closest_marker("benchmark")
-    options: dict[str, object] = dict(marker.kwargs) if marker else {}
-    if "timer" in options:
-        options["timer"] = NameWrapper(options["timer"])
-    fixture = StudentFixture(node.name)
-    return fixture
-    # fixture._cleanup()
 
 
 @pytest.fixture
