@@ -51,12 +51,35 @@ async def main() -> None:
     #     await writer.drain()
 
     try:
+        student_code_vars = {}
         async for line_bytes in reader:
             line = line_bytes.decode().strip()
             if not line:  # Handle empty lines
                 continue
 
             json_message = json.loads(line)
+
+            msg_type = json_message.get("type")
+            if msg_type == "start":
+                # Execute the student code for the first time and load
+                # variables into the student_code_vars dictionary
+                student_code = json_message["student_code"]
+                # TODO have a better filename
+                code_setup = compile(student_code, "StudentCodeFile", "exec")
+                exec(code_setup, student_code_vars)
+
+                # await writer.drain()
+                writer.write(json.dumps({"status": "success", "message": "Student code executed."}).encode() + b"\n")
+
+            elif msg_type == "query":
+                var_to_query = json_message["var"]
+                # Check if the variable exists in the student_code_vars
+                if var_to_query in student_code_vars:
+                    response = json.dumps({"status": "success", "value": student_code_vars[var_to_query]})
+                else:
+                    response = json.dumps({"status": "error", "message": f"Variable '{var_to_query}' not found."})
+
+                writer.write(response.encode() + b"\n")  # Add newline for stream parsing
 
             # TODO handle cases of different payloads
             # The first payload should be student code
@@ -67,8 +90,9 @@ async def main() -> None:
                 break  # Exit the loop and terminate the server
 
             # Simulate processing a request
-            response = f"Server processed: '{line.upper()}'\n"
-            writer.write(response.encode())
+            # response = f"Server processed: '{line.upper()}'\n"
+
+            # exit()
             await writer.drain()  # Ensure the response is written to stdout
 
     except asyncio.CancelledError:

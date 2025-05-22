@@ -1,4 +1,5 @@
 import argparse
+import json
 import operator
 import platform
 import subprocess
@@ -37,10 +38,12 @@ from .utils import parse_timer
 from .utils import parse_warmup
 from .utils import time_unit
 
+SCRIPT_PATH = str(files("pl_pytest_autograder").joinpath("_student_code_runner.py"))
+
 
 class StudentFiles(NamedTuple):
-    leading_file: Path | None
-    trailing_file: Path | None
+    leading_file: Path
+    trailing_file: Path
     student_code_file: Path
 
 
@@ -52,19 +55,58 @@ class StudentFixture:
         self.trailing_file = file_names.trailing_file
         self.student_code_file = file_names.student_code_file
 
-        script_path = str(files("pl_pytest_autograder").joinpath("_student_code_runner.py"))
+        self._start_student_code_server()
 
+    def _start_student_code_server(self) -> None:
         self.process = subprocess.Popen(
-            [sys.executable, script_path], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+            [sys.executable, SCRIPT_PATH], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE
         )
 
-    def try_message(self, message: str) -> str:
-        import json
+        student_code = ""
+        if self.leading_file.is_file():
+            with open(self.leading_file) as f:
+                student_code += f.read()
+                student_code += "\n"
 
-        json_message = json.dumps({"message": message})
+        if self.student_code_file.is_file():
+            with open(self.student_code_file) as f:
+                student_code += f.read()
 
-        stdout, stderr = self.process.communicate(json_message.encode("utf-8"), timeout=2)
-        return stdout.decode("utf-8")
+        if self.trailing_file.is_file():
+            with open(self.trailing_file) as f:
+                student_code += "\n"
+                student_code += f.read()
+
+        json_message = {
+            "type": "start",
+            "student_code": student_code,
+        }
+
+        # TODO this stuff is all blocking, use asyncio to make it non-blocking
+        # TODO add a timeout to this
+        self.process.stdin.write(json.dumps(json_message).encode("utf-8") + b"\n")
+        self.process.stdin.flush()
+
+        # Wait for the server to start and print its output
+        # You can adjust the timeout as needed
+        # self.process.wait(timeout=2)
+        res = json.loads(self.process.stdout.readline().decode("utf-8").strip())
+        assert res["status"] == "success"
+        # self.process.stdin.write(json.dumps(json_message).encode("utf-8"))
+        # stdout = self.process.stdout.readline()
+
+    def query(self, var_to_query: str) -> str:
+        json_message = {
+            "type": "query",
+            "var": var_to_query,
+        }
+
+        self.process.stdin.write(json.dumps(json_message).encode("utf-8") + b"\n")
+        self.process.stdin.flush()
+
+        # TODO add actual json encoding
+        res = json.loads(self.process.stdout.readline().decode("utf-8").strip())["value"]
+        return res
 
     # TODO add functions that let instructors use the student fixture
     # use the stuff pete set up here: https://github.com/reteps/pytest-autograder-prototype
