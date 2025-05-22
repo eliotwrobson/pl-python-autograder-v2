@@ -69,7 +69,7 @@ async def main() -> None:
                 # TODO have a better filename
                 code_setup = compile(student_code, "StudentCodeFile", "exec")
 
-                await asyncio.wait_for(asyncio.get_event_loop().run_in_executor(executor, exec, code_setup, student_code_vars), timeout=2)
+                await asyncio.wait_for(asyncio.get_event_loop().run_in_executor(executor, exec, code_setup, student_code_vars), timeout=1)
 
                 # exec(code_setup, student_code_vars)
 
@@ -97,16 +97,17 @@ async def main() -> None:
             # Simulate processing a request
             # response = f"Server processed: '{line.upper()}'\n"
 
-            # exit()
             await writer.drain()  # Ensure the response is written to stdout
 
     except asyncio.CancelledError:
-        print("Server was cancelled.", file=sys.stderr)
+        print("Server was cancelled.")
+    except asyncio.TimeoutError:
+        writer.write(json.dumps({"status": "failurue", "message": "Student code timed out."}).encode() + b"\n")
     except Exception as e:
-        print(f"An error occurred: {e}", file=sys.stderr)
+        print(f"An error occurred: {e}")
     finally:
         # It's good practice to close transports and writers
-        print("Closing server connections...", file=sys.stderr)
+        print("Closing server connections...")
         if transport:
             transport.close()
         if writer:

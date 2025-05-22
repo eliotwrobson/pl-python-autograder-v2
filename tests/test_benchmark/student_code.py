@@ -12,3 +12,6 @@ def fib(n):
         1 / 0
 
     return fib(n - 1) + fib(n - 2)
+
+
+# time.sleep(3)
