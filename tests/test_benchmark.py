@@ -11,7 +11,7 @@ def test_temp(benchmark):
     # This is a test to check if the benchmark fixture is working
     assert benchmark is not None
 
-    print(benchmark.get_output())
+    print(benchmark.try_message("exit"))
     assert False
 
 
