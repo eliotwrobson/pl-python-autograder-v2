@@ -2,6 +2,7 @@ import argparse
 import json
 import operator
 import platform
+import socket
 import subprocess
 import sys
 import traceback
@@ -39,12 +40,28 @@ from .utils import parse_warmup
 from .utils import time_unit
 
 SCRIPT_PATH = str(files("pl_pytest_autograder").joinpath("_student_code_runner.py"))
+HOST = "127.0.0.1"
+PORT = 8888
 
 
 class StudentFiles(NamedTuple):
     leading_file: Path
     trailing_file: Path
     student_code_file: Path
+
+
+def recv_line(sock):
+    data = b""
+    while True:
+        print("HERE")
+        part = sock.recv(1)
+        print("STUCK")
+        if not part:
+            # Connection closed or error
+            return None if data == b"" else data
+        data += part
+        if part == os.linesep.encode("utf-8"):
+            return data
 
 
 class StudentFixture:
@@ -81,17 +98,20 @@ class StudentFixture:
             "type": "start",
             "student_code": student_code,
         }
+        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.socket.connect((HOST, PORT))
         # TODO this stuff is all blocking, use asyncio to make it non-blocking
         # TODO add a timeout to this
-        self.process.stdin.write(json.dumps(json_message).encode("utf-8") + os.linesep.encode("utf-8"))
-        self.process.stdin.flush()
+        # self.process.stdin.write(json.dumps(json_message).encode("utf-8") + os.linesep.encode("utf-8"))
+        # self.process.stdin.flush()
 
         # Wait for the server to start and print its output
         # You can adjust the timeout as needed
         # self.process.wait(timeout=2)
-        import time
 
-        time.sleep(0.1)  # Give the server some time to start
+        data = recv_line(self.socket)
+        print(data)
+        exit()
         thing = self.process.stdout.readline().decode("utf-8").strip()
         print(thing)
         print(self.process.stdout.readline().decode("utf-8").strip())

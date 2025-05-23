@@ -9,6 +9,10 @@ from contextlib import redirect_stdout
 from typing import Any
 from typing import NamedTuple
 
+# Define the server's address and port
+HOST = "127.0.0.1"  # Loopback address, means "this computer only"
+PORT = 8888
+
 # Global ThreadPoolExecutor for CPU-bound tasks
 # It's good practice to create this once and reuse it.
 # The number of workers should ideally be around the number of CPU cores.
@@ -49,42 +53,11 @@ def student_code_runner(student_code: str) -> StudentCodeResult:
     )
 
 
-async def main() -> None:
+async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
     """
     Reads lines from stdin asynchronously and responds on stdout.
     Mimics a simple server handling requests.
     """
-
-    loop = asyncio.get_running_loop()
-
-    # On Windows, explicitly set the ProactorEventLoop for better pipe support
-    if sys.platform == "win32":
-        try:
-            loop = asyncio.ProactorEventLoop()
-            asyncio.set_event_loop(loop)
-            print("Using ProactorEventLoop on Windows.", file=sys.stderr)
-        except NotImplementedError:
-            print(
-                "ProactorEventLoop not available, falling back to SelectorEventLoop (may not work well with stdin/stdout).", file=sys.stderr
-            )
-            # Keep default if ProactorEventLoop isn't available
-
-    # Create StreamReader for stdin
-    # We use a protocol to handle the stream, then get the reader/writer from it
-    # This is a bit more involved than direct pipe connections, but more robust
-    # for full duplex interactive streams like stdin/stdout.
-
-    reader = asyncio.StreamReader()
-    protocol = asyncio.StreamReaderProtocol(reader)
-    # connect_read_pipe connects a pipe to an asyncio transport and protocol
-
-    transport, _ = await loop.connect_read_pipe(lambda: protocol, sys.stdin)
-    print("poop")
-    # Create StreamWriter for stdout
-    writer_transport, writer_protocol = await loop.connect_write_pipe(asyncio.streams.FlowControlMixin, sys.stdout)
-    writer = asyncio.StreamWriter(writer_transport, writer_protocol, reader, loop)
-    print("poop")
-    print("Server started. Type your message and press Enter. Type 'exit' to quit.", file=sys.stderr)
     # try:
     #     json_message = json.loads(message)
     #     result = await asyncio.wait_for(
@@ -105,6 +78,12 @@ async def main() -> None:
     #     writer.write(json.dumps(error_response).encode("utf-8") + b"\n")
     #     await writer.drain()
     print("poop")
+    response_message = "Server Echo" + os.linesep
+
+    # Write response back to the client
+    writer.write(response_message.encode())
+    await writer.drain()
+    exit()
     try:
         student_code_vars: None | dict = None
         async for line_bytes in reader:
@@ -167,11 +146,30 @@ async def main() -> None:
     finally:
         # It's good practice to close transports and writers
         print("Closing server connections...")
-        if transport:
-            transport.close()
-        if writer:
-            writer.close()
-            await writer.wait_closed()  # Wait for the writer to finish closing
+
+        writer.close()
+        await writer.wait_closed()  # Wait for the writer to finish closing
+
+
+async def main():
+    """
+    Starts the asynchronous socket server.
+    """
+    # Ensure ProactorEventLoop is used on Windows for robust socket operations
+    if sys.platform == "win32":
+        try:
+            loop = asyncio.ProactorEventLoop()
+            asyncio.set_event_loop(loop)
+            print("Using ProactorEventLoop on Windows.", file=sys.stderr)
+        except NotImplementedError:
+            print("ProactorEventLoop not available, continuing with default loop.", file=sys.stderr)
+
+    # Start the server, binding to the specified host and port
+    server = await asyncio.start_server(handle_client, HOST, PORT)
+
+    async with server:
+        # Run forever, or until the server is explicitly stopped
+        await server.serve_forever()
 
 
 if __name__ == "__main__":
