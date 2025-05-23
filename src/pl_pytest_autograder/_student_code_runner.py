@@ -2,7 +2,6 @@ import asyncio
 import concurrent.futures
 import io
 import json
-import os
 import sys
 from contextlib import redirect_stderr
 from contextlib import redirect_stdout
@@ -11,7 +10,7 @@ from typing import NamedTuple
 
 # Define the server's address and port
 HOST = "127.0.0.1"  # Loopback address, means "this computer only"
-PORT = 8888
+PORT = 1111
 
 # Global ThreadPoolExecutor for CPU-bound tasks
 # It's good practice to create this once and reuse it.
@@ -77,13 +76,7 @@ async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWrit
     #     error_response = {"status": "error", "message": f"Invalid UTF-8 encoding: {e}"}
     #     writer.write(json.dumps(error_response).encode("utf-8") + b"\n")
     #     await writer.drain()
-    print("poop")
-    response_message = "Server Echo" + os.linesep
 
-    # Write response back to the client
-    writer.write(response_message.encode())
-    await writer.drain()
-    exit()
     try:
         student_code_vars: None | dict = None
         async for line_bytes in reader:
@@ -112,7 +105,7 @@ async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWrit
                     "execution_error": str(student_code_result.execution_error),
                 }
 
-                writer.write(json.dumps(response).encode() + os.linesep.encode())  # Add newline for stream parsing
+                writer.write(json.dumps(response).encode())  # Add newline for stream parsing
 
             elif msg_type == "query":
                 var_to_query = json_message["var"]
@@ -122,12 +115,12 @@ async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWrit
                 else:
                     response = json.dumps({"status": "error", "message": f"Variable '{var_to_query}' not found."})
 
-                writer.write(response.encode() + os.linesep.encode())  # Add newline for stream parsing
+                writer.write(response.encode())  # Add newline for stream parsing
 
             # TODO handle cases of different payloads
             # The first payload should be student code
             if line.lower() == "exit":
-                response = "Goodbye!" + os.linesep
+                response = "Goodbye!"
                 writer.write(response.encode())
                 await writer.drain()
                 break  # Exit the loop and terminate the server
@@ -140,7 +133,7 @@ async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWrit
     except asyncio.CancelledError:
         print("Server was cancelled.")
     except asyncio.TimeoutError:
-        writer.write(json.dumps({"status": "failurue", "message": "Student code timed out."}).encode() + os.linesep.encode())
+        writer.write(json.dumps({"status": "failurue", "message": "Student code timed out."}).encode())
     except Exception as e:
         print(f"An error occurred: {e}")
     finally:
