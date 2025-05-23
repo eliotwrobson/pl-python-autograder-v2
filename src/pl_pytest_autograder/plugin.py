@@ -17,7 +17,6 @@ from typing import NamedTuple
 import pytest
 
 from . import __version__
-from .fixture import BenchmarkFixture
 from .session import BenchmarkSession
 from .session import PerformanceRegression
 from .timers import default_timer
@@ -43,6 +42,32 @@ SCRIPT_PATH = str(files("pl_pytest_autograder").joinpath("_student_code_runner.p
 HOST = "127.0.0.1"
 PORT = 1111
 BUFFSIZE = 4096
+
+
+class FeedbackFixture:
+    """
+    A fixture to handle feedback from the student code.
+    """
+
+    test_id: str
+    messages: list[str]
+
+    def __init__(self, test_id: str) -> None:
+        self.test_id = test_id
+        self.messages = []
+
+    def add_message(self, message: str) -> None:
+        self.messages.append(message)
+
+
+@pytest.fixture
+def feedback(request: pytest.FixtureRequest) -> FeedbackFixture:
+    """
+    A fixture that allows tests to add feedback messages and scores.
+    """
+    nodeid = request.node.nodeid
+
+    return FeedbackFixture(test_id=nodeid)
 
 
 class StudentFiles(NamedTuple):
@@ -526,6 +551,36 @@ def pytest_sessionfinish(session, exitstatus):
     yield
 
 
+"""
+@pytest.hookimpl
+def pytest_sessionfinish(session):
+    # This hook runs after all tests are finished.
+    # Collect all student feedback and generate the final report.
+    final_results = []
+    for nodeid, feedback_obj in all_student_feedback.items():
+        final_results.append(feedback_obj.to_dict())
+
+    # Example: Save to a JSON file
+    import json
+    output_path = session.config.rootpath / "autograder_results.json"
+    with open(output_path, "w") as f:
+        json.dump(final_results, f, indent=4)
+    print(f"\nAutograder results saved to {output_path}")
+
+    # For autograding platforms like Gradescope, you might format
+    # it according to their specific JSON format.
+    # Example Gradescope format:
+    # {
+    #   "score": 0,
+    #   "output": "Overall feedback",
+    #   "tests": [
+    #     {"name": "Test Case 1", "score": 2, "max_score": 5, "output": "Feedback for test 1"},
+    #     ...
+    #   ]
+    # }
+"""
+
+
 def pytest_terminal_summary(terminalreporter):
     try:
         terminalreporter.config._benchmarksession.display(terminalreporter)
@@ -660,12 +715,14 @@ def pytest_runtest_setup(item):
 
 
 @pytest.hookimpl(hookwrapper=True)
-def pytest_runtest_makereport(item, call):
+def pytest_runtest_makereport(item: pytest.Item, call):
     outcome = yield
     fixture = None
     if hasattr(item, "funcargs"):
-        fixture = item.funcargs.get("benchmark")
-    if fixture is not None and not isinstance(fixture, BenchmarkFixture):
+        student_code_fixture = item.funcargs.get("benchmark")
+        feedback_fixture = item.funcargs.get("feedback")
+
+    if fixture is not None and not isinstance(fixture, StudentFixture):
         pass
         # raise TypeError(
         #     f"unexpected type for `benchmark` in funcargs, {fixture!r} must be a BenchmarkFixture instance. "

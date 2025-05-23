@@ -6,12 +6,14 @@ platform  # noqa: B018
 student_code_name = "hey.py"
 
 
-def test_temp(benchmark):
+def test_temp(benchmark, feedback):
     print(type(benchmark))
+    print(type(feedback))
     # This is a test to check if the benchmark fixture is working
     assert benchmark is not None
 
     assert benchmark.query("x") == 5
+    feedback.add_message("This is a test message")
     assert False
 
 
