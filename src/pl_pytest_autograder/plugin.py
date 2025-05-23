@@ -81,17 +81,25 @@ class StudentFixture:
             "type": "start",
             "student_code": student_code,
         }
-
         # TODO this stuff is all blocking, use asyncio to make it non-blocking
         # TODO add a timeout to this
-        self.process.stdin.write(json.dumps(json_message).encode("utf-8") + b"\n")
+        self.process.stdin.write(json.dumps(json_message).encode("utf-8") + os.linesep.encode("utf-8"))
         self.process.stdin.flush()
 
         # Wait for the server to start and print its output
         # You can adjust the timeout as needed
         # self.process.wait(timeout=2)
-        res = json.loads(self.process.stdout.readline().decode("utf-8").strip())
+        import time
+
+        time.sleep(0.1)  # Give the server some time to start
+        thing = self.process.stdout.readline().decode("utf-8").strip()
+        print(thing)
+        print(self.process.stdout.readline().decode("utf-8").strip())
+        res = json.loads(thing)
         assert res["status"] == "success"
+
+        print("hey")
+        exit()
         # self.process.stdin.write(json.dumps(json_message).encode("utf-8"))
         # stdout = self.process.stdout.readline()
 
@@ -101,7 +109,7 @@ class StudentFixture:
             "var": var_to_query,
         }
 
-        self.process.stdin.write(json.dumps(json_message).encode("utf-8") + b"\n")
+        self.process.stdin.write(json.dumps(json_message).encode("utf-8") + os.linesep.encode("utf-8"))
         self.process.stdin.flush()
 
         # TODO add actual json encoding

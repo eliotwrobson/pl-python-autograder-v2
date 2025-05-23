@@ -2,6 +2,7 @@ import asyncio
 import concurrent.futures
 import io
 import json
+import os
 import sys
 from contextlib import redirect_stderr
 from contextlib import redirect_stdout
@@ -53,21 +54,36 @@ async def main() -> None:
     Reads lines from stdin asynchronously and responds on stdout.
     Mimics a simple server handling requests.
     """
+
     loop = asyncio.get_running_loop()
+
+    # On Windows, explicitly set the ProactorEventLoop for better pipe support
+    if sys.platform == "win32":
+        try:
+            loop = asyncio.ProactorEventLoop()
+            asyncio.set_event_loop(loop)
+            print("Using ProactorEventLoop on Windows.", file=sys.stderr)
+        except NotImplementedError:
+            print(
+                "ProactorEventLoop not available, falling back to SelectorEventLoop (may not work well with stdin/stdout).", file=sys.stderr
+            )
+            # Keep default if ProactorEventLoop isn't available
 
     # Create StreamReader for stdin
     # We use a protocol to handle the stream, then get the reader/writer from it
     # This is a bit more involved than direct pipe connections, but more robust
     # for full duplex interactive streams like stdin/stdout.
+
     reader = asyncio.StreamReader()
     protocol = asyncio.StreamReaderProtocol(reader)
     # connect_read_pipe connects a pipe to an asyncio transport and protocol
-    transport, _ = await loop.connect_read_pipe(lambda: protocol, sys.stdin)
 
+    transport, _ = await loop.connect_read_pipe(lambda: protocol, sys.stdin)
+    print("poop")
     # Create StreamWriter for stdout
     writer_transport, writer_protocol = await loop.connect_write_pipe(asyncio.streams.FlowControlMixin, sys.stdout)
     writer = asyncio.StreamWriter(writer_transport, writer_protocol, reader, loop)
-
+    print("poop")
     print("Server started. Type your message and press Enter. Type 'exit' to quit.", file=sys.stderr)
     # try:
     #     json_message = json.loads(message)
@@ -88,7 +104,7 @@ async def main() -> None:
     #     error_response = {"status": "error", "message": f"Invalid UTF-8 encoding: {e}"}
     #     writer.write(json.dumps(error_response).encode("utf-8") + b"\n")
     #     await writer.drain()
-
+    print("poop")
     try:
         student_code_vars: None | dict = None
         async for line_bytes in reader:
@@ -117,7 +133,7 @@ async def main() -> None:
                     "execution_error": str(student_code_result.execution_error),
                 }
 
-                writer.write(json.dumps(response).encode() + b"\n")
+                writer.write(json.dumps(response).encode() + os.linesep.encode())  # Add newline for stream parsing
 
             elif msg_type == "query":
                 var_to_query = json_message["var"]
@@ -127,12 +143,12 @@ async def main() -> None:
                 else:
                     response = json.dumps({"status": "error", "message": f"Variable '{var_to_query}' not found."})
 
-                writer.write(response.encode() + b"\n")  # Add newline for stream parsing
+                writer.write(response.encode() + os.linesep.encode())  # Add newline for stream parsing
 
             # TODO handle cases of different payloads
             # The first payload should be student code
             if line.lower() == "exit":
-                response = "Goodbye!\n"
+                response = "Goodbye!" + os.linesep
                 writer.write(response.encode())
                 await writer.drain()
                 break  # Exit the loop and terminate the server
@@ -145,7 +161,7 @@ async def main() -> None:
     except asyncio.CancelledError:
         print("Server was cancelled.")
     except asyncio.TimeoutError:
-        writer.write(json.dumps({"status": "failurue", "message": "Student code timed out."}).encode() + b"\n")
+        writer.write(json.dumps({"status": "failurue", "message": "Student code timed out."}).encode() + os.linesep.encode())
     except Exception as e:
         print(f"An error occurred: {e}")
     finally:
