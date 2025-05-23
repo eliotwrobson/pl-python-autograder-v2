@@ -1,12 +1,51 @@
 import asyncio
 import concurrent.futures
+import io
 import json
 import sys
+from contextlib import redirect_stderr
+from contextlib import redirect_stdout
+from typing import Any
+from typing import NamedTuple
 
 # Global ThreadPoolExecutor for CPU-bound tasks
 # It's good practice to create this once and reuse it.
 # The number of workers should ideally be around the number of CPU cores.
 executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
+
+
+class StudentCodeResult(NamedTuple):
+    """
+    A named tuple to hold the result of the student code execution.
+    """
+
+    student_local_vars: dict
+    captured_stdout: str
+    captured_stderr: str
+    execution_error: Exception | None
+
+
+def student_code_runner(student_code: str) -> StudentCodeResult:
+    stdout_capture = io.StringIO()
+    stderr_capture = io.StringIO()
+    execution_error = None
+    student_code_vars: dict[str, Any] = {}
+
+    try:
+        # First, compile student code. Make sure to handle errors in this later
+        # TODO have a better filename
+        code_setup = compile(student_code, "StudentCodeFile", "exec")
+        with redirect_stdout(stdout_capture), redirect_stderr(stderr_capture):
+            exec(code_setup, {}, student_code_vars)  # noqa: S102
+    except Exception as e:
+        execution_error = e
+
+    return StudentCodeResult(
+        student_local_vars=student_code_vars,
+        captured_stdout=stdout_capture.getvalue(),
+        captured_stderr=stderr_capture.getvalue(),
+        execution_error=execution_error,
+    )
 
 
 async def main() -> None:
@@ -51,7 +90,7 @@ async def main() -> None:
     #     await writer.drain()
 
     try:
-        student_code_vars = {}
+        student_code_vars: None | dict = None
         async for line_bytes in reader:
             line = line_bytes.decode().strip()
             if not line:  # Handle empty lines
@@ -65,16 +104,20 @@ async def main() -> None:
                 # variables into the student_code_vars dictionary
                 student_code = json_message["student_code"]
 
-                # First, compile student code. Make sure to handle errors in this later
-                # TODO have a better filename
-                code_setup = compile(student_code, "StudentCodeFile", "exec")
+                student_code_result = await asyncio.wait_for(
+                    asyncio.get_event_loop().run_in_executor(executor, student_code_runner, student_code), timeout=1
+                )
 
-                await asyncio.wait_for(asyncio.get_event_loop().run_in_executor(executor, exec, code_setup, student_code_vars), timeout=1)
+                student_code_vars = student_code_result.student_local_vars
 
-                # exec(code_setup, student_code_vars)
+                response = {
+                    "status": "success",
+                    "stdout": student_code_result.captured_stdout,
+                    "stderr": student_code_result.captured_stderr,
+                    "execution_error": str(student_code_result.execution_error),
+                }
 
-                # await writer.drain()
-                writer.write(json.dumps({"status": "success", "message": "Student code executed."}).encode() + b"\n")
+                writer.write(json.dumps(response).encode() + b"\n")
 
             elif msg_type == "query":
                 var_to_query = json_message["var"]
