@@ -10,7 +10,6 @@ from .utils import NAME_FORMATTERS
 from .utils import SecondsDecimal
 from .utils import first_or_value
 from .utils import get_machine_id
-from .utils import load_storage
 from .utils import load_timer
 from .utils import report_noprogress
 from .utils import report_progress
@@ -37,12 +36,7 @@ class BenchmarkSession:
         self.performance_regressions = []
         self.benchmarks = []
         self.machine_id = get_machine_id()
-        self.storage = load_storage(
-            config.getoption("benchmark_storage"),
-            logger=self.logger,
-            default_machine_id=self.machine_id,
-            netrc=config.getoption("benchmark_netrc"),
-        )
+        self.storage = None
         self.cprofile_sort_by = config.getoption("benchmark_cprofile")
         self.cprofile_loops = config.getoption("benchmark_cprofile_loops")
         self.cprofile_top = config.getoption("benchmark_cprofile_top")
@@ -95,7 +89,6 @@ class BenchmarkSession:
         self.compare = config.getoption("benchmark_compare")
         self.compare_fail = config.getoption("benchmark_compare_fail")
         self.name_format = NAME_FORMATTERS[config.getoption("benchmark_name")]
-        self.histogram = first_or_value(config.getoption("benchmark_histogram"), False)
 
     def get_machine_info(self):
         obj = self.config.hook.pytest_benchmark_generate_machine_info(config=self.config)

@@ -288,20 +288,6 @@ def add_display_options(addoption, prefix="benchmark-"):
     )
 
 
-def add_histogram_options(addoption, prefix="benchmark-"):
-    filename_prefix = f"benchmark_{get_current_time()}"
-    addoption(
-        f"--{prefix}histogram",
-        action="append",
-        metavar="FILENAME-PREFIX",
-        nargs="?",
-        default=[],
-        const=filename_prefix,
-        help="Plot graphs of min/max/avg/stddev over time in FILENAME-PREFIX-test_name.svg. If FILENAME-PREFIX contains"
-        f" slashes ('/') then directories will be created. Default: {filename_prefix!r}",
-    )
-
-
 def add_csv_options(addoption, prefix="benchmark-"):
     filename_prefix = f"benchmark_{get_current_time()}"
     addoption(
@@ -500,7 +486,6 @@ def pytest_addoption(parser):
     )
     add_global_options(group.addoption)
     add_display_options(group.addoption)
-    add_histogram_options(group.addoption)
 
 
 def pytest_addhooks(pluginmanager):

@@ -13,8 +13,6 @@ from .plugin import add_display_options
 from .plugin import add_global_options
 from .table import TableResults
 from .utils import NAME_FORMATTERS
-from .utils import first_or_value
-from .utils import load_storage
 from .utils import report_noprogress
 
 COMPARE_HELP = """examples:
@@ -132,7 +130,7 @@ def main():
     if args.verbose:
         level = Logger.VERBOSE
     logger = Logger(level)
-    storage = load_storage(args.storage, logger=logger, netrc=args.netrc)
+    storage = None
 
     hook = HookDispatch(mode=args.importmode, root=pathlib.Path("."))
 
