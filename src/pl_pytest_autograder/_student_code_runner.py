@@ -3,6 +3,7 @@ import concurrent.futures
 import io
 import json
 import sys
+import traceback
 from contextlib import redirect_stderr
 from contextlib import redirect_stdout
 from typing import Any
@@ -29,12 +30,14 @@ class StudentCodeResult(NamedTuple):
     captured_stdout: str
     captured_stderr: str
     execution_error: Exception | None
+    execution_traceback: str | None = None
 
 
 def student_code_runner(student_code: str) -> StudentCodeResult:
     stdout_capture = io.StringIO()
     stderr_capture = io.StringIO()
     execution_error = None
+    exception_traceback = None
     student_code_vars: dict[str, Any] = {}
 
     try:
@@ -45,12 +48,15 @@ def student_code_runner(student_code: str) -> StudentCodeResult:
             exec(code_setup, student_code_vars, student_code_vars)  # noqa: S102
     except Exception as e:
         execution_error = e
+        # TODO this traceback is not very useful
+        exception_traceback = traceback.format_exc()
 
     return StudentCodeResult(
         student_local_vars=student_code_vars,
         captured_stdout=stdout_capture.getvalue(),
         captured_stderr=stderr_capture.getvalue(),
         execution_error=execution_error,
+        execution_traceback=exception_traceback,
     )
 
 
@@ -105,6 +111,7 @@ async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWrit
                     "stdout": student_code_result.captured_stdout,
                     "stderr": student_code_result.captured_stderr,
                     "execution_error": str(student_code_result.execution_error),
+                    "execution_traceback": student_code_result.execution_traceback,
                 }
 
                 writer.write(json.dumps(response).encode())  # Add newline for stream parsing
