@@ -1,4 +1,5 @@
 import argparse
+import base64
 import json
 import netrc
 import os
@@ -19,6 +20,8 @@ from subprocess import CalledProcessError
 from subprocess import check_output
 from urllib.parse import parse_qs
 from urllib.parse import urlparse
+
+import dill
 
 TIME_UNITS = {"": "Seconds", "m": "Milliseconds (ms)", "u": "Microseconds (us)", "n": "Nanoseconds (ns)"}
 ALLOWED_COLUMNS = ["min", "max", "mean", "stddev", "median", "iqr", "ops", "outliers", "rounds", "iterations"]
@@ -565,3 +568,43 @@ def get_cprofile_functions(stats):
         )
 
     return result
+
+
+### Stuff for the new autograder we actually need ###
+def serialize_object_unsafe(obj: object) -> str:
+    """
+    Serializes an arbitrary Python object to a JSON string.
+    The object is first serialized using dill, then base64 encoded.
+
+    Returns:
+        A JSON string representing the serialized object.
+    """
+    # 1. Serialize the object using dill
+    dilled_bytes = dill.dumps(obj)
+
+    # 2. Base64 encode the byte stream
+    base64_encoded_bytes = base64.b64encode(dilled_bytes)
+
+    # 3. Decode base64 bytes to a UTF-8 string for JSON storage
+    return base64_encoded_bytes.decode("utf-8")
+
+
+def deserialize_object_unsafe(base64_string: str) -> object:
+    """
+    Deserializes a Python object from a JSON string.
+
+    The string is expected to contain a base64-encoded, dill-serialized
+    object.
+
+    Returns:
+        The deserialized Python object.
+    """
+
+    # 1. Encode the base64 string back to bytes
+    base64_encoded_bytes = base64_string.encode("utf-8")
+
+    # 2. Base64 decode the bytes
+    dilled_bytes = base64.b64decode(base64_encoded_bytes)
+
+    # 3. Deserialize the object using dill
+    return dill.loads(dilled_bytes)

@@ -5,7 +5,10 @@ description = "A pytest plugin for autograding Python code."
 readme = "README.md"
 authors = [{ name = "Eliot Robson", email = "eliot.robson24@gmail.com" }]
 requires-python = ">=3.10"
-dependencies = ["pytest"]
+dependencies = [
+    "dill>=0.4.0",
+    "pytest",
+]
 license = { file = "LICENSE" }
 
 [build-system]
