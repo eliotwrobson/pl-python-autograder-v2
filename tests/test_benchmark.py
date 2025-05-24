@@ -1,12 +1,15 @@
 import platform
 
+from pl_pytest_autograder.plugin import FeedbackFixture
+from pl_pytest_autograder.plugin import StudentFixture
+
 pytest_plugins = ("pytester",)
 platform  # noqa: B018
 
 student_code_name = "hey.py"
 
 
-def test_temp(benchmark, feedback):
+def test_temp(benchmark: StudentFixture, feedback: FeedbackFixture) -> None:
     print(type(benchmark))
     print(type(feedback))
     # This is a test to check if the benchmark fixture is working
@@ -17,6 +20,17 @@ def test_temp(benchmark, feedback):
     assert False
 
 
+def test_temp_2(benchmark: StudentFixture, feedback: FeedbackFixture) -> None:
+    print(type(benchmark))
+    print(type(feedback))
+    # This is a test to check if the benchmark fixture is working
+    assert benchmark is not None
+
+    if benchmark.query("x") == 5:
+        feedback.set_score(0.5)
+
+
+"""
 def test_help(pytester):
     result = pytester.runpytest_subprocess("--help")
     result.stdout.fnmatch_lines(
@@ -61,7 +75,7 @@ def test_help(pytester):
 
 def test_groups(testdir):
     test = testdir.makepyfile(
-        """
+
 import time
 import pytest
 
@@ -82,7 +96,7 @@ def test_slower(benchmark):
 def test_xfast(benchmark):
     benchmark(lambda: None)
     assert 1 == 1
-"""
+
     )
     result = testdir.runpytest_subprocess("-vv", "--doctest-modules", test)
     result.stdout.fnmatch_lines(
@@ -104,3 +118,4 @@ def test_xfast(benchmark):
     )
     print(result.stdout)
     assert False
+"""

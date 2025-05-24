@@ -15,6 +15,7 @@ from pathlib import Path
 from typing import NamedTuple
 
 import pytest
+from _pytest.config import Config
 
 from . import __version__
 from .session import BenchmarkSession
@@ -51,13 +52,25 @@ class FeedbackFixture:
 
     test_id: str
     messages: list[str]
+    score: float | None
 
     def __init__(self, test_id: str) -> None:
         self.test_id = test_id
         self.messages = []
+        self.score = None
 
     def add_message(self, message: str) -> None:
         self.messages.append(message)
+
+    def set_score(self, score: float) -> None:
+        self.score = score
+
+    def to_dict(self) -> dict:
+        return {
+            "test_id": self.test_id,
+            "messages": self.messages,
+            "score": self.score,
+        }
 
 
 @pytest.fixture
@@ -67,7 +80,14 @@ def feedback(request: pytest.FixtureRequest) -> FeedbackFixture:
     """
     nodeid = request.node.nodeid
 
-    return FeedbackFixture(test_id=nodeid)
+    # Access the shared feedback data from config
+    feedback_data: dict[str, FeedbackFixture] = request.config.student_feedback_data
+
+    # Initialize feedback for this test if it doesn't exist
+    if nodeid not in feedback_data:
+        feedback_data[nodeid] = FeedbackFixture(test_id=nodeid)
+
+    return feedback_data[nodeid]
 
 
 class StudentFiles(NamedTuple):
@@ -547,21 +567,20 @@ def pytest_benchmark_group_stats(config, benchmarks, group_by):
 
 @pytest.hookimpl(hookwrapper=True)
 def pytest_sessionfinish(session, exitstatus):
-    session.config._benchmarksession.finish()
+    #     session.config._benchmarksession.finish()
+    #     yield
     yield
-
-
-"""
-@pytest.hookimpl
-def pytest_sessionfinish(session):
+    # """
+    # @pytest.hookimpl
+    # def pytest_sessionfinish(session):
     # This hook runs after all tests are finished.
     # Collect all student feedback and generate the final report.
     final_results = []
-    for nodeid, feedback_obj in all_student_feedback.items():
+    for nodeid, feedback_obj in session.config.student_feedback_data.items():
         final_results.append(feedback_obj.to_dict())
 
     # Example: Save to a JSON file
-    import json
+
     output_path = session.config.rootpath / "autograder_results.json"
     with open(output_path, "w") as f:
         json.dump(final_results, f, indent=4)
@@ -578,7 +597,6 @@ def pytest_sessionfinish(session):
     #     ...
     #   ]
     # }
-"""
 
 
 def pytest_terminal_summary(terminalreporter):
@@ -733,8 +751,11 @@ def pytest_runtest_makereport(item: pytest.Item, call):
 
 
 @pytest.hookimpl(trylast=True)  # force the other plugins to initialise, fixes issue with capture not being properly initialised
-def pytest_configure(config):
+def pytest_configure(config: Config) -> None:
     config.addinivalue_line("markers", "benchmark: mark a test with custom benchmark settings.")
     bs = config._benchmarksession = BenchmarkSession(config)
     bs.handle_loading()
     config.pluginmanager.register(bs, "pytest-benchmark")
+
+    if not hasattr(config, "student_feedback_data"):
+        config.student_feedback_data = {}
