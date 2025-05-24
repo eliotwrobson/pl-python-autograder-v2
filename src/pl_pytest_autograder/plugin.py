@@ -765,5 +765,60 @@ def pytest_configure(config: Config) -> None:
     # bs.handle_loading()
     # config.pluginmanager.register(bs, "pytest-benchmark")
 
+    # TODO instead of having this tied to a config object, we should
+    # register a collector plugin that contains the data within its hooks
+    # see below
     if not hasattr(config, "student_feedback_data"):
         config.student_feedback_data = {}
+
+
+"""
+class MyResultCollectorPlugin:
+    def __init__(self):
+        self.collected_results = {}
+
+    @pytest.hookimpl(hookwrapper=True)
+    def pytest_runtest_makereport(self, item, call):
+
+        Hook wrapper to capture test outcomes.
+
+        outcome = yield
+        report = outcome.get_result()
+
+        if report.when == "call":
+            self.collected_results[report.nodeid] = report.outcome
+            # self.collected_results[report.nodeid] = {
+            #     "outcome": report.outcome,
+            #     "duration": report.duration,
+            # }
+
+    @pytest.hookimpl(hookwrapper=True)
+    def pytest_sessionfinish(self, session, exitstatus):
+
+        Hook wrapper to process test results after the session finishes.
+
+        yield # Let other sessionfinish hooks run
+
+        print("\n--- Custom Test Results Summary (via Plugin Class) ---")
+        for nodeid, outcome in self.collected_results.items():
+            print(f"Test: {nodeid} -> Outcome: {outcome}")
+        print("--------------------------------------------------")
+
+        # Example: Check the result of a specific test by its nodeid
+        target_nodeid = "test_example.py::test_passing_example" # Replace with a test you have
+        if target_nodeid in self.collected_results:
+            print(f"\nResult for '{target_nodeid}': {self.collected_results[target_nodeid]}")
+        else:
+            print(f"\n'{target_nodeid}' not found or no results collected.")
+
+# This line registers your plugin class with pytest
+def pytest_configure(config):
+    # Only register our plugin if it hasn't been already (e.g., in case of multiple conftests)
+    if not hasattr(config, 'my_result_collector_plugin'):
+        config.my_result_collector_plugin = MyResultCollectorPlugin()
+        config.pluginmanager.register(config.my_result_collector_plugin)
+
+# If you need to access the plugin instance in pytest_sessionfinish outside the class,
+# you could do it via config.my_result_collector_plugin, but if all your logic
+# is within the class, you don't need to.
+"""
