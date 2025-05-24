@@ -14,6 +14,7 @@ from importlib.resources import files
 from pathlib import Path
 from typing import NamedTuple
 
+import _pytest.reports
 import pytest
 from _pytest.config import Config
 
@@ -551,10 +552,11 @@ def pytest_benchmark_group_stats(config, benchmarks, group_by):
 
 
 @pytest.hookimpl(hookwrapper=True)
-def pytest_sessionfinish(session, exitstatus):
+def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> Iterable[None]:
+    yield  # Let other sessionfinish hooks run
+
     #     session.config._benchmarksession.finish()
     #     yield
-    yield
     # """
     # @pytest.hookimpl
     # def pytest_sessionfinish(session):
@@ -562,6 +564,7 @@ def pytest_sessionfinish(session, exitstatus):
     # Collect all student feedback and generate the final report.
     final_results = []
     for nodeid, feedback_obj in session.config.student_feedback_data.items():
+        test_outcome = session.config.test_results[nodeid]
         final_results.append(feedback_obj.to_dict())
 
     # Example: Save to a JSON file
@@ -717,9 +720,17 @@ def pytest_runtest_setup(item):
                 raise ValueError(f"benchmark mark can't have {name!r} keyword argument.")
 
 
+import _pytest
+
+
 @pytest.hookimpl(hookwrapper=True)
-def pytest_runtest_makereport(item: pytest.Item, call):
-    outcome = yield
+def pytest_runtest_makereport(item: pytest.Item, call) -> Iterable[None]:
+    # Ensure the dictionary for results exists on config
+    if not hasattr(item.config, "test_results"):
+        item.config.test_results = {}
+
+    outcome = yield  # Let the actual tests run
+
     fixture = None
     if hasattr(item, "funcargs"):
         student_code_fixture = item.funcargs.get("benchmark")
@@ -733,6 +744,16 @@ def pytest_runtest_makereport(item: pytest.Item, call):
         # )
     # if fixture:
     #     fixture.skipped = outcome.get_result().outcome == "skipped"
+
+    report: _pytest.reports.TestReport = outcome.get_result()
+
+    if report.when == "call":
+        item.config.test_results[report.nodeid] = report
+        # You could store more details here if needed
+        # item.config.my_test_results[report.nodeid] = {
+        #     "outcome": report.outcome,
+        #     "duration": report.duration,
+        # }
 
 
 @pytest.hookimpl(trylast=True)  # force the other plugins to initialise, fixes issue with capture not being properly initialised
