@@ -9,6 +9,10 @@ platform  # noqa: B018
 student_code_name = "hey.py"
 
 
+def test_query_func(benchmark: StudentFixture, feedback: FeedbackFixture) -> None:
+    assert benchmark.query_function("fib", 3) == 5
+
+
 def test_temp(benchmark: StudentFixture, feedback: FeedbackFixture) -> None:
     print(type(benchmark))
     print(type(feedback))
@@ -17,7 +21,6 @@ def test_temp(benchmark: StudentFixture, feedback: FeedbackFixture) -> None:
 
     assert benchmark.query("x") == 5
     feedback.add_message("This is a test message")
-    assert False
 
 
 def test_temp_2(benchmark: StudentFixture, feedback: FeedbackFixture) -> None:

@@ -8,6 +8,8 @@ from contextlib import redirect_stdout
 from typing import Any
 from typing import NamedTuple
 
+from pl_pytest_autograder.utils import deserialize_object_unsafe
+
 # Define the server's address and port
 HOST = "127.0.0.1"  # Loopback address, means "this computer only"
 PORT = 1111
@@ -40,7 +42,7 @@ def student_code_runner(student_code: str) -> StudentCodeResult:
         # TODO have a better filename
         code_setup = compile(student_code, "StudentCodeFile", "exec")
         with redirect_stdout(stdout_capture), redirect_stderr(stderr_capture):
-            exec(code_setup, {}, student_code_vars)  # noqa: S102
+            exec(code_setup, student_code_vars, student_code_vars)  # noqa: S102
     except Exception as e:
         execution_error = e
 
@@ -116,6 +118,27 @@ async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWrit
                     response = json.dumps({"status": "error", "message": f"Variable '{var_to_query}' not found."})
 
                 writer.write(response.encode())  # Add newline for stream parsing
+
+            elif msg_type == "query_function":
+                func_name = json_message["function_name"]
+                args = deserialize_object_unsafe(json_message["args_encoded"])
+                kwargs = deserialize_object_unsafe(json_message["kwargs_encoded"])
+
+                # Check if the function exists in the student_code_vars
+                if func_name in student_code_vars:
+                    func = student_code_vars[func_name]
+                    if callable(func):
+                        try:
+                            result = func(*args, **kwargs)
+                            response = json.dumps({"status": "success", "value": result})
+                        except Exception as e:
+                            response = json.dumps({"status": "error", "message": str(e)})
+                    else:
+                        response = json.dumps({"status": "error", "message": f"'{func_name}' is not callable."})
+                else:
+                    response = json.dumps({"status": "error", "message": f"Function '{func_name}' not found."})
+
+                writer.write(response.encode())
 
             # TODO handle cases of different payloads
             # The first payload should be student code

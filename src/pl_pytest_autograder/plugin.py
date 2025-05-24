@@ -94,6 +94,9 @@ class StudentFiles(NamedTuple):
     student_code_file: Path
 
 
+from .utils import serialize_object_unsafe
+
+
 class StudentFixture:
     process: subprocess.Popen | None
 
@@ -146,6 +149,20 @@ class StudentFixture:
         self.socket.sendall(json.dumps(json_message).encode("utf-8") + os.linesep.encode("utf-8"))
         data = self.socket.recv(BUFFSIZE).decode()
 
+        res = json.loads(data)["value"]
+        return res
+
+    def query_function(self, function_name: str, *args, **kwargs) -> str:
+        json_message = {
+            "type": "query_function",
+            "function_name": function_name,
+            "args_encoded": serialize_object_unsafe(args),
+            "kwargs_encoded": serialize_object_unsafe(kwargs),
+        }
+
+        self.socket.sendall(json.dumps(json_message).encode("utf-8") + os.linesep.encode("utf-8"))
+
+        data = self.socket.recv(BUFFSIZE).decode()
         res = json.loads(data)["value"]
         return res
 
