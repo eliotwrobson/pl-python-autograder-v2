@@ -1,0 +1,14 @@
+[
+    {
+        "test_id": "tests/test_benchmark.py::test_temp[benchmark0]",
+        "messages": [
+            "This is a test message"
+        ],
+        "score": null
+    },
+    {
+        "test_id": "tests/test_benchmark.py::test_temp_2[benchmark0]",
+        "messages": [],
+        "score": 0.5
+    }
+]
