@@ -5,7 +5,6 @@ import platform
 import socket
 import subprocess
 import sys
-import traceback
 from collections import defaultdict
 from collections.abc import Iterable
 from datetime import datetime
@@ -19,8 +18,6 @@ import pytest
 from _pytest.config import Config
 
 from . import __version__
-from .session import BenchmarkSession
-from .session import PerformanceRegression
 from .timers import default_timer
 from .utils import NameWrapper
 from .utils import consistent_dumps
@@ -229,24 +226,25 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
 
 
 def pytest_report_header(config):
-    bs = config._benchmarksession
+    pass
+    # bs = config._benchmarksession
 
-    return (
-        "benchmark: {version} (defaults:"
-        " timer={timer}"
-        " disable_gc={0[disable_gc]}"
-        " min_rounds={0[min_rounds]}"
-        " min_time={0[min_time]}"
-        " max_time={0[max_time]}"
-        " calibration_precision={0[calibration_precision]}"
-        " warmup={0[warmup]}"
-        " warmup_iterations={0[warmup_iterations]}"
-        ")"
-    ).format(
-        bs.options,
-        version=__version__,
-        timer=bs.options.get("timer"),
-    )
+    # return (
+    #     "benchmark: {version} (defaults:"
+    #     " timer={timer}"
+    #     " disable_gc={0[disable_gc]}"
+    #     " min_rounds={0[min_rounds]}"
+    #     " min_time={0[min_time]}"
+    #     " max_time={0[max_time]}"
+    #     " calibration_precision={0[calibration_precision]}"
+    #     " warmup={0[warmup]}"
+    #     " warmup_iterations={0[warmup_iterations]}"
+    #     ")"
+    # ).format(
+    #     bs.options,
+    #     version=__version__,
+    #     timer=bs.options.get("timer"),
+    # )
 
 
 def add_display_options(addoption, prefix="benchmark-"):
@@ -509,17 +507,20 @@ def pytest_benchmark_compare_machine_info(config, benchmarksession, machine_info
 
 
 def pytest_collection_modifyitems(config, items):
-    bs = config._benchmarksession
-    skip_bench = pytest.mark.skip(reason="Skipping benchmark (--benchmark-skip active).")
-    skip_other = pytest.mark.skip(reason="Skipping non-benchmark (--benchmark-only active).")
-    for item in items:
-        has_benchmark = hasattr(item, "fixturenames") and "benchmark" in item.fixturenames
-        if has_benchmark:
-            if bs.skip:
-                item.add_marker(skip_bench)
-        else:
-            if bs.only:
-                item.add_marker(skip_other)
+    pass
+    # TODO check that all necessary autograding fixtures are present in
+    # each item
+    # bs = config._benchmarksession
+    # skip_bench = pytest.mark.skip(reason="Skipping benchmark (--benchmark-skip active).")
+    # skip_other = pytest.mark.skip(reason="Skipping non-benchmark (--benchmark-only active).")
+    # for item in items:
+    #     has_benchmark = hasattr(item, "fixturenames") and "benchmark" in item.fixturenames
+    #     if has_benchmark:
+    #         if bs.skip:
+    #             item.add_marker(skip_bench)
+    #     else:
+    #         if bs.only:
+    #             item.add_marker(skip_other)
 
 
 def pytest_benchmark_group_stats(config, benchmarks, group_by):
@@ -588,13 +589,14 @@ def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> Iterable[N
 
 
 def pytest_terminal_summary(terminalreporter):
-    try:
-        terminalreporter.config._benchmarksession.display(terminalreporter)
-    except PerformanceRegression:
-        raise
-    except Exception:
-        terminalreporter.config._benchmarksession.logger.error(f"\n{traceback.format_exc()}")
-        raise
+    pass
+    # try:
+    #     terminalreporter.config._benchmarksession.display(terminalreporter)
+    # except PerformanceRegression:
+    #     raise
+    # except Exception:
+    #     terminalreporter.config._benchmarksession.logger.error(f"\n{traceback.format_exc()}")
+    #     raise
 
 
 def get_cpu_info():
@@ -758,10 +760,10 @@ def pytest_runtest_makereport(item: pytest.Item, call) -> Iterable[None]:
 
 @pytest.hookimpl(trylast=True)  # force the other plugins to initialise, fixes issue with capture not being properly initialised
 def pytest_configure(config: Config) -> None:
-    config.addinivalue_line("markers", "benchmark: mark a test with custom benchmark settings.")
-    bs = config._benchmarksession = BenchmarkSession(config)
-    bs.handle_loading()
-    config.pluginmanager.register(bs, "pytest-benchmark")
+    # config.addinivalue_line("markers", "benchmark: mark a test with custom benchmark settings.")
+    # bs = config._benchmarksession = BenchmarkSession(config)
+    # bs.handle_loading()
+    # config.pluginmanager.register(bs, "pytest-benchmark")
 
     if not hasattr(config, "student_feedback_data"):
         config.student_feedback_data = {}
