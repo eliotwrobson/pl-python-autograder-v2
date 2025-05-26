@@ -8,7 +8,6 @@ import typing
 from math import ceil
 from pathlib import Path
 
-from .timers import compute_timer_precision
 from .utils import NameWrapper
 from .utils import format_time
 from .utils import slugify
@@ -90,7 +89,7 @@ class BenchmarkFixture:
         if timer in self._precisions:
             timer_precision = self._precisions[timer]
         else:
-            timer_precision = self._precisions[timer] = compute_timer_precision(timer)
+            timer_precision = self._precisions[timer] = 0.0001
             self._logger.debug("")
             self._logger.debug(f"Computing precision for {NameWrapper(timer)} ... {format_time(timer_precision)}s.", blue=True, bold=True)
         return timer_precision

@@ -5,6 +5,7 @@ import platform
 import socket
 import subprocess
 import sys
+import time
 from collections import defaultdict
 from collections.abc import Iterable
 from datetime import datetime
@@ -18,7 +19,6 @@ import pytest
 from _pytest.config import Config
 
 from . import __version__
-from .timers import default_timer
 from .utils import NameWrapper
 from .utils import consistent_dumps
 from .utils import get_commit_info
@@ -388,7 +388,7 @@ def pytest_addoption(parser):
         "--benchmark-timer",
         metavar="FUNC",
         type=parse_timer,
-        default=str(NameWrapper(default_timer)),
+        default=str(NameWrapper(time.time)),
         help="Timer to use when measuring time. Default: %(default)r",
     )
     group.addoption(
