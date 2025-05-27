@@ -1,11 +1,9 @@
-import argparse
 import json
 import operator
 import platform
 import socket
 import subprocess
 import sys
-import time
 from collections import defaultdict
 from collections.abc import Iterable
 from datetime import datetime
@@ -14,27 +12,16 @@ from importlib.resources import files
 from pathlib import Path
 from typing import NamedTuple
 
+import _pytest
 import _pytest.reports
 import pytest
 from _pytest.config import Config
 
 from . import __version__
-from .utils import NameWrapper
 from .utils import consistent_dumps
 from .utils import get_commit_info
 from .utils import get_current_time
-from .utils import get_tag
 from .utils import operations_unit
-from .utils import parse_columns
-from .utils import parse_compare_fail
-from .utils import parse_cprofile_loops
-from .utils import parse_name_format
-from .utils import parse_rounds
-from .utils import parse_save
-from .utils import parse_seconds
-from .utils import parse_sort
-from .utils import parse_timer
-from .utils import parse_warmup
 from .utils import time_unit
 
 SCRIPT_PATH = str(files("pl_pytest_autograder").joinpath("_student_code_runner.py"))
@@ -264,46 +251,6 @@ def pytest_report_header(config):
     # )
 
 
-def add_display_options(addoption, prefix="benchmark-"):
-    addoption(
-        f"--{prefix}sort",
-        metavar="COL",
-        type=parse_sort,
-        default="min",
-        help="Column to sort on. Can be one of: 'min', 'max', 'mean', 'stddev', 'name', 'fullname'. Default: %(default)r",
-    )
-    addoption(
-        f"--{prefix}group-by",
-        metavar="LABEL",
-        default="group",
-        help="How to group tests. Can be one of: 'group', 'name', 'fullname', 'func', 'fullfunc', "
-        "'param' or 'param:NAME', where NAME is the name passed to @pytest.parametrize."
-        " Default: %(default)r",
-    )
-    addoption(
-        f"--{prefix}columns",
-        metavar="LABELS",
-        type=parse_columns,
-        default=["min", "max", "mean", "stddev", "median", "iqr", "outliers", "ops", "rounds", "iterations"],
-        help="Comma-separated list of columns to show in the result table. Default: "
-        "'min, max, mean, stddev, median, iqr, outliers, ops, rounds, iterations'",
-    )
-    addoption(
-        f"--{prefix}name",
-        metavar="FORMAT",
-        type=parse_name_format,
-        default="normal",
-        help="How to format names in results. Can be one of 'short', 'normal', 'long', or 'trial'. Default: %(default)r",
-    )
-    addoption(
-        f"--{prefix}time-unit",
-        metavar="COLUMN",
-        default=None,
-        choices=["ns", "us", "ms", "s", "auto"],
-        help="Unit to scale the results to. Available units: 'ns', 'us', 'ms', 's'. Default: 'auto'.",
-    )
-
-
 def add_csv_options(addoption, prefix="benchmark-"):
     filename_prefix = f"benchmark_{get_current_time()}"
     addoption(
@@ -317,191 +264,16 @@ def add_csv_options(addoption, prefix="benchmark-"):
     )
 
 
-def add_global_options(addoption, prefix="benchmark-"):
-    addoption(
-        f"--{prefix}storage",
-        *[] if prefix else ["-s"],
-        metavar="URI",
-        default="file://./.benchmarks",
-        help="Specify a path to store the runs as uri in form file://path or"
-        " elasticsearch+http[s]://host1,host2/[index/doctype?project_name=Project] "
-        "(when --benchmark-save or --benchmark-autosave are used). For backwards compatibility unexpected values "
-        "are converted to file://<value>. Default: %(default)r.",
-    )
-    addoption(
-        f"--{prefix}netrc",
-        nargs="?",
-        default="",
-        const="~/.netrc",
-        help="Load elasticsearch credentials from a netrc file. Default: %(default)r.",
-    )
-    addoption(
-        f"--{prefix}verbose",
-        *[] if prefix else ["-v"],
-        action="store_true",
-        default=False,
-        help="Dump diagnostic and progress information.",
-    )
-    addoption(
-        f"--{prefix}quiet",
-        *[] if prefix else ["-q"],
-        action="store_true",
-        default=False,
-        help="Disable reporting. Verbose mode takes precedence.",
-    )
-    if not prefix:
-        addoption(
-            "--import-mode",
-            default="prepend",
-            choices=["prepend", "append", "importlib"],
-            dest="importmode",
-            help="How to attempt loading hooks from conftest. Akin to pytest's --import-mode. Default: %(default)r.",
-        )
-
-
 def pytest_addoption(parser):
-    group = parser.getgroup("benchmark")
-    group.addoption(
-        "--benchmark-min-time",
-        metavar="SECONDS",
-        type=parse_seconds,
-        default="0.000005",
-        help="Minimum time per round in seconds. Default: %(default)r",
-    )
-    group.addoption(
-        "--benchmark-max-time",
-        metavar="SECONDS",
-        type=parse_seconds,
-        default="1.0",
-        help="Maximum run time per test - it will be repeated until this total time is reached. It may be "
-        "exceeded if test function is very slow or --benchmark-min-rounds is large (it takes precedence). "
-        "Default: %(default)r",
-    )
-    group.addoption(
-        "--benchmark-min-rounds",
-        metavar="NUM",
-        type=parse_rounds,
-        default=5,
-        help="Minimum rounds, even if total time would exceed `--max-time`. Default: %(default)r",
-    )
-    group.addoption(
-        "--benchmark-timer",
-        metavar="FUNC",
-        type=parse_timer,
-        default=str(NameWrapper(time.time)),
-        help="Timer to use when measuring time. Default: %(default)r",
-    )
-    group.addoption(
-        "--benchmark-calibration-precision",
-        metavar="NUM",
-        type=int,
-        default=10,
-        help="Precision to use when calibrating number of iterations. Precision of 10 will make the timer look 10 times"
-        " more accurate, at a cost of less precise measure of deviations. Default: %(default)r",
-    )
-    group.addoption(
-        "--benchmark-warmup",
-        metavar="KIND",
-        nargs="?",
-        default=parse_warmup("auto"),
-        type=parse_warmup,
-        help="Activates warmup. Will run the test function up to number of times in the calibration phase. "
-        "See `--benchmark-warmup-iterations`. Note: Even the warmup phase obeys --benchmark-max-time. "
-        "Available KIND: 'auto', 'off', 'on'. Default: 'auto' (automatically activate on PyPy).",
-    )
-    group.addoption(
-        "--benchmark-warmup-iterations",
-        metavar="NUM",
-        type=int,
-        default=100000,
-        help="Max number of iterations to run in the warmup phase. Default: %(default)r",
-    )
-    group.addoption("--benchmark-disable-gc", action="store_true", default=False, help="Disable GC during benchmarks.")
-    group.addoption("--benchmark-skip", action="store_true", default=False, help="Skip running any tests that contain benchmarks.")
-    group.addoption(
-        "--benchmark-disable",
-        action="store_true",
-        default=False,
-        help="Disable benchmarks. Benchmarked functions are only ran once and no stats are reported. Use this is you "
-        "want to run the test but don't do any benchmarking.",
-    )
-    group.addoption(
-        "--benchmark-enable",
-        action="store_true",
-        default=False,
-        help="Forcibly enable benchmarks. Use this option to override --benchmark-disable (in case you have it in pytest configuration).",
-    )
-    group.addoption("--benchmark-only", action="store_true", default=False, help="Only run benchmarks. This overrides --benchmark-skip.")
-    group.addoption("--benchmark-save", metavar="NAME", type=parse_save, help="Save the current run into 'STORAGE-PATH/counter_NAME.json'.")
-    tag = get_tag()
-    group.addoption(
-        "--benchmark-autosave",
-        action="store_const",
-        const=tag,
-        help=f"Autosave the current run into 'STORAGE-PATH/counter_{tag}.json",
-    )
-    group.addoption(
-        "--benchmark-save-data",
-        action="store_true",
-        help="Use this to make --benchmark-save and --benchmark-autosave include all the timing data, not just the stats.",
-    )
-    group.addoption(
-        "--benchmark-json",
-        metavar="PATH",
-        type=argparse.FileType("wb"),
-        help="Dump a JSON report into PATH. Note that this will include the complete data (all the timings, not just the stats).",
-    )
-    group.addoption(
-        "--benchmark-compare",
-        metavar="NUM|_ID",
-        nargs="?",
-        default=[],
-        const=True,
-        help="Compare the current run against run NUM (or prefix of _id in elasticsearch) or the latest saved run if unspecified.",
-    )
-    group.addoption(
-        "--benchmark-compare-fail",
-        metavar="EXPR",
-        nargs="+",
-        type=parse_compare_fail,
-        help="Fail test if performance regresses according to given EXPR"
-        " (eg: min:5%% or mean:0.001 for number of seconds). Can be used multiple times.",
-    )
-    group.addoption(
-        "--benchmark-cprofile",
-        metavar="COLUMN",
-        default=None,
-        choices=["ncalls_recursion", "ncalls", "tottime", "tottime_per", "cumtime", "cumtime_per", "function_name"],
-        help="If specified cProfile will be enabled. Top functions will be stored for the given column. Available columns: "
-        "'ncalls_recursion', 'ncalls', 'tottime', 'tottime_per', 'cumtime', 'cumtime_per', 'function_name'.",
-    )
-    group.addoption(
-        "--benchmark-cprofile-loops",
-        metavar="LOOPS",
-        default=1,
-        type=parse_cprofile_loops,
-        help="How many times to run the function in cprofile. Available options: 'auto', or an integer. ",
-    )
-    group.addoption(
-        "--benchmark-cprofile-top",
-        metavar="COUNT",
-        default=25,
-        type=int,
-        help="How many rows to display.",
-    )
-    cprofile_dump_prefix = f"benchmark_{get_current_time()}"
-    group.addoption(
-        "--benchmark-cprofile-dump",
-        action="append",
-        metavar="FILENAME-PREFIX",
-        nargs="?",
-        default=[],
-        const=cprofile_dump_prefix,
-        help="Save cprofile dumps as FILENAME-PREFIX-test_name.prof. If FILENAME-PREFIX contains"
-        f" slashes ('/') then directories will be created. Default: {cprofile_dump_prefix!r}",
-    )
-    add_global_options(group.addoption)
-    add_display_options(group.addoption)
+    pass
+    # group = parser.getgroup("benchmark")
+    # group.addoption(
+    #     "--benchmark-min-time",
+    #     metavar="SECONDS",
+    #     type=parse_seconds,
+    #     default="0.000005",
+    #     help="Minimum time per round in seconds. Default: %(default)r",
+    # )
 
 
 def pytest_addhooks(pluginmanager):
@@ -569,42 +341,6 @@ def pytest_benchmark_group_stats(config, benchmarks, group_by):
     return sorted(groups.items(), key=lambda pair: pair[0] or "")
 
 
-@pytest.hookimpl(hookwrapper=True)
-def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> Iterable[None]:
-    yield  # Let other sessionfinish hooks run
-
-    #     session.config._benchmarksession.finish()
-    #     yield
-    # """
-    # @pytest.hookimpl
-    # def pytest_sessionfinish(session):
-    # This hook runs after all tests are finished.
-    # Collect all student feedback and generate the final report.
-    final_results = []
-    for nodeid, feedback_obj in session.config.student_feedback_data.items():
-        test_outcome = session.config.test_results[nodeid]
-        final_results.append(feedback_obj.to_dict())
-
-    # Example: Save to a JSON file
-
-    output_path = session.config.rootpath / "autograder_results.json"
-    with open(output_path, "w") as f:
-        json.dump(final_results, f, indent=4)
-    print(f"\nAutograder results saved to {output_path}")
-
-    # For autograding platforms like Gradescope, you might format
-    # it according to their specific JSON format.
-    # Example Gradescope format:
-    # {
-    #   "score": 0,
-    #   "output": "Overall feedback",
-    #   "tests": [
-    #     {"name": "Test Case 1", "score": 2, "max_score": 5, "output": "Feedback for test 1"},
-    #     ...
-    #   ]
-    # }
-
-
 def pytest_terminal_summary(terminalreporter):
     pass
     # try:
@@ -614,12 +350,6 @@ def pytest_terminal_summary(terminalreporter):
     # except Exception:
     #     terminalreporter.config._benchmarksession.logger.error(f"\n{traceback.format_exc()}")
     #     raise
-
-
-def get_cpu_info():
-    import cpuinfo
-
-    return cpuinfo.get_cpu_info() or {}
 
 
 def pytest_benchmark_scale_unit(config, unit, benchmarks, best, worst, sort):
@@ -662,7 +392,7 @@ def pytest_benchmark_generate_machine_info():
         "python_build": platform.python_build(),
         "release": platform.release(),
         "system": platform.system(),
-        "cpu": get_cpu_info(),
+        "cpu": "",
     }
 
 
@@ -739,42 +469,6 @@ def pytest_runtest_setup(item):
                 raise ValueError(f"benchmark mark can't have {name!r} keyword argument.")
 
 
-import _pytest
-
-
-@pytest.hookimpl(hookwrapper=True)
-def pytest_runtest_makereport(item: pytest.Item, call) -> Iterable[None]:
-    # Ensure the dictionary for results exists on config
-    if not hasattr(item.config, "test_results"):
-        item.config.test_results = {}
-
-    outcome = yield  # Let the actual tests run
-
-    fixture = None
-    if hasattr(item, "funcargs"):
-        student_code_fixture = item.funcargs.get("benchmark")
-        feedback_fixture = item.funcargs.get("feedback")
-
-    if fixture is not None and not isinstance(fixture, StudentFixture):
-        pass
-        # raise TypeError(
-        #     f"unexpected type for `benchmark` in funcargs, {fixture!r} must be a BenchmarkFixture instance. "
-        #     "You should not use other plugins that define a `benchmark` fixture, or return and unexpected value if you do redefine it."
-        # )
-    # if fixture:
-    #     fixture.skipped = outcome.get_result().outcome == "skipped"
-
-    report: _pytest.reports.TestReport = outcome.get_result()
-
-    if report.when == "call":
-        item.config.test_results[report.nodeid] = report
-        # You could store more details here if needed
-        # item.config.my_test_results[report.nodeid] = {
-        #     "outcome": report.outcome,
-        #     "duration": report.duration,
-        # }
-
-
 @pytest.hookimpl(trylast=True)  # force the other plugins to initialise, fixes issue with capture not being properly initialised
 def pytest_configure(config: Config) -> None:
     # config.addinivalue_line("markers", "benchmark: mark a test with custom benchmark settings.")
@@ -788,54 +482,86 @@ def pytest_configure(config: Config) -> None:
     if not hasattr(config, "student_feedback_data"):
         config.student_feedback_data = {}
 
+    # Only register our plugin if it hasn't been already (e.g., in case of multiple conftests)
+    if not hasattr(config, "my_result_collector_plugin"):
+        config.my_result_collector_plugin = MyResultCollectorPlugin()
+        config.pluginmanager.register(config.my_result_collector_plugin)
 
-"""
+
 class MyResultCollectorPlugin:
-    def __init__(self):
+    def __init__(self) -> None:
         self.collected_results = {}
 
     @pytest.hookimpl(hookwrapper=True)
-    def pytest_runtest_makereport(self, item, call):
-
+    def pytest_runtest_makereport(self, item: pytest.Item, call) -> Iterable[None]:
+        """
         Hook wrapper to capture test outcomes.
-
+        """
         outcome = yield
-        report = outcome.get_result()
+        report: _pytest.reports.TestReport = outcome.get_result()
 
         if report.when == "call":
             self.collected_results[report.nodeid] = report.outcome
-            # self.collected_results[report.nodeid] = {
+            # You could store more details here if needed
+            # item.config.my_test_results[report.nodeid] = {
             #     "outcome": report.outcome,
             #     "duration": report.duration,
             # }
 
+        fixture = None
+        if hasattr(item, "funcargs"):
+            student_code_fixture = item.funcargs.get("benchmark")
+            feedback_fixture = item.funcargs.get("feedback")
+
+        if fixture is not None and not isinstance(fixture, StudentFixture):
+            pass
+            # raise TypeError(
+            #     f"unexpected type for `benchmark` in funcargs, {fixture!r} must be a BenchmarkFixture instance. "
+            #     "You should not use other plugins that define a `benchmark` fixture, or return and unexpected value if you do redefine it."
+            # )
+        # if fixture:
+        #     fixture.skipped = outcome.get_result().outcome == "skipped"
+
     @pytest.hookimpl(hookwrapper=True)
-    def pytest_sessionfinish(self, session, exitstatus):
-
+    def pytest_sessionfinish(self, session: pytest.Session, exitstatus: int) -> Iterable[None]:
+        """
         Hook wrapper to process test results after the session finishes.
+        """
+        yield  # Let other sessionfinish hooks run
 
-        yield # Let other sessionfinish hooks run
+        # print("\n--- Custom Test Results Summary (via Plugin Class) ---")
+        # for nodeid, outcome in self.collected_results.items():
+        #     print(f"Test: {nodeid} -> Outcome: {outcome}")
+        # print("--------------------------------------------------")
 
-        print("\n--- Custom Test Results Summary (via Plugin Class) ---")
-        for nodeid, outcome in self.collected_results.items():
-            print(f"Test: {nodeid} -> Outcome: {outcome}")
-        print("--------------------------------------------------")
+        # # Example: Check the result of a specific test by its nodeid
+        # target_nodeid = "test_example.py::test_passing_example" # Replace with a test you have
+        # if target_nodeid in self.collected_results:
+        #     print(f"\nResult for '{target_nodeid}': {self.collected_results[target_nodeid]}")
+        # else:
+        #     print(f"\n'{target_nodeid}' not found or no results collected.")
 
-        # Example: Check the result of a specific test by its nodeid
-        target_nodeid = "test_example.py::test_passing_example" # Replace with a test you have
-        if target_nodeid in self.collected_results:
-            print(f"\nResult for '{target_nodeid}': {self.collected_results[target_nodeid]}")
-        else:
-            print(f"\n'{target_nodeid}' not found or no results collected.")
+        # Collect all student feedback and generate the final report.
+        final_results = []
+        for nodeid, feedback_obj in session.config.student_feedback_data.items():
+            test_outcome = self.collected_results[nodeid]
+            final_results.append(feedback_obj.to_dict())
 
-# This line registers your plugin class with pytest
-def pytest_configure(config):
-    # Only register our plugin if it hasn't been already (e.g., in case of multiple conftests)
-    if not hasattr(config, 'my_result_collector_plugin'):
-        config.my_result_collector_plugin = MyResultCollectorPlugin()
-        config.pluginmanager.register(config.my_result_collector_plugin)
+        # Example: Save to a JSON file
 
-# If you need to access the plugin instance in pytest_sessionfinish outside the class,
-# you could do it via config.my_result_collector_plugin, but if all your logic
-# is within the class, you don't need to.
-"""
+        output_path = session.config.rootpath / "autograder_results.json"
+        with open(output_path, "w") as f:
+            json.dump(final_results, f, indent=4)
+        print(f"\nAutograder results saved to {output_path}")
+
+        # For autograding platforms like Gradescope, you might format
+        # it according to their specific JSON format.
+        # Example Gradescope format:
+        # {
+        #   "score": 0,
+        #   "output": "Overall feedback",
+        #   "tests": [
+        #     {"name": "Test Case 1", "score": 2, "max_score": 5, "output": "Feedback for test 1"},
+        #     ...
+        #   ]
+        # }
