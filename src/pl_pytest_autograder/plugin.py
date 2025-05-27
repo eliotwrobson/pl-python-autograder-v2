@@ -54,7 +54,8 @@ def feedback(request: pytest.FixtureRequest) -> FeedbackFixture:
     A fixture that allows tests to add feedback messages and scores.
     """
     nodeid = request.node.nodeid
-
+    # TODO replace this with a stash
+    # https://docs.pytest.org/en/stable/reference/reference.html#stash
     # Access the shared feedback data from config
     feedback_data: dict[str, FeedbackFixture] = request.config.student_feedback_data
 
