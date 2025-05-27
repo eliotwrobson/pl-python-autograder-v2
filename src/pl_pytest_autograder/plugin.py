@@ -1,13 +1,8 @@
 import json
-import operator
-import platform
 import socket
 import subprocess
 import sys
-from collections import defaultdict
 from collections.abc import Iterable
-from datetime import datetime
-from datetime import timezone
 from importlib.resources import files
 from pathlib import Path
 from typing import NamedTuple
@@ -17,12 +12,7 @@ import _pytest.reports
 import pytest
 from _pytest.config import Config
 
-from . import __version__
-from .utils import consistent_dumps
-from .utils import get_commit_info
 from .utils import get_current_time
-from .utils import operations_unit
-from .utils import time_unit
 
 SCRIPT_PATH = str(files("pl_pytest_autograder").joinpath("_student_code_runner.py"))
 HOST = "127.0.0.1"
@@ -277,22 +267,13 @@ def pytest_addoption(parser):
 
 
 def pytest_addhooks(pluginmanager):
-    from . import hookspec
+    pass
+    # from . import hookspec
 
-    method = getattr(pluginmanager, "add_hookspecs", None)
-    if method is None:
-        method = pluginmanager.addhooks
-    method(hookspec)
-
-
-def pytest_benchmark_compare_machine_info(config, benchmarksession, machine_info, compared_benchmark):
-    machine_info = consistent_dumps(machine_info)
-    compared_machine_info = consistent_dumps(compared_benchmark["machine_info"])
-
-    if compared_machine_info != machine_info:
-        benchmarksession.logger.warning(
-            f"Benchmark machine_info is different. Current: {machine_info} VS saved: {compared_machine_info} (location: {benchmarksession.storage.location})."
-        )
+    # method = getattr(pluginmanager, "add_hookspecs", None)
+    # if method is None:
+    #     method = pluginmanager.addhooks
+    # method(hookspec)
 
 
 def pytest_collection_modifyitems(config, items):
@@ -312,35 +293,6 @@ def pytest_collection_modifyitems(config, items):
     #             item.add_marker(skip_other)
 
 
-def pytest_benchmark_group_stats(config, benchmarks, group_by):
-    groups = defaultdict(list)
-    for bench in benchmarks:
-        key = ()
-        for grouping in group_by.split(","):
-            if grouping == "group":
-                key += (bench["group"],)
-            elif grouping == "name":
-                key += (bench["name"],)
-            elif grouping == "func":
-                key += (bench["name"].split("[")[0],)
-            elif grouping == "fullname":
-                key += (bench["fullname"],)
-            elif grouping == "fullfunc":
-                key += (bench["fullname"].split("[")[0],)
-            elif grouping == "param":
-                key += (bench["param"],)
-            elif grouping.startswith("param:"):
-                param_name = grouping[len("param:") :]
-                key += ("{}={}".format(param_name, bench["params"][param_name]),)
-            else:
-                raise NotImplementedError(f"Unsupported grouping {group_by!r}.")
-        groups[" ".join(str(p) for p in key if p) or None].append(bench)
-
-    for grouped_benchmarks in groups.values():
-        grouped_benchmarks.sort(key=operator.itemgetter("fullname" if "full" in group_by else "name"))
-    return sorted(groups.items(), key=lambda pair: pair[0] or "")
-
-
 def pytest_terminal_summary(terminalreporter):
     pass
     # try:
@@ -350,69 +302,6 @@ def pytest_terminal_summary(terminalreporter):
     # except Exception:
     #     terminalreporter.config._benchmarksession.logger.error(f"\n{traceback.format_exc()}")
     #     raise
-
-
-def pytest_benchmark_scale_unit(config, unit, benchmarks, best, worst, sort):
-    config_time_unit = config.getoption("benchmark_time_unit", None) if config else None
-    if config_time_unit == "ns":
-        return "n", 1e9
-    elif config_time_unit == "us":
-        return "u", 1e6
-    elif config_time_unit == "ms":
-        return "m", 1e3
-    elif config_time_unit == "s":
-        return "", 1.0
-    assert config_time_unit in ("auto", None)
-    if unit == "seconds":
-        time_unit_key = sort
-        if sort in ("name", "fullname"):
-            time_unit_key = "min"
-        return time_unit(best.get(sort, benchmarks[0][time_unit_key]))
-    elif unit == "operations":
-        return operations_unit(worst.get("ops", benchmarks[0]["ops"]))
-    else:
-        raise RuntimeError(f"Unexpected measurement unit {unit!r}")
-
-
-def pytest_benchmark_generate_machine_info():
-    python_implementation = platform.python_implementation()
-    python_implementation_version = platform.python_version()
-    if python_implementation == "PyPy":
-        python_implementation_version = "%d.%d.%d" % sys.pypy_version_info[:3]
-        if sys.pypy_version_info.releaselevel != "final":
-            python_implementation_version += "-%s%d" % sys.pypy_version_info[3:]
-    return {
-        "node": platform.node(),
-        "processor": platform.processor(),
-        "machine": platform.machine(),
-        "python_compiler": platform.python_compiler(),
-        "python_implementation": python_implementation,
-        "python_implementation_version": python_implementation_version,
-        "python_version": platform.python_version(),
-        "python_build": platform.python_build(),
-        "release": platform.release(),
-        "system": platform.system(),
-        "cpu": "",
-    }
-
-
-def pytest_benchmark_generate_commit_info(config):
-    return get_commit_info(config.getoption("benchmark_project_name", None))
-
-
-def pytest_benchmark_generate_json(config, benchmarks, include_data, machine_info, commit_info):
-    benchmarks_json = []
-    output_json = {
-        "machine_info": machine_info,
-        "commit_info": commit_info,
-        "benchmarks": benchmarks_json,
-        "datetime": datetime.now(timezone.utc).isoformat(),
-        "version": __version__,
-    }
-    for bench in benchmarks:
-        if not bench.has_error:
-            benchmarks_json.append(bench.as_dict(include_data=include_data))
-    return output_json
 
 
 import os
