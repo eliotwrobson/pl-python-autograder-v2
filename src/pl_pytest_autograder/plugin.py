@@ -13,6 +13,7 @@ import pytest
 from _pytest.config import Config
 
 from .utils import get_current_time
+from .utils import serialize_object_unsafe
 
 SCRIPT_PATH = str(files("pl_pytest_autograder").joinpath("_student_code_runner.py"))
 HOST = "127.0.0.1"
@@ -70,9 +71,6 @@ class StudentFiles(NamedTuple):
     leading_file: Path
     trailing_file: Path
     student_code_file: Path
-
-
-from .utils import serialize_object_unsafe
 
 
 class StudentFixture:
@@ -412,7 +410,8 @@ class MyResultCollectorPlugin:
         # if fixture:
         #     fixture.skipped = outcome.get_result().outcome == "skipped"
 
-    @pytest.hookimpl(hookwrapper=True)
+    # TODO uncomment this line!!!
+    # @pytest.hookimpl(hookwrapper=True)
     def pytest_sessionfinish(self, session: pytest.Session, exitstatus: int) -> Iterable[None]:
         """
         Hook wrapper to process test results after the session finishes.

@@ -114,7 +114,7 @@ async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWrit
                     "execution_traceback": student_code_result.execution_traceback,
                 }
 
-                writer.write(json.dumps(response).encode())  # Add newline for stream parsing
+                writer.write(json.dumps(response).encode())
 
             elif msg_type == "query":
                 var_to_query = json_message["var"]
@@ -124,7 +124,7 @@ async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWrit
                 else:
                     response = json.dumps({"status": "error", "message": f"Variable '{var_to_query}' not found."})
 
-                writer.write(response.encode())  # Add newline for stream parsing
+                writer.write(response.encode())
 
             elif msg_type == "query_function":
                 func_name = json_message["function_name"]
@@ -161,15 +161,15 @@ async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWrit
             await writer.drain()  # Ensure the response is written to stdout
 
     except asyncio.CancelledError:
-        print("Server was cancelled.")
+        writer.write(json.dumps({"status": "failure", "message": "Server was cancelled."}).encode())
     except asyncio.TimeoutError:
-        writer.write(json.dumps({"status": "failurue", "message": "Student code timed out."}).encode())
+        writer.write(json.dumps({"status": "failure", "message": "Student code timed out."}).encode())
     except Exception as e:
-        print(f"An error occurred: {e}")
+        writer.write(json.dumps({"status": "failure", "message": f"An error occurred: {e}"}).encode())
     finally:
         # It's good practice to close transports and writers
-        print("Closing server connections...")
-
+        # print("Closing server connections...")
+        await writer.drain()  # Ensure all data is sent before closing
         writer.close()
         await writer.wait_closed()  # Wait for the writer to finish closing
 
