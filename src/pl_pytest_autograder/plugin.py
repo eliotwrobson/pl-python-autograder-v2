@@ -148,6 +148,7 @@ class StudentFixture:
         self.socket.sendall(json.dumps(json_message).encode("utf-8") + os.linesep.encode("utf-8"))
 
         data = self.socket.recv(BUFFSIZE).decode()
+        # print(json.loads(data)["traceback"])
         res = json.loads(data)["value"]
         return res
 

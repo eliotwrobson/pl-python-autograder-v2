@@ -138,7 +138,7 @@ async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWrit
                             result = func(*args, **kwargs)
                             response = json.dumps({"status": "success", "value": result})
                         except Exception as e:
-                            response = json.dumps({"status": "error", "message": str(e)})
+                            response = json.dumps({"status": "error", "message": str(e), "traceback": traceback.format_exc()})
                     else:
                         response = json.dumps({"status": "error", "message": f"'{func_name}' is not callable."})
                 else:
