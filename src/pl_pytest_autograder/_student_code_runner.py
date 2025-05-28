@@ -12,9 +12,7 @@ from typing import NamedTuple
 from pl_pytest_autograder.json_utils import to_json
 from pl_pytest_autograder.utils import deserialize_object_unsafe
 
-# Define the server's address and port
 HOST = "127.0.0.1"  # Loopback address, means "this computer only"
-PORT = 1111
 
 # Global ThreadPoolExecutor for CPU-bound tasks
 # It's good practice to create this once and reuse it.
@@ -188,7 +186,9 @@ async def main():
             print("ProactorEventLoop not available, continuing with default loop.", file=sys.stderr)
 
     # Start the server, binding to the specified host and port
-    server = await asyncio.start_server(handle_client, HOST, PORT)
+    server = await asyncio.start_server(handle_client, HOST, 0)
+    addr = server.sockets[0].getsockname()
+    print(f"{addr[0]}, {addr[1]}", flush=True)
 
     async with server:
         # Run forever, or until the server is explicitly stopped

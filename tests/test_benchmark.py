@@ -11,10 +11,10 @@ platform  # noqa: B018
 student_code_name = "hey.py"
 
 
-# TODO this fails for some reason on linux, but not on windows
-# figure out wtf is going on
-# def test_query_func(benchmark: StudentFixture, feedback: FeedbackFixture) -> None:
-#     assert benchmark.query_function("fib", 3) == 5
+def test_query_func(benchmark: StudentFixture, feedback: FeedbackFixture) -> None:
+    assert benchmark.query_function("fib", 3) == 5
+
+
 def test_numpy(benchmark: StudentFixture, feedback: FeedbackFixture) -> None:
     expected_res = np.array([1.0, 2.0, 3.0, 4.0, 5.0])
     np.testing.assert_array_equal(benchmark.query("my_array"), expected_res)

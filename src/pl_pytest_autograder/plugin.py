@@ -17,8 +17,6 @@ from .utils import get_current_time
 from .utils import serialize_object_unsafe
 
 SCRIPT_PATH = str(files("pl_pytest_autograder").joinpath("_student_code_runner.py"))
-HOST = "127.0.0.1"
-PORT = 1111  # TODO use a dynamically assigned port to avoid issues
 BUFFSIZE = 4096
 
 
@@ -108,8 +106,12 @@ class StudentFixture:
             "type": "start",
             "student_code": student_code,
         }
+
+        line = self.process.stdout.readline().decode()  # Read the initial output from the process to ensure it's ready
+        host, port = line.strip().split(",")
+
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.socket.connect((HOST, PORT))
+        self.socket.connect((host, int(port)))
 
         self.socket.sendall(json.dumps(json_message).encode("utf-8") + os.linesep.encode("utf-8"))
 
@@ -128,8 +130,8 @@ class StudentFixture:
         self.socket.sendall(json.dumps(json_message).encode("utf-8") + os.linesep.encode("utf-8"))
         data = self.socket.recv(BUFFSIZE).decode()
 
-        print(self.process.stdout.read())
-        print(self.process.stderr.read())
+        # print(self.process.stdout.read())
+        # print(self.process.stderr.read())
         json_val = json.loads(data)["value"]
 
         res = from_json(json_val)
