@@ -48,24 +48,6 @@ class FeedbackFixture:
         }
 
 
-@pytest.fixture
-def feedback(request: pytest.FixtureRequest) -> FeedbackFixture:
-    """
-    A fixture that allows tests to add feedback messages and scores.
-    """
-    nodeid = request.node.nodeid
-    # TODO replace this with a stash
-    # https://docs.pytest.org/en/stable/reference/reference.html#stash
-    # Access the shared feedback data from config
-    feedback_data: dict[str, FeedbackFixture] = request.config.student_feedback_data
-
-    # Initialize feedback for this test if it doesn't exist
-    if nodeid not in feedback_data:
-        feedback_data[nodeid] = FeedbackFixture(test_id=nodeid)
-
-    return feedback_data[nodeid]
-
-
 class StudentFiles(NamedTuple):
     leading_file: Path
     trailing_file: Path
@@ -369,12 +351,6 @@ def pytest_configure(config: Config) -> None:
     # bs.handle_loading()
     # config.pluginmanager.register(bs, "pytest-benchmark")
 
-    # TODO instead of having this tied to a config object, we should
-    # register a collector plugin that contains the data within its hooks
-    # see below
-    if not hasattr(config, "student_feedback_data"):
-        config.student_feedback_data = {}
-
     # Only register our plugin if it hasn't been already (e.g., in case of multiple conftests)
     if not hasattr(config, "my_result_collector_plugin"):
         config.my_result_collector_plugin = MyResultCollectorPlugin()
@@ -383,9 +359,11 @@ def pytest_configure(config: Config) -> None:
 
 class MyResultCollectorPlugin:
     collected_results: dict[str, str]
+    student_feedback_data: dict[str, FeedbackFixture]
 
     def __init__(self) -> None:
         self.collected_results = {}
+        self.student_feedback_data = {}
 
     @pytest.hookimpl(hookwrapper=True)
     def pytest_runtest_makereport(self, item: pytest.Item, call) -> Iterable[None]:
@@ -417,6 +395,19 @@ class MyResultCollectorPlugin:
         # if fixture:
         #     fixture.skipped = outcome.get_result().outcome == "skipped"
 
+    @pytest.fixture
+    def feedback(self, request: pytest.FixtureRequest) -> FeedbackFixture:
+        """
+        A fixture that allows tests to add feedback messages and scores.
+        """
+        nodeid = request.node.nodeid
+
+        # Initialize feedback for this test if it doesn't exist
+        if nodeid not in self.student_feedback_data:
+            self.student_feedback_data[nodeid] = FeedbackFixture(test_id=nodeid)
+
+        return self.student_feedback_data[nodeid]
+
     @pytest.hookimpl(hookwrapper=True)
     def pytest_sessionfinish(self, session: pytest.Session, exitstatus: int) -> Iterable[None]:
         """
@@ -438,7 +429,7 @@ class MyResultCollectorPlugin:
 
         # Collect all student feedback and generate the final report.
         final_results = []
-        for nodeid, feedback_obj in session.config.student_feedback_data.items():
+        for nodeid, feedback_obj in self.student_feedback_data.items():
             final_results.append(feedback_obj.to_dict())
 
         # Example: Save to a JSON file
