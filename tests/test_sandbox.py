@@ -17,32 +17,32 @@ student_code_name = "hey.py"
 
 
 @pytest.mark.grading_data(name="test_query_func", points=2)
-def test_query_func(benchmark: StudentFixture) -> None:
-    assert benchmark.query_function("fib", 3) == 5
+def test_query_func(sandbox: StudentFixture) -> None:
+    assert sandbox.query_function("fib", 3) == 5
 
 
-def test_numpy(benchmark: StudentFixture) -> None:
+def test_numpy(sandbox: StudentFixture) -> None:
     expected_res = np.array([1.0, 2.0, 3.0, 4.0, 5.0])
-    np.testing.assert_array_equal(benchmark.query("my_array"), expected_res)
+    np.testing.assert_array_equal(sandbox.query("my_array"), expected_res)
 
 
-def test_temp(benchmark: StudentFixture, feedback: FeedbackFixture) -> None:
-    print(type(benchmark))
+def test_temp(sandbox: StudentFixture, feedback: FeedbackFixture) -> None:
+    print(type(sandbox))
     print(type(feedback))
-    # This is a test to check if the benchmark fixture is working
-    assert benchmark is not None
+    # This is a test to check if the sandbox fixture is working
+    assert sandbox is not None
 
-    assert benchmark.query("x") == 5
+    assert sandbox.query("x") == 5
     feedback.add_message("This is a test message")
 
 
-def test_temp_2(benchmark: StudentFixture, feedback: FeedbackFixture) -> None:
-    print(type(benchmark))
+def test_temp_2(sandbox: StudentFixture, feedback: FeedbackFixture) -> None:
+    print(type(sandbox))
     print(type(feedback))
-    # This is a test to check if the benchmark fixture is working
-    assert benchmark is not None
+    # This is a test to check if the sandbox fixture is working
+    assert sandbox is not None
 
-    if benchmark.query("x") == 5:
+    if sandbox.query("x") == 5:
         feedback.set_score(0.5)
 
 

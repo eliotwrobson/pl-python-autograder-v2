@@ -17,7 +17,7 @@ from .utils import get_current_time
 
 
 @pytest.fixture
-def benchmark(request: pytest.FixtureRequest) -> Iterable[StudentFixture]:
+def sandbox(request: pytest.FixtureRequest) -> Iterable[StudentFixture]:
     fixture = StudentFixture(request.param)
     yield fixture
     fixture._cleanup()
@@ -50,7 +50,7 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
     # 3. Convert it to a pathlib.Path object for easier manipulation
     module_path = Path(module_filepath_str)
 
-    if "benchmark" in metafunc.fixturenames:
+    if "sandbox" in metafunc.fixturenames:
         # Let's assume you have a 'data' directory next to your test file
         data_dir = module_path.parent / module_path.stem
 
@@ -73,7 +73,7 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
 
             file_tups = [StudentFiles(leading_file, trailing_file, student_code_file) for student_code_file in student_code_files]
 
-            metafunc.parametrize("benchmark", file_tups, indirect=True)
+            metafunc.parametrize("sandbox", file_tups, indirect=True)
             # else:
             #    pass
             # pytest.skip(f"Data file '{data_file.name}' not found in '{data_dir}'")
@@ -196,7 +196,7 @@ def _win32_longpath(path):
 
 
 def pytest_runtest_setup(item):
-    marker = item.get_closest_marker("benchmark")
+    marker = item.get_closest_marker("sandbox")
     if marker:
         if marker.args:
             raise ValueError("benchmark mark can't have positional arguments.")
@@ -269,7 +269,7 @@ class MyResultCollectorPlugin:
 
         fixture = None
         if hasattr(item, "funcargs"):
-            student_code_fixture = item.funcargs.get("benchmark")
+            student_code_fixture = item.funcargs.get("sandbox")
             feedback_fixture = item.funcargs.get("feedback")
 
         if fixture is not None and not isinstance(fixture, StudentFixture):
