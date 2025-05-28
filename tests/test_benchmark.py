@@ -17,11 +17,11 @@ student_code_name = "hey.py"
 
 
 @pytest.mark.grading_data(name="test_query_func", points=2)
-def test_query_func(benchmark: StudentFixture, feedback: FeedbackFixture) -> None:
+def test_query_func(benchmark: StudentFixture) -> None:
     assert benchmark.query_function("fib", 3) == 5
 
 
-def test_numpy(benchmark: StudentFixture, feedback: FeedbackFixture) -> None:
+def test_numpy(benchmark: StudentFixture) -> None:
     expected_res = np.array([1.0, 2.0, 3.0, 4.0, 5.0])
     np.testing.assert_array_equal(benchmark.query("my_array"), expected_res)
 

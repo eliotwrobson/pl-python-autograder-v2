@@ -315,7 +315,15 @@ class MyResultCollectorPlugin:
 
         # Collect all student feedback and generate the final report.
         final_results = []
-        for nodeid, feedback_obj in self.student_feedback_data.items():
+
+        for item in session.items:
+            nodeid = item.nodeid
+            if nodeid in self.student_feedback_data:
+                feedback_obj = self.student_feedback_data[nodeid]
+            else:
+                feedback_obj = FeedbackFixture(test_id=nodeid)
+
+            # for nodeid, feedback_obj in self.student_feedback_data.items():
             grading_data = self.grading_data.setdefault(nodeid, {"name": nodeid, "points": 1})
 
             res_obj = feedback_obj.to_dict()
