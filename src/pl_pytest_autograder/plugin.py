@@ -17,7 +17,7 @@ from .utils import serialize_object_unsafe
 
 SCRIPT_PATH = str(files("pl_pytest_autograder").joinpath("_student_code_runner.py"))
 HOST = "127.0.0.1"
-PORT = 1111
+PORT = 1111  # TODO use a dynamically assigned port to avoid issues
 BUFFSIZE = 4096
 
 
