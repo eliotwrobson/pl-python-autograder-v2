@@ -12,6 +12,7 @@ import _pytest.reports
 import pytest
 from _pytest.config import Config
 
+from .json_utils import from_json
 from .utils import get_current_time
 from .utils import serialize_object_unsafe
 
@@ -122,10 +123,16 @@ class StudentFixture:
             "var": var_to_query,
         }
 
+        assert self.process is not None, "Student code server process is not running."
+
         self.socket.sendall(json.dumps(json_message).encode("utf-8") + os.linesep.encode("utf-8"))
         data = self.socket.recv(BUFFSIZE).decode()
 
-        res = json.loads(data)["value"]
+        print(self.process.stdout.read())
+        print(self.process.stderr.read())
+        json_val = json.loads(data)["value"]
+
+        res = from_json(json_val)
         return res
 
     def query_function(self, function_name: str, *args, **kwargs) -> str:

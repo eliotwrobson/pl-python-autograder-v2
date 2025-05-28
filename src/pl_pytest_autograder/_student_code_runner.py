@@ -9,6 +9,7 @@ from contextlib import redirect_stdout
 from typing import Any
 from typing import NamedTuple
 
+from pl_pytest_autograder.json_utils import to_json
 from pl_pytest_autograder.utils import deserialize_object_unsafe
 
 # Define the server's address and port
@@ -120,7 +121,7 @@ async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWrit
                 var_to_query = json_message["var"]
                 # Check if the variable exists in the student_code_vars
                 if var_to_query in student_code_vars:
-                    response = json.dumps({"status": "success", "value": student_code_vars[var_to_query]})
+                    response = json.dumps({"status": "success", "value": to_json(student_code_vars[var_to_query])})
                 else:
                     response = json.dumps({"status": "error", "message": f"Variable '{var_to_query}' not found."})
 

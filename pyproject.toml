@@ -9,7 +9,7 @@ dependencies = ["dill>=0.4.0", "pytest"]
 license = { file = "LICENSE" }
 
 [dependency-groups]
-dev = ["numpy"]
+dev = ["numpy>=2.0", "pandas>=2.0"]
 
 [build-system]
 requires = ["hatchling"]
