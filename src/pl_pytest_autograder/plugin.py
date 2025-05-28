@@ -341,11 +341,6 @@ def _win32_longpath(path):
         return path
 
 
-@pytest.fixture
-def benchmark_weave(benchmark):
-    return benchmark.weave
-
-
 def pytest_runtest_setup(item):
     marker = item.get_closest_marker("benchmark")
     if marker:
@@ -387,6 +382,8 @@ def pytest_configure(config: Config) -> None:
 
 
 class MyResultCollectorPlugin:
+    collected_results: dict[str, str]
+
     def __init__(self) -> None:
         self.collected_results = {}
 
@@ -420,8 +417,7 @@ class MyResultCollectorPlugin:
         # if fixture:
         #     fixture.skipped = outcome.get_result().outcome == "skipped"
 
-    # TODO uncomment this line!!!
-    # @pytest.hookimpl(hookwrapper=True)
+    @pytest.hookimpl(hookwrapper=True)
     def pytest_sessionfinish(self, session: pytest.Session, exitstatus: int) -> Iterable[None]:
         """
         Hook wrapper to process test results after the session finishes.
@@ -443,7 +439,6 @@ class MyResultCollectorPlugin:
         # Collect all student feedback and generate the final report.
         final_results = []
         for nodeid, feedback_obj in session.config.student_feedback_data.items():
-            test_outcome = self.collected_results[nodeid]
             final_results.append(feedback_obj.to_dict())
 
         # Example: Save to a JSON file
