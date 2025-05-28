@@ -150,8 +150,7 @@ async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWrit
             # TODO handle cases of different payloads
             # The first payload should be student code
             if line.lower() == "exit":
-                response = "Goodbye!"
-                writer.write(response.encode())
+                writer.write(b"Goodbye!")
                 await writer.drain()
                 break  # Exit the loop and terminate the server
 
