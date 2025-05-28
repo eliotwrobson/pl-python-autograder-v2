@@ -32,7 +32,7 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
     # TODO read in student code and leading/trailing code
     # patterns from metafunc by magically named variables
     # in the testing module.
-    # print(metafunc.module.__dict__["student_code_name"])
+    # print()
 
     # 1. Get the module object associated with the test function
     test_module = metafunc.module
@@ -55,17 +55,25 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
         data_dir = module_path.parent / module_path.stem
 
         if data_dir.is_dir():
+            student_code_pattern = metafunc.module.__dict__.get("student_code_pattern")
+
+            if student_code_pattern is None:
+                student_code_pattern = "student_code*.py"
+
             print("IN THE DATA DIR")
             # Find a specific data file, e.g., 'test_data.txt'
             leading_file = data_dir / "leading_code.py"
             trailing_file = data_dir / "trailing_code.py"
+
+            student_code_files = list(data_dir.glob(student_code_pattern))
+
             # TODO parameterize this accross multiple of these files if the exist
             # conforming to the same naming scheme
-            student_code_file = data_dir / "student_code.py"
+            # student_code_file = data_dir / "student_code.py"
 
-            file_tup = StudentFiles(leading_file, trailing_file, student_code_file)
+            file_tups = [StudentFiles(leading_file, trailing_file, student_code_file) for student_code_file in student_code_files]
 
-            metafunc.parametrize("benchmark", [file_tup], indirect=True)
+            metafunc.parametrize("benchmark", file_tups, indirect=True)
             # else:
             #    pass
             # pytest.skip(f"Data file '{data_file.name}' not found in '{data_dir}'")
