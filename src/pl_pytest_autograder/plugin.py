@@ -60,7 +60,7 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
             if student_code_pattern is None:
                 student_code_pattern = "student_code*.py"
 
-            print("IN THE DATA DIR")
+            # print("IN THE DATA DIR")
             # Find a specific data file, e.g., 'test_data.txt'
             leading_file = data_dir / "leading_code.py"
             trailing_file = data_dir / "trailing_code.py"
