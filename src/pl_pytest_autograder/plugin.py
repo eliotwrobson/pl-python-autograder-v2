@@ -357,13 +357,24 @@ def pytest_configure(config: Config) -> None:
         config.pluginmanager.register(config.my_result_collector_plugin)
 
 
+from typing import Any
+
+
 class MyResultCollectorPlugin:
     collected_results: dict[str, str]
     student_feedback_data: dict[str, FeedbackFixture]
+    grading_data: dict[str, Any]
 
     def __init__(self) -> None:
         self.collected_results = {}
         self.student_feedback_data = {}
+        self.grading_data = {}
+
+    def pytest_configure(self, config: Config) -> None:
+        """
+        Register our custom marker to avoid warnings.
+        """
+        config.addinivalue_line("markers", "grading_data(name, points): Mark a test with custom data that can be injected.")
 
     @pytest.hookimpl(hookwrapper=True)
     def pytest_runtest_makereport(self, item: pytest.Item, call) -> Iterable[None]:
@@ -372,6 +383,12 @@ class MyResultCollectorPlugin:
         """
         outcome = yield
         report: _pytest.reports.TestReport = outcome.get_result()
+        marker = item.get_closest_marker("grading_data")  # Ensure the marker is registered
+
+        if marker:
+            self.grading_data[item.nodeid] = marker.kwargs
+
+        # print(marker, item.nodeid, item.name, item.location)
 
         if report.when == "call":
             self.collected_results[report.nodeid] = report.outcome
@@ -430,7 +447,13 @@ class MyResultCollectorPlugin:
         # Collect all student feedback and generate the final report.
         final_results = []
         for nodeid, feedback_obj in self.student_feedback_data.items():
-            final_results.append(feedback_obj.to_dict())
+            grading_data = self.grading_data.setdefault(nodeid, {"name": nodeid, "points": 1})
+
+            res_obj = feedback_obj.to_dict()
+            res_obj["test_name"] = grading_data.get("name", nodeid)
+            res_obj["points"] = grading_data.get("points", 1)
+
+            final_results.append(res_obj)
 
         # Example: Save to a JSON file
 

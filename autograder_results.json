@@ -2,23 +2,31 @@
     {
         "test_id": "tests/test_benchmark.py::test_query_func[benchmark0]",
         "messages": [],
-        "score": null
+        "score": null,
+        "test_name": "test_query_func",
+        "points": 2
     },
     {
         "test_id": "tests/test_benchmark.py::test_numpy[benchmark0]",
         "messages": [],
-        "score": null
+        "score": null,
+        "test_name": "tests/test_benchmark.py::test_numpy[benchmark0]",
+        "points": 1
     },
     {
         "test_id": "tests/test_benchmark.py::test_temp[benchmark0]",
         "messages": [
             "This is a test message"
         ],
-        "score": null
+        "score": null,
+        "test_name": "tests/test_benchmark.py::test_temp[benchmark0]",
+        "points": 1
     },
     {
         "test_id": "tests/test_benchmark.py::test_temp_2[benchmark0]",
         "messages": [],
-        "score": 0.5
+        "score": 0.5,
+        "test_name": "tests/test_benchmark.py::test_temp_2[benchmark0]",
+        "points": 1
     }
 ]

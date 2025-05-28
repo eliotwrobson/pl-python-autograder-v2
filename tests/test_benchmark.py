@@ -1,6 +1,7 @@
 import platform
 
 import numpy as np
+import pytest
 
 from pl_pytest_autograder.plugin import FeedbackFixture
 from pl_pytest_autograder.plugin import StudentFixture
@@ -15,6 +16,7 @@ student_code_name = "hey.py"
 #     assert benchmark.query_function("fib", 7)
 
 
+@pytest.mark.grading_data(name="test_query_func", points=2)
 def test_query_func(benchmark: StudentFixture, feedback: FeedbackFixture) -> None:
     assert benchmark.query_function("fib", 3) == 5
 
