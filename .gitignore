@@ -61,7 +61,6 @@ nosetests.xml
 .idea
 .project
 .pydevproject
-.vscode
 
 # Complexity
 output/*.html

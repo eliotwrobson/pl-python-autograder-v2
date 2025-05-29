@@ -3,6 +3,7 @@ import os
 import sys
 from collections.abc import Iterable
 from pathlib import Path
+from types import ModuleType
 from typing import Any
 
 import _pytest
@@ -16,6 +17,47 @@ from .fixture import StudentFixture
 from .utils import get_current_time
 
 
+def get_datadir(test_module: ModuleType) -> Path | None:
+    """
+    Get the data directory for the current test module.
+    """
+
+    if test_module is None:
+        # In case the test is not in a module (e.g., it is a class method)
+        # or a standalone function, you can skip this step
+        return None
+
+    # Access the __file__ attribute of the module
+    module_filepath_str = test_module.__file__
+
+    if module_filepath_str is None:
+        return None
+
+    # Convert it to a pathlib.Path object for easier manipulation
+    module_path = Path(module_filepath_str)
+
+    # Let's assume you have a 'data' directory next to your test file
+    data_dir = module_path.parent / module_path.stem
+
+    return data_dir
+
+
+@pytest.fixture(scope="module")
+def data_json(request: pytest.FixtureRequest) -> dict[str, Any]:
+    datadir = get_datadir(request.module)
+
+    if datadir is None or not datadir.is_dir():
+        raise ValueError(f"Data directory '{datadir}' not found or is not a directory.")
+
+    data_file = datadir / "data.json"
+
+    if not data_file.is_file():
+        raise ValueError(f"Data file '{data_file.name}' not found in '{datadir}'.")
+
+    return json.loads(data_file.read_text(encoding="utf-8"))
+
+
+# TODO maybe change to the module scope??
 @pytest.fixture
 def sandbox(request: pytest.FixtureRequest) -> Iterable[StudentFixture]:
     fixture = StudentFixture(request.param)
@@ -34,31 +76,31 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
     # in the testing module.
     # print()
 
-    # 1. Get the module object associated with the test function
-    test_module = metafunc.module
+    # # 1. Get the module object associated with the test function
+    # test_module = metafunc.module
 
-    if test_module is None:
-        # IN case the test is not in a module (e.g., it is a class method)
-        # or a standalone function, you can skip this step
-        return
+    # if test_module is None:
+    #     # IN case the test is not in a module (e.g., it is a class method)
+    #     # or a standalone function, you can skip this step
+    #     return
 
-    # print(test_module)
-    # 2. Access the __file__ attribute of the module
-    # This gives you the string path to the .py file where the test function is defined
-    module_filepath_str = test_module.__file__
+    # # print(test_module)
+    # # 2. Access the __file__ attribute of the module
+    # # This gives you the string path to the .py file where the test function is defined
+    # module_filepath_str = test_module.__file__
 
-    # 3. Convert it to a pathlib.Path object for easier manipulation
-    module_path = Path(module_filepath_str)
+    # # 3. Convert it to a pathlib.Path object for easier manipulation
+    # module_path = Path(module_filepath_str)
+
+    # # Let's assume you have a 'data' directory next to your test file
+    data_dir = get_datadir(metafunc.module)
+
+    if data_dir is None:
+        raise ValueError
 
     if "sandbox" in metafunc.fixturenames:
-        # Let's assume you have a 'data' directory next to your test file
-        data_dir = module_path.parent / module_path.stem
-
         if data_dir.is_dir():
-            student_code_pattern = metafunc.module.__dict__.get("student_code_pattern")
-
-            if student_code_pattern is None:
-                student_code_pattern = "student_code*.py"
+            student_code_pattern = metafunc.module.__dict__.get("student_code_pattern", "student_code*.py")
 
             # print("IN THE DATA DIR")
             # Find a specific data file, e.g., 'test_data.txt'

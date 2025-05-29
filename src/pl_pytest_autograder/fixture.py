@@ -5,10 +5,13 @@ import subprocess
 import sys
 from importlib.resources import files
 from pathlib import Path
+from typing import Any
 from typing import NamedTuple
 
 from .json_utils import from_json
 from .utils import serialize_object_unsafe
+
+DataFixture = dict[str, Any]
 
 SCRIPT_PATH = str(files("pl_pytest_autograder").joinpath("_student_code_runner.py"))
 BUFFSIZE = 4096

@@ -1,0 +1,21 @@
+{
+  "params": {
+    "pairs": [
+      { "input": "hamster", "output": "herring" },
+      { "input": "ministry", "output": "quest" },
+      { "input": "silly", "output": "knight" },
+      { "input": "spam", "output": "duck" }
+    ],
+    "names_for_user": [],
+    "names_from_user": [
+      {
+        "name": "bar",
+        "description": "the requested function",
+        "type": "function (str -> str)"
+      }
+    ],
+    "function_name": "bar",
+    "default_output": "parrot",
+    "invalid_input": "grail"
+  }
+}

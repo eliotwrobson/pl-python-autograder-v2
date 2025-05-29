@@ -9,7 +9,7 @@
           "source.fixAll": "explicit"
       }
   },
-  "[yaml][toml]": {
+  "[yaml][toml][json]": {
       "editor.formatOnSave": true
   },
   "files.trimTrailingWhitespace": true,
