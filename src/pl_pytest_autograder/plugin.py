@@ -69,28 +69,6 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
     """
     TODO this is where the parameterization inside the folder is happening
     """
-    print("HERE in metafunc", type(metafunc))
-
-    # TODO read in student code and leading/trailing code
-    # patterns from metafunc by magically named variables
-    # in the testing module.
-    # print()
-
-    # # 1. Get the module object associated with the test function
-    # test_module = metafunc.module
-
-    # if test_module is None:
-    #     # IN case the test is not in a module (e.g., it is a class method)
-    #     # or a standalone function, you can skip this step
-    #     return
-
-    # # print(test_module)
-    # # 2. Access the __file__ attribute of the module
-    # # This gives you the string path to the .py file where the test function is defined
-    # module_filepath_str = test_module.__file__
-
-    # # 3. Convert it to a pathlib.Path object for easier manipulation
-    # module_path = Path(module_filepath_str)
 
     # # Let's assume you have a 'data' directory next to your test file
     data_dir = get_datadir(metafunc.module)
@@ -109,13 +87,10 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
 
             student_code_files = list(data_dir.glob(student_code_pattern))
 
-            # TODO parameterize this accross multiple of these files if the exist
-            # conforming to the same naming scheme
-            # student_code_file = data_dir / "student_code.py"
-
             file_tups = [StudentFiles(leading_file, trailing_file, student_code_file) for student_code_file in student_code_files]
+            file_stems = [file_tup.student_code_file.stem for file_tup in file_tups]
 
-            metafunc.parametrize("sandbox", file_tups, indirect=True)
+            metafunc.parametrize("sandbox", file_tups, indirect=True, ids=file_stems)
             # else:
             #    pass
             # pytest.skip(f"Data file '{data_file.name}' not found in '{data_dir}'")
