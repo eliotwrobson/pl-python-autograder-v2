@@ -4,9 +4,7 @@ from pl_pytest_autograder.fixture import DataFixture
 from pl_pytest_autograder.fixture import FeedbackFixture
 from pl_pytest_autograder.fixture import StudentFixture
 
-# @pytest.mark.grading_data(name="test_query_func", points=2)
-# def test_query_func(sandbox: StudentFixture) -> None:
-#     assert sandbox.query_function("fib", 3) == 5
+student_code_pattern = "func_name_code*.py"
 
 
 @pytest.mark.grading_data(name="Test expected inputs", points=4)

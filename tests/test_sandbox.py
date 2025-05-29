@@ -9,8 +9,6 @@ from pl_pytest_autograder.fixture import StudentFixture
 pytest_plugins = ("pytester",)
 platform  # noqa: B018
 
-student_code_name = "hey.py"
-
 
 @pytest.mark.grading_data(name="test_query_func", points=2)
 def test_query_func(sandbox: StudentFixture) -> None:
