@@ -27,8 +27,6 @@ def test_numpy(sandbox: StudentFixture) -> None:
 
 
 def test_temp(sandbox: StudentFixture, feedback: FeedbackFixture) -> None:
-    print(type(sandbox))
-    print(type(feedback))
     # This is a test to check if the sandbox fixture is working
     assert sandbox is not None
 
@@ -37,8 +35,6 @@ def test_temp(sandbox: StudentFixture, feedback: FeedbackFixture) -> None:
 
 
 def test_temp_2(sandbox: StudentFixture, feedback: FeedbackFixture) -> None:
-    print(type(sandbox))
-    print(type(feedback))
     # This is a test to check if the sandbox fixture is working
     assert sandbox is not None
 

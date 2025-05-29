@@ -9,8 +9,6 @@ from _pytest.config.findpaths import locate_config
 from . import plugin
 from .logger import Logger
 from .plugin import add_csv_options
-from .plugin import add_display_options
-from .plugin import add_global_options
 from .table import TableResults
 from .utils import NAME_FORMATTERS
 from .utils import report_noprogress
@@ -74,7 +72,6 @@ def add_glob_or_file(addoption):
 
 def make_parser():
     parser = CommandArgumentParser("py.test-benchmark", description="pytest_benchmark's management commands.")
-    add_global_options(parser.add_argument, prefix="")
 
     parser.add_command("list", description="List saved runs.")
 
@@ -96,8 +93,6 @@ def make_parser():
 
         Loads runs from exactly those files.""",
     )
-    add_display_options(compare_command.add_argument, prefix="")
-    add_histogram_options(compare_command.add_argument, prefix="")
     add_glob_or_file(compare_command.add_argument)
     add_csv_options(compare_command.add_argument, prefix="")
 
