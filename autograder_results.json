@@ -1,23 +1,34 @@
-[
-    {
-        "test_id": "tests/test_autograder_scenarios.py::test_autograder_scenario_with_pytester[test_function_name]",
-        "messages": [],
-        "score": null,
-        "test_name": "tests/test_autograder_scenarios.py::test_autograder_scenario_with_pytester[test_function_name]",
-        "points": 1
-    },
-    {
-        "test_id": "tests/test_autograder_scenarios.py::test_autograder_scenario_with_pytester[test_sandbox]",
-        "messages": [],
-        "score": null,
-        "test_name": "tests/test_autograder_scenarios.py::test_autograder_scenario_with_pytester[test_sandbox]",
-        "points": 1
-    },
-    {
-        "test_id": "tests/test_serialize.py::test_serialize_numpy_array",
-        "messages": [],
-        "score": null,
-        "test_name": "tests/test_serialize.py::test_serialize_numpy_array",
-        "points": 1
-    }
-]
+{
+    "output": "Overall feedback for the autograder session.",
+    "score": 0,
+    "tests": [
+        {
+            "max_points": 1,
+            "message": "",
+            "name": "tests/test_autograder_scenarios.py::test_autograder_scenario_with_pytester[test_function_name]",
+            "points": 0,
+            "test_id": "tests/test_autograder_scenarios.py::test_autograder_scenario_with_pytester[test_function_name]"
+        },
+        {
+            "max_points": 1,
+            "message": "",
+            "name": "tests/test_autograder_scenarios.py::test_autograder_scenario_with_pytester[test_sandbox]",
+            "points": 0,
+            "test_id": "tests/test_autograder_scenarios.py::test_autograder_scenario_with_pytester[test_sandbox]"
+        },
+        {
+            "max_points": 1,
+            "message": "",
+            "name": "tests/test_serialize.py::test_serialize_numpy_array",
+            "points": 0,
+            "test_id": "tests/test_serialize.py::test_serialize_numpy_array"
+        },
+        {
+            "max_points": 2,
+            "message": "",
+            "name": "test_query_func",
+            "points": 0,
+            "test_id": "tests/test_temp.py::test_query_func"
+        }
+    ]
+}

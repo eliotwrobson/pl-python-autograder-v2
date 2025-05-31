@@ -344,16 +344,23 @@ class MyResultCollectorPlugin:
             grading_data = self.grading_data.setdefault(nodeid, {"name": nodeid, "points": 1})
 
             res_obj = feedback_obj.to_dict()
-            res_obj["test_name"] = grading_data.get("name", nodeid)
-            res_obj["points"] = grading_data.get("points", 1)
+            res_obj["name"] = grading_data.get("name", nodeid)
+            res_obj["max_points"] = grading_data.get("points", 1)
 
             final_results.append(res_obj)
 
-        # Example: Save to a JSON file
+        # TODO add gradable property
+        # https://prairielearn.readthedocs.io/en/latest/externalGrading/#grading-results
+        res_dict = {
+            "score": sum(res["points"] * res["max_points"] for res in final_results),
+            "output": "Overall feedback for the autograder session.",
+            "tests": final_results,
+        }
 
+        # Example: Save to a JSON file
         output_path = session.config.rootpath / "autograder_results.json"
         with open(output_path, "w") as f:
-            json.dump(final_results, f, indent=4)
+            json.dump(res_dict, f, indent=4, sort_keys=True)
         print(f"\nAutograder results saved to {output_path}")
 
         # For autograding platforms like Gradescope, you might format

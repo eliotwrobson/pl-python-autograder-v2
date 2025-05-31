@@ -1,3 +1,4 @@
+import math
 import platform
 from pathlib import Path
 
@@ -94,6 +95,19 @@ def test_autograder_scenario_with_pytester(pytester: pytest.Pytester, scenario_d
     #
     # For a scenario where student code is expected to pass:
     result.assert_outcomes(passed=expected_outcome_dict["expected_passed_count"], failed=expected_outcome_dict["expected_failed_count"])
+
+    results_obj = json.loads((pytester.path / "autograder_results.json").read_text())
+
+    # output_path = scenario_dir / "autograder_output.json"
+    # print(output_path)
+    # with open(output_path, "w") as f:
+    #     json.dump(results_obj, f, indent=4, sort_keys=True)
+
+    expected_data_obj = expected_outcome_dict["expected_data_object"]
+
+    assert math.isclose(expected_data_obj["score"], results_obj["score"])
+
+    # TODO add tests for the tests object
 
     # For a scenario where student code is expected to fail:
     # result.assert_outcomes(failed=1, passed=1) # If one test fails and one passes

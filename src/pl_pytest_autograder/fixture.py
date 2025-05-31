@@ -29,7 +29,8 @@ class FeedbackFixture:
     def __init__(self, test_id: str) -> None:
         self.test_id = test_id
         self.messages = []
-        self.score = None
+        # TODO allow setting score to none?
+        self.score = 0
 
     def add_message(self, message: str) -> None:
         self.messages.append(message)
@@ -40,8 +41,8 @@ class FeedbackFixture:
     def to_dict(self) -> dict:
         return {
             "test_id": self.test_id,
-            "messages": self.messages,
-            "score": self.score,
+            "message": "".join(self.messages),
+            "points": self.score,
         }
 
 

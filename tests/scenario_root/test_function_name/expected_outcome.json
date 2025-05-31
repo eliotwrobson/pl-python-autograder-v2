@@ -1,4 +1,21 @@
 {
-    "expected_passed_count": 2,
-    "expected_failed_count": 0
+  "expected_passed_count": 2,
+  "expected_failed_count": 0,
+  "expected_data_object": {
+    "score": 5.0,
+    "tests": [
+      {
+        "max_points": 4,
+        "name": "Test expected inputs",
+        "points": 1.0,
+        "test_id": "test_function_name.py::test_input[func_name_code_student]"
+      },
+      {
+        "max_points": 1,
+        "name": "Test default output",
+        "points": 1,
+        "test_id": "test_function_name.py::test_default_output[func_name_code_student]"
+      }
+    ]
+  }
 }

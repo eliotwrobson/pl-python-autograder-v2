@@ -1,4 +1,7 @@
 {
-    "expected_passed_count": 7,
-    "expected_failed_count": 1
+  "expected_passed_count": 7,
+  "expected_failed_count": 1,
+  "expected_data_object": {
+    "score": 5.0
+  }
 }
