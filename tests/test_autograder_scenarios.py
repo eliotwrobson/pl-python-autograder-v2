@@ -93,9 +93,7 @@ def test_autograder_scenario_with_pytester(pytester: pytest.Pytester, scenario_d
     # It takes keyword arguments for the expected number of passed, failed, skipped, etc. tests.
     #
     # For a scenario where student code is expected to pass:
-    result.assert_outcomes(
-        passed=expected_outcome_dict["expected_passed_count"], failed=expected_outcome_dict["expected_failed_count"]
-    )  # Assuming common_autograder_tests.py has 2 passing tests
+    result.assert_outcomes(passed=expected_outcome_dict["expected_passed_count"], failed=expected_outcome_dict["expected_failed_count"])
 
     # For a scenario where student code is expected to fail:
     # result.assert_outcomes(failed=1, passed=1) # If one test fails and one passes
