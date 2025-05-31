@@ -1,81 +1,16 @@
 [
     {
-        "test_id": "tests/test_function_name.py::test_input[func_name_code_student]",
-        "messages": [
-            "Function \"bar\" returned \"herring\" on input \"hamster\".",
-            "Function \"bar\" returned \"quest\" on input \"ministry\".",
-            "Function \"bar\" returned \"knight\" on input \"silly\".",
-            "Function \"bar\" returned \"duck\" on input \"spam\"."
-        ],
-        "score": 1.0,
-        "test_name": "Test expected inputs",
-        "points": 4
-    },
-    {
-        "test_id": "tests/test_function_name.py::test_default_output[func_name_code_student]",
-        "messages": [
-            "Function \"bar\" returned \"parrot\" on input \"grail\"."
-        ],
-        "score": 1,
-        "test_name": "Test default output",
+        "test_id": "tests/test_autograder_scenarios.py::test_autograder_scenario_with_pytester[test_function_name]",
+        "messages": [],
+        "score": null,
+        "test_name": "tests/test_autograder_scenarios.py::test_autograder_scenario_with_pytester[test_function_name]",
         "points": 1
     },
     {
-        "test_id": "tests/test_sandbox.py::test_query_func[student_code_other]",
+        "test_id": "tests/test_autograder_scenarios.py::test_autograder_scenario_with_pytester[test_sandbox]",
         "messages": [],
         "score": null,
-        "test_name": "test_query_func",
-        "points": 2
-    },
-    {
-        "test_id": "tests/test_sandbox.py::test_query_func[student_code]",
-        "messages": [],
-        "score": null,
-        "test_name": "test_query_func",
-        "points": 2
-    },
-    {
-        "test_id": "tests/test_sandbox.py::test_numpy[student_code_other]",
-        "messages": [],
-        "score": null,
-        "test_name": "tests/test_sandbox.py::test_numpy[student_code_other]",
-        "points": 1
-    },
-    {
-        "test_id": "tests/test_sandbox.py::test_numpy[student_code]",
-        "messages": [],
-        "score": null,
-        "test_name": "tests/test_sandbox.py::test_numpy[student_code]",
-        "points": 1
-    },
-    {
-        "test_id": "tests/test_sandbox.py::test_temp[student_code_other]",
-        "messages": [],
-        "score": null,
-        "test_name": "tests/test_sandbox.py::test_temp[student_code_other]",
-        "points": 1
-    },
-    {
-        "test_id": "tests/test_sandbox.py::test_temp[student_code]",
-        "messages": [
-            "This is a test message"
-        ],
-        "score": null,
-        "test_name": "tests/test_sandbox.py::test_temp[student_code]",
-        "points": 1
-    },
-    {
-        "test_id": "tests/test_sandbox.py::test_temp_2[student_code_other]",
-        "messages": [],
-        "score": null,
-        "test_name": "tests/test_sandbox.py::test_temp_2[student_code_other]",
-        "points": 1
-    },
-    {
-        "test_id": "tests/test_sandbox.py::test_temp_2[student_code]",
-        "messages": [],
-        "score": 0.5,
-        "test_name": "tests/test_sandbox.py::test_temp_2[student_code]",
+        "test_name": "tests/test_autograder_scenarios.py::test_autograder_scenario_with_pytester[test_sandbox]",
         "points": 1
     },
     {

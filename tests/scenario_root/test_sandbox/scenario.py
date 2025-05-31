@@ -1,13 +1,8 @@
-import platform
-
 import numpy as np
 import pytest
 
 from pl_pytest_autograder.fixture import FeedbackFixture
 from pl_pytest_autograder.fixture import StudentFixture
-
-pytest_plugins = ("pytester",)
-platform  # noqa: B018
 
 
 @pytest.mark.grading_data(name="test_query_func", points=2)
