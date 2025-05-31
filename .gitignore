@@ -71,3 +71,6 @@ docs/_build
 
 # Mypy Cache
 .mypy_cache/
+
+autograder_results.json
+**/autograder_output.json

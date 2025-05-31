@@ -247,7 +247,7 @@ def pytest_configure(config: Config) -> None:
 
 
 class MyResultCollectorPlugin:
-    collected_results: dict[str, str]
+    collected_results: dict[str, _pytest.reports.TestReport]
     student_feedback_data: dict[str, FeedbackFixture]
     grading_data: dict[str, Any]
 
@@ -277,7 +277,7 @@ class MyResultCollectorPlugin:
         # print(marker, item.nodeid, item.name, item.location)
 
         if report.when == "call":
-            self.collected_results[report.nodeid] = report.outcome
+            self.collected_results[report.nodeid] = report
             # You could store more details here if needed
             # item.config.my_test_results[report.nodeid] = {
             #     "outcome": report.outcome,
@@ -343,9 +343,26 @@ class MyResultCollectorPlugin:
             # for nodeid, feedback_obj in self.student_feedback_data.items():
             grading_data = self.grading_data.setdefault(nodeid, {"name": nodeid, "points": 1})
 
+            if nodeid not in self.collected_results:
+                continue  # Skip if no results collected for this test
+
+            outcome = self.collected_results[nodeid].outcome
+
             res_obj = feedback_obj.to_dict()
             res_obj["name"] = grading_data.get("name", nodeid)
             res_obj["max_points"] = grading_data.get("points", 1)
+
+            if outcome == "passed":
+                res_obj["points"] = 1.0
+
+            elif res_obj["points"] is None:
+                if outcome == "failed":
+                    res_obj["points"] = 0.0
+                else:
+                    # TODO fill in logic for other outcomes
+                    # e.g., "skipped", "xpassed", etc.
+                    # For now, we raise an error for unexpected outcomes
+                    raise ValueError(f"Unexpected outcome '{outcome}' for test '{nodeid}'.")
 
             final_results.append(res_obj)
 

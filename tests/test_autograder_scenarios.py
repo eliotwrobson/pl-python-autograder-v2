@@ -98,16 +98,28 @@ def test_autograder_scenario_with_pytester(pytester: pytest.Pytester, scenario_d
 
     results_obj = json.loads((pytester.path / "autograder_results.json").read_text())
 
-    # output_path = scenario_dir / "autograder_output.json"
-    # print(output_path)
-    # with open(output_path, "w") as f:
-    #     json.dump(results_obj, f, indent=4, sort_keys=True)
+    """
+    #NOTE uncomment this to save the results object to a file
+    output_path = scenario_dir / "autograder_output.json"
+    print(output_path)
+    with open(output_path, "w") as f:
+        json.dump(results_obj, f, indent=4, sort_keys=True)
+    """
 
     expected_data_obj = expected_outcome_dict["expected_data_object"]
 
     assert math.isclose(expected_data_obj["score"], results_obj["score"])
 
     # TODO add tests for the tests object
+    test_results_obj = {test_result["test_id"]: test_result for test_result in results_obj["tests"]}
+    for expected_test in expected_data_obj["tests"]:
+        test_id = expected_test["test_id"]
+        assert test_id in test_results_obj, f"Test '{test_id}' not found in results."
+        actual_test = test_results_obj[test_id]
+
+        # assert actual_test["message"] == expected_test["message"], f"Message mismatch for test '{test_id}'."
+        assert actual_test["max_points"] == expected_test["max_points"], f"Max points mismatch for test '{test_id}'."
+        assert math.isclose(expected_test["points"], actual_test["points"]), f"Points mismatch for test '{test_id}'."
 
     # For a scenario where student code is expected to fail:
     # result.assert_outcomes(failed=1, passed=1) # If one test fails and one passes

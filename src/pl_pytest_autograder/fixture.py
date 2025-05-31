@@ -29,8 +29,7 @@ class FeedbackFixture:
     def __init__(self, test_id: str) -> None:
         self.test_id = test_id
         self.messages = []
-        # TODO allow setting score to none?
-        self.score = 0
+        self.score = None
 
     def add_message(self, message: str) -> None:
         self.messages.append(message)
