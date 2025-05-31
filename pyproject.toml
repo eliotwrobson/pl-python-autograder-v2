@@ -9,22 +9,17 @@ dependencies = ["dill>=0.4.0", "pytest"]
 license = { file = "LICENSE" }
 
 [dependency-groups]
-dev = ["numpy>=2.0", "pandas>=2.0"]
+dev = ["numpy>=2.0", "pandas>=2.0", "mypy", "ruff>=0.11.12"]
 
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.ruff]
-extend-exclude = ["static", "ci/templates"]
 line-length = 140
 src = ["src", "tests"]
 target-version = "py39"
 
-[tool.ruff.lint.per-file-ignores]
-"ci/*" = ["S"]
-
-[tool.ruff.lint]
 ignore = [
     "RUF001", # ruff-specific rules ambiguous-unicode-character-string
     "S101",   # flake8-bandit assert
