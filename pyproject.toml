@@ -20,6 +20,8 @@ line-length = 140
 src = ["src", "tests"]
 target-version = "py39"
 
+
+[tool.ruff.lint]
 ignore = [
     "RUF001", # ruff-specific rules ambiguous-unicode-character-string
     "S101",   # flake8-bandit assert
