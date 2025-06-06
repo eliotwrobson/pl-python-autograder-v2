@@ -84,6 +84,7 @@ class StudentFixture:
         json_message = {
             "type": "start",
             "student_code": student_code,
+            "student_file_name": str(self.student_code_file),
         }
 
         line = self.process.stdout.readline().decode()  # Read the initial output from the process to ensure it's ready
@@ -126,9 +127,10 @@ class StudentFixture:
 
         self.socket.sendall(json.dumps(json_message).encode("utf-8") + os.linesep.encode("utf-8"))
 
-        data = self.socket.recv(BUFFSIZE).decode()
+        data = json.loads(self.socket.recv(BUFFSIZE).decode())
         # print(json.loads(data)["traceback"])
-        res = json.loads(data)["value"]
+        print("data: ", data["traceback"])
+        res = data["value"]
         return res
 
     # TODO add functions that let instructors use the student fixture

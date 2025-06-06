@@ -2,6 +2,7 @@ import asyncio
 import concurrent.futures
 import io
 import json
+import linecache
 import sys
 import traceback
 from contextlib import redirect_stderr
@@ -32,7 +33,20 @@ class StudentCodeResult(NamedTuple):
     execution_traceback: str | None = None
 
 
-def student_code_runner(student_code: str) -> StudentCodeResult:
+def populate_linecache(fname: str, contents: str) -> None:
+    """
+    TODO do what's in this file here
+    https://github.com/PrairieLearn/PrairieLearn/commit/28c1f0bfb3792c950e5df30061469bfaf0ca199f
+    """
+    linecache.cache[fname] = (
+        len(contents),
+        None,
+        [line + "\n" for line in contents.splitlines()],
+        fname,
+    )
+
+
+def student_code_runner(student_code: str, student_file_name: str) -> StudentCodeResult:
     stdout_capture = io.StringIO()
     stderr_capture = io.StringIO()
     execution_error = None
@@ -42,7 +56,7 @@ def student_code_runner(student_code: str) -> StudentCodeResult:
     try:
         # First, compile student code. Make sure to handle errors in this later
         # TODO have a better filename
-        code_setup = compile(student_code, "StudentCodeFile", "exec")
+        code_setup = compile(student_code, student_file_name, "exec")
         with redirect_stdout(stdout_capture), redirect_stderr(stderr_capture):
             exec(code_setup, student_code_vars, student_code_vars)  # noqa: S102
     except Exception as e:
@@ -98,9 +112,10 @@ async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWrit
                 # Execute the student code for the first time and load
                 # variables into the student_code_vars dictionary
                 student_code = json_message["student_code"]
+                student_file_name = json_message.get("student_file_name", "student_code.py")
 
                 student_code_result = await asyncio.wait_for(
-                    asyncio.get_event_loop().run_in_executor(executor, student_code_runner, student_code), timeout=1
+                    asyncio.get_event_loop().run_in_executor(executor, student_code_runner, student_code, student_file_name), timeout=1
                 )
 
                 student_code_vars = student_code_result.student_local_vars
