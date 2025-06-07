@@ -112,7 +112,9 @@ async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWrit
                 # Execute the student code for the first time and load
                 # variables into the student_code_vars dictionary
                 student_code = json_message["student_code"]
-                student_file_name = json_message.get("student_file_name", "student_code.py")
+                student_file_name = json_message.get("student_file_name")
+
+                populate_linecache(student_file_name, student_code)
 
                 student_code_result = await asyncio.wait_for(
                     asyncio.get_event_loop().run_in_executor(executor, student_code_runner, student_code, student_file_name), timeout=1
@@ -153,7 +155,14 @@ async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWrit
                             result = func(*args, **kwargs)
                             response = json.dumps({"status": "success", "value": result})
                         except Exception as e:
-                            response = json.dumps({"status": "error", "message": str(e), "traceback": traceback.format_exc()})
+                            response = json.dumps(
+                                {
+                                    "status": "error",
+                                    "exception_name": type(e).__name__,
+                                    "message": str(e),
+                                    "traceback": traceback.format_exc(),
+                                }
+                            )
                     else:
                         response = json.dumps({"status": "error", "message": f"'{func_name}' is not callable."})
                 else:

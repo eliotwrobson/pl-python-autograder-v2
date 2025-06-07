@@ -68,18 +68,15 @@ class StudentFixture:
 
         student_code = ""
         if self.leading_file.is_file():
-            with open(self.leading_file) as f:
-                student_code += f.read()
-                student_code += "\n"
+            student_code += self.leading_file.read_text(encoding="utf-8")
+            student_code += "\n"
 
         if self.student_code_file.is_file():
-            with open(self.student_code_file) as f:
-                student_code += f.read()
+            student_code += self.student_code_file.read_text(encoding="utf-8")
 
         if self.trailing_file.is_file():
-            with open(self.trailing_file) as f:
-                student_code += "\n"
-                student_code += f.read()
+            student_code += "\n"
+            student_code += self.trailing_file.read_text(encoding="utf-8")
 
         json_message = {
             "type": "start",
@@ -129,7 +126,10 @@ class StudentFixture:
 
         data = json.loads(self.socket.recv(BUFFSIZE).decode())
         # print(json.loads(data)["traceback"])
-        print("data: ", data["traceback"])
+        print("data:")
+        for line in data.items():
+            print(line)
+
         res = data["value"]
         return res
 
