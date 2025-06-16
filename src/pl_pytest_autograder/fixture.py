@@ -163,7 +163,11 @@ class StudentFixture:
     # TODO add functions that let instructors use the student fixture
     # use the stuff pete set up here: https://github.com/reteps/pytest-autograder-prototype
     def _cleanup(self) -> None:
-        if self.process:
+        if self.student_socket is not None:
+            self.student_socket.close()
+            self.student_socket = None
+
+        if self.process is not None:
             self.process.terminate()
             self.process.wait()
             self.process = None
