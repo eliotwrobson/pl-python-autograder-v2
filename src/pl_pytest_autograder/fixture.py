@@ -6,15 +6,30 @@ import sys
 from importlib.resources import files
 from pathlib import Path
 from typing import Any
+from typing import Literal
 from typing import NamedTuple
+from typing import TypedDict
 
 from .json_utils import from_json
 from .utils import serialize_object_unsafe
 
 DataFixture = dict[str, Any]
+StatusCode = Literal["success", "exception"]
 
 SCRIPT_PATH = str(files("pl_pytest_autograder").joinpath("_student_code_runner.py"))
 BUFFSIZE = 4096
+
+
+class StudentFiles(NamedTuple):
+    leading_file: Path
+    trailing_file: Path
+    student_code_file: Path
+
+
+class ProcessStartResponse(TypedDict):
+    """TODO add more fields as needed"""
+
+    status: StatusCode
 
 
 class FeedbackFixture:
@@ -45,26 +60,36 @@ class FeedbackFixture:
         }
 
 
-class StudentFiles(NamedTuple):
+class StudentFixture:
+    process: subprocess.Popen | None
     leading_file: Path
     trailing_file: Path
     student_code_file: Path
-
-
-class StudentFixture:
-    process: subprocess.Popen | None
+    student_socket: socket.socket | None
 
     def __init__(self, file_names: StudentFiles) -> None:
         self.leading_file = file_names.leading_file
         self.trailing_file = file_names.trailing_file
         self.student_code_file = file_names.student_code_file
 
-        self._start_student_code_server()
+        self.process = None
+        self.student_socket = None
 
-    def _start_student_code_server(self) -> None:
+    def _assert_process_running(self) -> None:
+        if self.process is None:
+            raise RuntimeError("Student code server process is not running. Please start it first.")
+
+        process_return_code = self.process.poll()
+        if process_return_code is not None:
+            raise RuntimeError(f"Student code server process terminated with code {process_return_code}.")
+
+    def start_student_code_server(self) -> ProcessStartResponse:
         self.process = subprocess.Popen(
             [sys.executable, SCRIPT_PATH], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE
         )
+
+        # Assert process is running after popen call
+        self._assert_process_running()
 
         student_code = ""
         if self.leading_file.is_file():
@@ -87,25 +112,25 @@ class StudentFixture:
         line = self.process.stdout.readline().decode()  # Read the initial output from the process to ensure it's ready
         host, port = line.strip().split(",")
 
-        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.socket.connect((host, int(port)))
+        self.student_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.student_socket.connect((host, int(port)))
 
-        self.socket.sendall(json.dumps(json_message).encode("utf-8") + os.linesep.encode("utf-8"))
+        self.student_socket.sendall(json.dumps(json_message).encode("utf-8") + os.linesep.encode("utf-8"))
 
-        data = self.socket.recv(BUFFSIZE).decode()  # Adjust the buffer size as needed
+        data = self.student_socket.recv(BUFFSIZE).decode()  # Adjust the buffer size as needed
         res = json.loads(data)
-        assert res["status"] == "success"
+        return res
 
     def query(self, var_to_query: str) -> str:
+        self._assert_process_running()
+
         json_message = {
             "type": "query",
             "var": var_to_query,
         }
 
-        assert self.process is not None, "Student code server process is not running."
-
-        self.socket.sendall(json.dumps(json_message).encode("utf-8") + os.linesep.encode("utf-8"))
-        data = self.socket.recv(BUFFSIZE).decode()
+        self.student_socket.sendall(json.dumps(json_message).encode("utf-8") + os.linesep.encode("utf-8"))
+        data = self.student_socket.recv(BUFFSIZE).decode()
 
         # print(self.process.stdout.read())
         # print(self.process.stderr.read())
@@ -115,6 +140,8 @@ class StudentFixture:
         return res
 
     def query_function(self, function_name: str, *args, **kwargs) -> str:
+        self._assert_process_running()
+
         json_message = {
             "type": "query_function",
             "function_name": function_name,
@@ -122,9 +149,9 @@ class StudentFixture:
             "kwargs_encoded": serialize_object_unsafe(kwargs),
         }
 
-        self.socket.sendall(json.dumps(json_message).encode("utf-8") + os.linesep.encode("utf-8"))
+        self.student_socket.sendall(json.dumps(json_message).encode("utf-8") + os.linesep.encode("utf-8"))
 
-        data = json.loads(self.socket.recv(BUFFSIZE).decode())
+        data = json.loads(self.student_socket.recv(BUFFSIZE).decode())
         # print(json.loads(data)["traceback"])
         print("data:")
         for line in data.items():

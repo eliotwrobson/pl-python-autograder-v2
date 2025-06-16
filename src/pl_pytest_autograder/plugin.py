@@ -61,8 +61,17 @@ def data_json(request: pytest.FixtureRequest) -> dict[str, Any]:
 @pytest.fixture
 def sandbox(request: pytest.FixtureRequest) -> Iterable[StudentFixture]:
     fixture = StudentFixture(request.param)
-    yield fixture
-    fixture._cleanup()
+
+    try:
+        response = fixture.start_student_code_server()
+
+        if response["status"] == "exception":
+            exception_message = response.get("execution_error", "Unknown error")
+            pytest.fail(f"Student code execution failed with an exception: {exception_message}", pytrace=False)
+
+        yield fixture
+    finally:
+        fixture._cleanup()
 
 
 def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
@@ -276,7 +285,12 @@ class MyResultCollectorPlugin:
 
         # print(marker, item.nodeid, item.name, item.location)
 
-        if report.when == "call":
+        # Make a report for the setup phase, replace with the call phase if it exists
+        if report.when == "setup":
+            self.collected_results[report.nodeid] = report
+            # Add a default outcome if not already set
+
+        elif report.when == "call":
             self.collected_results[report.nodeid] = report
             # You could store more details here if needed
             # item.config.my_test_results[report.nodeid] = {
@@ -335,10 +349,6 @@ class MyResultCollectorPlugin:
 
         for item in session.items:
             nodeid = item.nodeid
-            if nodeid in self.student_feedback_data:
-                feedback_obj = self.student_feedback_data[nodeid]
-            else:
-                feedback_obj = FeedbackFixture(test_id=nodeid)
 
             # for nodeid, feedback_obj in self.student_feedback_data.items():
             grading_data = self.grading_data.setdefault(nodeid, {"name": nodeid, "points": 1})
@@ -346,7 +356,15 @@ class MyResultCollectorPlugin:
             if nodeid not in self.collected_results:
                 continue  # Skip if no results collected for this test
 
-            outcome = self.collected_results[nodeid].outcome
+            report = self.collected_results[nodeid]
+            outcome = report.outcome
+
+            if nodeid in self.student_feedback_data:
+                feedback_obj = self.student_feedback_data[nodeid]
+            else:
+                feedback_obj = FeedbackFixture(test_id=nodeid)
+                if report.outcome == "failed":
+                    feedback_obj.add_message(str(report.longrepr))
 
             res_obj = feedback_obj.to_dict()
             res_obj["name"] = grading_data.get("name", nodeid)
@@ -365,7 +383,6 @@ class MyResultCollectorPlugin:
                     raise ValueError(f"Unexpected outcome '{outcome}' for test '{nodeid}'.")
 
             final_results.append(res_obj)
-
         # TODO add gradable property
         # https://prairielearn.readthedocs.io/en/latest/externalGrading/#grading-results
         res_dict = {

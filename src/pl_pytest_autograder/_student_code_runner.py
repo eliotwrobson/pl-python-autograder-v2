@@ -121,9 +121,10 @@ async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWrit
                 )
 
                 student_code_vars = student_code_result.student_local_vars
+                status = "success" if student_code_result.execution_error is None else "exception"
 
                 response = {
-                    "status": "success",
+                    "status": status,
                     "stdout": student_code_result.captured_stdout,
                     "stderr": student_code_result.captured_stderr,
                     "execution_error": str(student_code_result.execution_error),
