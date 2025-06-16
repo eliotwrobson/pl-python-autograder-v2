@@ -1,6 +1,5 @@
 import pytest
 
-# from pl_pytest_autograder.fixture import FeedbackFixture
 from pl_pytest_autograder.fixture import StudentFixture
 
 
