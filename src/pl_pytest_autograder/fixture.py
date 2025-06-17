@@ -127,12 +127,6 @@ class StudentFixture:
         data: StudentQueryResponse = json.loads(self.student_socket.recv(BUFFSIZE).decode())
 
         return data
-        # print(self.process.stdout.read())
-        # print(self.process.stderr.read())
-        json_val = data["value"]
-
-        res = from_json(json_val)
-        return res
 
     def query(self, var_to_query: str) -> Any:
         """
@@ -140,7 +134,7 @@ class StudentFixture:
         """
         response = self.query_raw(var_to_query)
 
-        assert response["status"] == "success", f"Query for {var_to_query} failed"
+        assert response["status"] == "success", f"Query for '{var_to_query}' failed"
 
         return from_json(response["value"])
 
@@ -168,14 +162,6 @@ class StudentFixture:
         assert response["status"] == "success", f"Query for function {function_name} failed: {response['exception_message']}"
 
         return from_json(response["value"])
-
-        # print(json.loads(data)["traceback"])
-        # print("data:")
-        # for line in data.items():
-        #     print(line)
-
-        # res = data["value"]
-        # return res
 
     # TODO add functions that let instructors use the student fixture
     # use the stuff pete set up here: https://github.com/reteps/pytest-autograder-prototype
