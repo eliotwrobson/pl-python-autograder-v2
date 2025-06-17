@@ -10,6 +10,8 @@ from contextlib import redirect_stdout
 from typing import Any
 from typing import NamedTuple
 
+from utils import ProcessStartResponse
+
 from pl_pytest_autograder.json_utils import to_json
 from pl_pytest_autograder.utils import deserialize_object_unsafe
 
@@ -116,20 +118,29 @@ async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWrit
 
                 populate_linecache(student_file_name, student_code)
 
-                student_code_result = await asyncio.wait_for(
-                    asyncio.get_event_loop().run_in_executor(executor, student_code_runner, student_code, student_file_name), timeout=1
-                )
+                try:
+                    student_code_result = await asyncio.wait_for(
+                        asyncio.get_event_loop().run_in_executor(executor, student_code_runner, student_code, student_file_name), timeout=1
+                    )
 
-                student_code_vars = student_code_result.student_local_vars
-                status = "success" if student_code_result.execution_error is None else "exception"
+                    student_code_vars = student_code_result.student_local_vars
+                    status = "success" if student_code_result.execution_error is None else "exception"
 
-                response = {
-                    "status": status,
-                    "stdout": student_code_result.captured_stdout,
-                    "stderr": student_code_result.captured_stderr,
-                    "execution_error": str(student_code_result.execution_error),
-                    "execution_traceback": student_code_result.execution_traceback,
-                }
+                    response: ProcessStartResponse = {
+                        "status": status,
+                        "stdout": student_code_result.captured_stdout,
+                        "stderr": student_code_result.captured_stderr,
+                        "execution_error": str(student_code_result.execution_error),
+                        "execution_traceback": str(student_code_result.execution_traceback),
+                    }
+                except asyncio.TimeoutError as e:
+                    response = {
+                        "status": "timeout",
+                        "stdout": "",
+                        "stderr": "",
+                        "execution_error": str(e),
+                        "execution_traceback": "",
+                    }
 
                 writer.write(json.dumps(response).encode())
 

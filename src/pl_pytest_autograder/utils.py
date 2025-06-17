@@ -18,6 +18,9 @@ from os.path import join
 from os.path import split
 from subprocess import CalledProcessError
 from subprocess import check_output
+from typing import Any
+from typing import Literal
+from typing import TypedDict
 from urllib.parse import parse_qs
 from urllib.parse import urlparse
 
@@ -570,7 +573,7 @@ def get_cprofile_functions(stats):
     return result
 
 
-### Stuff for the new autograder we actually need ###
+############### Stuff for the new autograder we actually need ###############
 def serialize_object_unsafe(obj: object) -> str:
     """
     Serializes an arbitrary Python object to a JSON string.
@@ -608,3 +611,19 @@ def deserialize_object_unsafe(base64_string: str) -> object:
 
     # 3. Deserialize the object using dill
     return dill.loads(dilled_bytes)
+
+
+StatusCode = Literal["success", "exception", "timeout"]
+
+
+class StudentQueryResponse(TypedDict):
+    # This is meant to be deserialized into a Python object
+    value: Any
+
+
+class ProcessStartResponse(TypedDict):
+    status: StatusCode
+    stdout: str
+    stderr: str
+    execution_error: str
+    execution_traceback: str

@@ -1,7 +1,7 @@
 {
   "expected_passed_count": 0,
   "expected_failed_count": 0,
-  "expected_errors_count": 1,
+  "expected_errors_count": 2,
   "expected_data_object": {
     "score": 0.0,
     "tests": [
@@ -11,6 +11,13 @@
         "name": "test_exception",
         "points": 0.0,
         "test_id": "test_core_exception.py::test_core_exception[student_code]"
+      },
+      {
+        "max_points": 2,
+        "message": "Student code execution timed out",
+        "name": "test_exception",
+        "points": 0.0,
+        "test_id": "test_core_exception.py::test_core_exception[student_code_timeout]"
       }
     ]
   }

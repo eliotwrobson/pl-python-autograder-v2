@@ -64,10 +64,17 @@ def sandbox(request: pytest.FixtureRequest) -> Iterable[StudentFixture]:
 
     try:
         response = fixture.start_student_code_server()
+        response_status = response["status"]
 
-        if response["status"] == "exception":
+        if response_status == "exception":
             exception_message = response.get("execution_error", "Unknown error")
             pytest.fail(f"Student code execution failed with an exception: {exception_message}", pytrace=False)
+
+        elif response_status == "timeout":
+            # Don't get the exception message since there usually isn't one for timeouts
+            pytest.fail("Student code execution timed out", pytrace=False)
+
+        assert response_status == "success", f"Unexpected status from student code server: {response_status}"
 
         yield fixture
     finally:
@@ -283,9 +290,7 @@ class MyResultCollectorPlugin:
         if marker:
             self.grading_data[item.nodeid] = marker.kwargs
 
-        # print(marker, item.nodeid, item.name, item.location)
-
-        # Make a report for the setup phase, replace with the call phase if it exists
+        # Make a report for the setup phase, replace with the call phase if it happens later
         if report.when == "setup":
             self.collected_results[report.nodeid] = report
             # Add a default outcome if not already set
