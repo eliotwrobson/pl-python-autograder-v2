@@ -613,16 +613,28 @@ def deserialize_object_unsafe(base64_string: str) -> object:
     return dill.loads(dilled_bytes)
 
 
-StatusCode = Literal["success", "exception", "timeout"]
+QueryStatusCode = Literal["success", "not_found"]
+FunctionStatusCode = Literal["success", "exception", "timeout", "not_found"]
+ProcessStatusCode = Literal["success", "exception", "timeout"]
 
 
 class StudentQueryResponse(TypedDict):
     # This is meant to be deserialized into a Python object
+    status: QueryStatusCode
     value: Any
 
 
+class StudentFunctionResponse(TypedDict):
+    # This is meant to be deserialized into a Python object
+    status: FunctionStatusCode
+    value: Any
+    exception_name: str | None
+    exception_message: str | None
+    traceback: str | None
+
+
 class ProcessStartResponse(TypedDict):
-    status: StatusCode
+    status: ProcessStatusCode
     stdout: str
     stderr: str
     execution_error: str

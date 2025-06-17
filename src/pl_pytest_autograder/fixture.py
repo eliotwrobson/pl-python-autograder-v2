@@ -10,6 +10,7 @@ from typing import NamedTuple
 
 from .json_utils import from_json
 from .utils import ProcessStartResponse
+from .utils import StudentQueryResponse
 from .utils import serialize_object_unsafe
 
 DataFixture = dict[str, Any]
@@ -122,11 +123,11 @@ class StudentFixture:
         }
 
         self.student_socket.sendall(json.dumps(json_message).encode("utf-8") + os.linesep.encode("utf-8"))
-        data = self.student_socket.recv(BUFFSIZE).decode()
+        data: StudentQueryResponse = json.loads(self.student_socket.recv(BUFFSIZE).decode())
 
         # print(self.process.stdout.read())
         # print(self.process.stderr.read())
-        json_val = json.loads(data)["value"]
+        json_val = data["value"]
 
         res = from_json(json_val)
         return res

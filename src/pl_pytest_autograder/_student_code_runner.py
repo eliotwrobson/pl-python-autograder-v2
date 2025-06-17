@@ -11,6 +11,8 @@ from typing import Any
 from typing import NamedTuple
 
 from utils import ProcessStartResponse
+from utils import StudentFunctionResponse
+from utils import StudentQueryResponse
 
 from pl_pytest_autograder.json_utils import to_json
 from pl_pytest_autograder.utils import deserialize_object_unsafe
@@ -126,7 +128,7 @@ async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWrit
                     student_code_vars = student_code_result.student_local_vars
                     status = "success" if student_code_result.execution_error is None else "exception"
 
-                    response: ProcessStartResponse = {
+                    start_response: ProcessStartResponse = {
                         "status": status,
                         "stdout": student_code_result.captured_stdout,
                         "stderr": student_code_result.captured_stderr,
@@ -134,7 +136,7 @@ async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWrit
                         "execution_traceback": str(student_code_result.execution_traceback),
                     }
                 except asyncio.TimeoutError as e:
-                    response = {
+                    start_response = {
                         "status": "timeout",
                         "stdout": "",
                         "stderr": "",
@@ -142,19 +144,22 @@ async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWrit
                         "execution_traceback": "",
                     }
 
-                writer.write(json.dumps(response).encode())
+                writer.write(json.dumps(start_response).encode())
 
             elif msg_type == "query":
+                assert student_code_vars is not None
                 var_to_query = json_message["var"]
+
                 # Check if the variable exists in the student_code_vars
                 if var_to_query in student_code_vars:
-                    response = json.dumps({"status": "success", "value": to_json(student_code_vars[var_to_query])})
+                    query_response: StudentQueryResponse = {"status": "success", "value": to_json(student_code_vars[var_to_query])}
                 else:
-                    response = json.dumps({"status": "error", "message": f"Variable '{var_to_query}' not found."})
+                    query_response = {"status": "not_found", "value": ""}
 
-                writer.write(response.encode())
+                writer.write(json.dumps(query_response).encode())
 
             elif msg_type == "query_function":
+                assert student_code_vars is not None
                 func_name = json_message["function_name"]
                 args = deserialize_object_unsafe(json_message["args_encoded"])
                 kwargs = deserialize_object_unsafe(json_message["kwargs_encoded"])
@@ -162,25 +167,34 @@ async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWrit
                 # Check if the function exists in the student_code_vars
                 if func_name in student_code_vars:
                     func = student_code_vars[func_name]
-                    if callable(func):
-                        try:
-                            result = func(*args, **kwargs)
-                            response = json.dumps({"status": "success", "value": result})
-                        except Exception as e:
-                            response = json.dumps(
-                                {
-                                    "status": "error",
-                                    "exception_name": type(e).__name__,
-                                    "message": str(e),
-                                    "traceback": traceback.format_exc(),
-                                }
-                            )
-                    else:
-                        response = json.dumps({"status": "error", "message": f"'{func_name}' is not callable."})
-                else:
-                    response = json.dumps({"status": "error", "message": f"Function '{func_name}' not found."})
+                    try:
+                        result = func(*args, **kwargs)
+                        function_response: StudentFunctionResponse = {
+                            "status": "success",
+                            "value": result,
+                            "exception_name": None,
+                            "exception_message": None,
+                            "traceback": None,
+                        }
+                    except Exception as e:
+                        function_response = {
+                            "status": "exception",
+                            "value": None,
+                            "exception_name": type(e).__name__,
+                            "exception_message": str(e),
+                            "traceback": traceback.format_exc(),
+                        }
 
-                writer.write(response.encode())
+                else:
+                    function_response = {
+                        "status": "not_found",
+                        "value": None,
+                        "exception_name": None,
+                        "exception_message": None,
+                        "traceback": None,
+                    }
+
+                writer.write(json.dumps(function_response).encode())
 
             # TODO handle cases of different payloads
             # The first payload should be student code
