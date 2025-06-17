@@ -10,6 +10,7 @@ from typing import NamedTuple
 
 from .json_utils import from_json
 from .utils import ProcessStartResponse
+from .utils import StudentFunctionResponse
 from .utils import StudentQueryResponse
 from .utils import serialize_object_unsafe
 
@@ -114,7 +115,7 @@ class StudentFixture:
         res = json.loads(data)
         return res
 
-    def query(self, var_to_query: str) -> str:
+    def query_raw(self, var_to_query: str) -> StudentQueryResponse:
         self._assert_process_running()
 
         json_message = {
@@ -125,6 +126,7 @@ class StudentFixture:
         self.student_socket.sendall(json.dumps(json_message).encode("utf-8") + os.linesep.encode("utf-8"))
         data: StudentQueryResponse = json.loads(self.student_socket.recv(BUFFSIZE).decode())
 
+        return data
         # print(self.process.stdout.read())
         # print(self.process.stderr.read())
         json_val = data["value"]
@@ -132,7 +134,17 @@ class StudentFixture:
         res = from_json(json_val)
         return res
 
-    def query_function(self, function_name: str, *args, **kwargs) -> str:
+    def query(self, var_to_query: str) -> Any:
+        """
+        Queries a variable from the student code and returns its value.
+        """
+        response = self.query_raw(var_to_query)
+
+        assert response["status"] == "success", f"Query for {var_to_query} failed"
+
+        return from_json(response["value"])
+
+    def query_function_raw(self, function_name: str, *args, **kwargs) -> StudentFunctionResponse:
         self._assert_process_running()
 
         json_message = {
@@ -144,14 +156,26 @@ class StudentFixture:
 
         self.student_socket.sendall(json.dumps(json_message).encode("utf-8") + os.linesep.encode("utf-8"))
 
-        data = json.loads(self.student_socket.recv(BUFFSIZE).decode())
-        # print(json.loads(data)["traceback"])
-        print("data:")
-        for line in data.items():
-            print(line)
+        data: StudentFunctionResponse = json.loads(self.student_socket.recv(BUFFSIZE).decode())
 
-        res = data["value"]
-        return res
+        return data
+
+    def query_function(self, function_name: str, *args, **kwargs) -> Any:
+        """
+        Queries a function from the student code and returns its return value.
+        """
+        response = self.query_function_raw(function_name, *args, **kwargs)
+        assert response["status"] == "success", f"Query for function {function_name} failed: {response['exception_message']}"
+
+        return from_json(response["value"])
+
+        # print(json.loads(data)["traceback"])
+        # print("data:")
+        # for line in data.items():
+        #     print(line)
+
+        # res = data["value"]
+        # return res
 
     # TODO add functions that let instructors use the student fixture
     # use the stuff pete set up here: https://github.com/reteps/pytest-autograder-prototype
