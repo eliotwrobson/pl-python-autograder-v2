@@ -88,13 +88,13 @@ class StudentFixture:
         student_code = ""
         if self.leading_file.is_file():
             student_code += self.leading_file.read_text(encoding="utf-8")
-            student_code += "\n"
+            student_code += os.linesep
 
         if self.student_code_file.is_file():
             student_code += self.student_code_file.read_text(encoding="utf-8")
 
         if self.trailing_file.is_file():
-            student_code += "\n"
+            student_code += os.linesep
             student_code += self.trailing_file.read_text(encoding="utf-8")
 
         json_message = {

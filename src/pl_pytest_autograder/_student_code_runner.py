@@ -3,6 +3,7 @@ import concurrent.futures
 import io
 import json
 import linecache
+import os
 import sys
 import traceback
 from contextlib import redirect_stderr
@@ -33,7 +34,7 @@ def populate_linecache(contents: str, fname: str) -> None:
     linecache.cache[fname] = (
         len(contents),
         None,
-        [line + "\n" for line in contents.splitlines()],
+        [line + os.linesep for line in contents.splitlines()],
         fname,
     )
 
