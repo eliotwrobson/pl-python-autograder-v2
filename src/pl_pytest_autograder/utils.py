@@ -639,5 +639,5 @@ class ProcessStartResponse(TypedDict):
     status: ProcessStatusCode
     stdout: str
     stderr: str
-    execution_error: str
+    execution_error: str | None
     execution_traceback: str

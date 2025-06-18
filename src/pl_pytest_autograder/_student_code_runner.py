@@ -108,7 +108,7 @@ async def student_code_runner(student_code: str, student_file_name: str, timeout
         "status": "success" if execution_error is None else "exception",
         "stdout": stdout_capture.getvalue(),
         "stderr": stderr_capture.getvalue(),
-        "execution_error": str(execution_error),
+        "execution_error": type(execution_error).__name__ if execution_error else None,
         "execution_traceback": str(exception_traceback),
     }
 
