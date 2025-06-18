@@ -8,6 +8,7 @@ import traceback
 from contextlib import redirect_stderr
 from contextlib import redirect_stdout
 from typing import Any
+from typing import Callable
 from typing import NamedTuple
 
 from utils import ProcessStartResponse
@@ -37,6 +38,18 @@ class StudentCodeResult(NamedTuple):
     execution_traceback: str | None = None
 
 
+class StudentFunctionResult(NamedTuple):
+    """
+    A named tuple to hold the result of the student function.
+    """
+
+    result: Any
+    captured_stdout: str
+    captured_stderr: str
+    execution_error: Exception | None
+    execution_traceback: str | None = None
+
+
 def populate_linecache(fname: str, contents: str) -> None:
     """
     TODO do what's in this file here
@@ -47,6 +60,29 @@ def populate_linecache(fname: str, contents: str) -> None:
         None,
         [line + "\n" for line in contents.splitlines()],
         fname,
+    )
+
+
+def student_function_runner(student_function: Callable, args_tup: Any, kwargs_dict: Any) -> StudentFunctionResult:
+    stdout_capture = io.StringIO()
+    stderr_capture = io.StringIO()
+    execution_error = None
+    exception_traceback = None
+    result = None
+
+    try:
+        with redirect_stdout(stdout_capture), redirect_stderr(stderr_capture):
+            result = student_function(*args_tup, **kwargs_dict)
+    except Exception as e:
+        execution_error = e
+        exception_traceback = traceback.format_exc()
+
+    return StudentFunctionResult(
+        result=result,
+        captured_stdout=stdout_capture.getvalue(),
+        captured_stderr=stderr_capture.getvalue(),
+        execution_error=execution_error,
+        execution_traceback=exception_traceback,
     )
 
 
@@ -168,10 +204,13 @@ async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWrit
                 if func_name in student_code_vars:
                     func = student_code_vars[func_name]
                     try:
-                        result = func(*args, **kwargs)
+                        result_obj = await asyncio.wait_for(
+                            asyncio.get_event_loop().run_in_executor(executor, student_function_runner, func, args, kwargs), timeout=1
+                        )
+
                         function_response: StudentFunctionResponse = {
                             "status": "success",
-                            "value": result,
+                            "value": result_obj.result,
                             "exception_name": None,
                             "exception_message": None,
                             "traceback": None,
