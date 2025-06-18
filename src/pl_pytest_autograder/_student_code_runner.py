@@ -8,7 +8,6 @@ import traceback
 from contextlib import redirect_stderr
 from contextlib import redirect_stdout
 from typing import Any
-from typing import NamedTuple
 
 from utils import ProcessStartResponse
 from utils import StudentFunctionResponse
@@ -24,18 +23,6 @@ TIMEOUT = 1  # Default timeout for student code execution in seconds
 # It's good practice to create this once and reuse it.
 # The number of workers should ideally be around the number of CPU cores.
 executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
-
-
-class StudentFunctionResult(NamedTuple):
-    """
-    A named tuple to hold the result of the student function.
-    """
-
-    result: Any
-    captured_stdout: str
-    captured_stderr: str
-    execution_error: Exception | None
-    execution_traceback: str | None = None
 
 
 def populate_linecache(contents: str, fname: str) -> None:
