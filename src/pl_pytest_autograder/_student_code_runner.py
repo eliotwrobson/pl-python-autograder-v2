@@ -18,6 +18,7 @@ from pl_pytest_autograder.json_utils import to_json
 from pl_pytest_autograder.utils import deserialize_object_unsafe
 
 HOST = "127.0.0.1"  # Loopback address, means "this computer only"
+TIMEOUT = 1  # Default timeout for student code execution in seconds
 
 # Global ThreadPoolExecutor for CPU-bound tasks
 # It's good practice to create this once and reuse it.
@@ -51,7 +52,7 @@ def populate_linecache(contents: str, fname: str) -> None:
 
 
 async def student_function_runner(
-    student_code_vars: dict[str, Any], func_name: str, args_tup: Any, kwargs_dict: Any
+    student_code_vars: dict[str, Any], func_name: str, timeout: int, args_tup: Any, kwargs_dict: Any
 ) -> StudentFunctionResponse:
     stdout_capture = io.StringIO()
     stderr_capture = io.StringIO()
@@ -63,7 +64,7 @@ async def student_function_runner(
         student_function = student_code_vars[func_name]
         with redirect_stdout(stdout_capture), redirect_stderr(stderr_capture):
             result = await asyncio.wait_for(
-                asyncio.get_event_loop().run_in_executor(executor, student_function, *args_tup, **kwargs_dict), timeout=1
+                asyncio.get_event_loop().run_in_executor(executor, student_function, *args_tup, **kwargs_dict), timeout=timeout
             )
     except Exception as e:
         execution_error = e
@@ -81,16 +82,8 @@ async def student_function_runner(
 
     return function_response
 
-    # return StudentFunctionResult(
-    #     result=result,
-    #     captured_stdout=stdout_capture.getvalue(),
-    #     captured_stderr=stderr_capture.getvalue(),
-    #     execution_error=execution_error,
-    #     execution_traceback=exception_traceback,
-    # )
 
-
-async def student_code_runner(student_code: str, student_file_name: str) -> tuple[dict[str, Any], ProcessStartResponse]:
+async def student_code_runner(student_code: str, student_file_name: str, timeout: int) -> tuple[dict[str, Any], ProcessStartResponse]:
     stdout_capture = io.StringIO()
     stderr_capture = io.StringIO()
     execution_error = None
@@ -103,7 +96,7 @@ async def student_code_runner(student_code: str, student_file_name: str) -> tupl
         code_setup = compile(student_code, student_file_name, "exec")
         with redirect_stdout(stdout_capture), redirect_stderr(stderr_capture):
             await asyncio.wait_for(
-                asyncio.get_event_loop().run_in_executor(executor, exec, code_setup, student_code_vars, student_code_vars), timeout=1
+                asyncio.get_event_loop().run_in_executor(executor, exec, code_setup, student_code_vars, student_code_vars), timeout=timeout
             )
 
     except Exception as e:
@@ -165,7 +158,7 @@ async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWrit
 
                 populate_linecache(student_code, student_file_name)
 
-                student_code_vars, start_response = await student_code_runner(student_code, student_file_name)
+                student_code_vars, start_response = await student_code_runner(student_code, student_file_name, TIMEOUT)
 
                 writer.write(json.dumps(start_response).encode())
 
@@ -187,40 +180,7 @@ async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWrit
                 args = deserialize_object_unsafe(json_message["args_encoded"])
                 kwargs = deserialize_object_unsafe(json_message["kwargs_encoded"])
 
-                function_response = await student_function_runner(student_code_vars, func_name, args, kwargs)
-
-                # Check if the function exists in the student_code_vars
-                # if func_name in student_code_vars:
-                #     func = student_code_vars[func_name]
-                #     try:
-                #         result_obj = await asyncio.wait_for(
-                #             asyncio.get_event_loop().run_in_executor(executor, student_function_runner, func, args, kwargs), timeout=1
-                #         )
-
-                #         function_response: StudentFunctionResponse = {
-                #             "status": "success",
-                #             "value": result_obj.result,
-                #             "exception_name": None,
-                #             "exception_message": None,
-                #             "traceback": None,
-                #         }
-                #     except Exception as e:
-                #         function_response = {
-                #             "status": "exception",
-                #             "value": None,
-                #             "exception_name": type(e).__name__,
-                #             "exception_message": str(e),
-                #             "traceback": traceback.format_exc(),
-                #         }
-
-                # else:
-                #     function_response = {
-                #         "status": "not_found",
-                #         "value": None,
-                #         "exception_name": None,
-                #         "exception_message": None,
-                #         "traceback": None,
-                #     }
+                function_response = await student_function_runner(student_code_vars, func_name, TIMEOUT, args, kwargs)
 
                 writer.write(json.dumps(function_response).encode())
 
