@@ -615,7 +615,7 @@ def deserialize_object_unsafe(base64_string: str) -> object:
 
 QueryStatusCode = Literal["success", "not_found"]
 FunctionStatusCode = Literal["success", "exception", "timeout", "not_found"]
-ProcessStatusCode = Literal["success", "exception", "timeout"]
+ProcessStatusCode = Literal["success", "exception", "timeout", "no_response"]
 
 
 class StudentQueryResponse(TypedDict):

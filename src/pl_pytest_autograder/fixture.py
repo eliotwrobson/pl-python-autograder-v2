@@ -111,8 +111,18 @@ class StudentFixture:
 
         self.student_socket.sendall(json.dumps(json_message).encode("utf-8") + os.linesep.encode("utf-8"))
 
-        data = self.student_socket.recv(BUFFSIZE).decode()  # Adjust the buffer size as needed
-        res = json.loads(data)
+        try:
+            data = self.student_socket.recv(BUFFSIZE).decode()  # Adjust the buffer size as needed
+            res: ProcessStartResponse = json.loads(data)
+        except Exception as e:
+            res = {
+                "status": "no_response",
+                "execution_error": type(e).__name__,
+                "execution_traceback": "",
+                "stdout": "",
+                "stderr": "",
+            }
+
         return res
 
     def query_raw(self, var_to_query: str) -> StudentQueryResponse:

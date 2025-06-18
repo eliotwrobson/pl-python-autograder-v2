@@ -74,6 +74,10 @@ def sandbox(request: pytest.FixtureRequest) -> Iterable[StudentFixture]:
             # Don't get the exception message since there usually isn't one for timeouts
             pytest.fail("Student code initialization timed out", pytrace=False)
 
+        elif response_status == "no_response":
+            # Don't get the exception message since there usually isn't one for timeouts
+            pytest.fail("No response from initialization", pytrace=False)
+
         assert response_status == "success", f"Unexpected status from student code server: {response_status}"
 
         yield fixture
