@@ -628,6 +628,8 @@ class StudentFunctionResponse(TypedDict):
     # This is meant to be deserialized into a Python object
     status: FunctionStatusCode
     value: Any
+    stdout: str
+    stderr: str
     exception_name: str | None
     exception_message: str | None
     traceback: str | None

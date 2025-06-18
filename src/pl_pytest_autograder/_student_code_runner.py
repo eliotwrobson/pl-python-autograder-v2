@@ -8,7 +8,6 @@ import traceback
 from contextlib import redirect_stderr
 from contextlib import redirect_stdout
 from typing import Any
-from typing import Callable
 from typing import NamedTuple
 
 from utils import ProcessStartResponse
@@ -51,7 +50,9 @@ def populate_linecache(contents: str, fname: str) -> None:
     )
 
 
-def student_function_runner(student_function: Callable, args_tup: Any, kwargs_dict: Any) -> StudentFunctionResult:
+async def student_function_runner(
+    student_code_vars: dict[str, Any], func_name: str, args_tup: Any, kwargs_dict: Any
+) -> StudentFunctionResponse:
     stdout_capture = io.StringIO()
     stderr_capture = io.StringIO()
     execution_error = None
@@ -59,19 +60,34 @@ def student_function_runner(student_function: Callable, args_tup: Any, kwargs_di
     result = None
 
     try:
+        student_function = student_code_vars[func_name]
         with redirect_stdout(stdout_capture), redirect_stderr(stderr_capture):
-            result = student_function(*args_tup, **kwargs_dict)
+            result = await asyncio.wait_for(
+                asyncio.get_event_loop().run_in_executor(executor, student_function, *args_tup, **kwargs_dict), timeout=1
+            )
     except Exception as e:
         execution_error = e
         exception_traceback = traceback.format_exc()
 
-    return StudentFunctionResult(
-        result=result,
-        captured_stdout=stdout_capture.getvalue(),
-        captured_stderr=stderr_capture.getvalue(),
-        execution_error=execution_error,
-        execution_traceback=exception_traceback,
-    )
+    function_response: StudentFunctionResponse = {
+        "status": "success" if execution_error is None else "exception",
+        "value": result,
+        "stdout": stdout_capture.getvalue(),
+        "stderr": stderr_capture.getvalue(),
+        "exception_name": type(execution_error).__name__,
+        "exception_message": str(execution_error) if execution_error else None,
+        "traceback": exception_traceback,
+    }
+
+    return function_response
+
+    # return StudentFunctionResult(
+    #     result=result,
+    #     captured_stdout=stdout_capture.getvalue(),
+    #     captured_stderr=stderr_capture.getvalue(),
+    #     execution_error=execution_error,
+    #     execution_traceback=exception_traceback,
+    # )
 
 
 async def student_code_runner(student_code: str, student_file_name: str) -> tuple[dict[str, Any], ProcessStartResponse]:
@@ -171,38 +187,40 @@ async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWrit
                 args = deserialize_object_unsafe(json_message["args_encoded"])
                 kwargs = deserialize_object_unsafe(json_message["kwargs_encoded"])
 
+                function_response = await student_function_runner(student_code_vars, func_name, args, kwargs)
+
                 # Check if the function exists in the student_code_vars
-                if func_name in student_code_vars:
-                    func = student_code_vars[func_name]
-                    try:
-                        result_obj = await asyncio.wait_for(
-                            asyncio.get_event_loop().run_in_executor(executor, student_function_runner, func, args, kwargs), timeout=1
-                        )
+                # if func_name in student_code_vars:
+                #     func = student_code_vars[func_name]
+                #     try:
+                #         result_obj = await asyncio.wait_for(
+                #             asyncio.get_event_loop().run_in_executor(executor, student_function_runner, func, args, kwargs), timeout=1
+                #         )
 
-                        function_response: StudentFunctionResponse = {
-                            "status": "success",
-                            "value": result_obj.result,
-                            "exception_name": None,
-                            "exception_message": None,
-                            "traceback": None,
-                        }
-                    except Exception as e:
-                        function_response = {
-                            "status": "exception",
-                            "value": None,
-                            "exception_name": type(e).__name__,
-                            "exception_message": str(e),
-                            "traceback": traceback.format_exc(),
-                        }
+                #         function_response: StudentFunctionResponse = {
+                #             "status": "success",
+                #             "value": result_obj.result,
+                #             "exception_name": None,
+                #             "exception_message": None,
+                #             "traceback": None,
+                #         }
+                #     except Exception as e:
+                #         function_response = {
+                #             "status": "exception",
+                #             "value": None,
+                #             "exception_name": type(e).__name__,
+                #             "exception_message": str(e),
+                #             "traceback": traceback.format_exc(),
+                #         }
 
-                else:
-                    function_response = {
-                        "status": "not_found",
-                        "value": None,
-                        "exception_name": None,
-                        "exception_message": None,
-                        "traceback": None,
-                    }
+                # else:
+                #     function_response = {
+                #         "status": "not_found",
+                #         "value": None,
+                #         "exception_name": None,
+                #         "exception_message": None,
+                #         "traceback": None,
+                #     }
 
                 writer.write(json.dumps(function_response).encode())
 
