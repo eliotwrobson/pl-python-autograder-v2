@@ -26,18 +26,6 @@ HOST = "127.0.0.1"  # Loopback address, means "this computer only"
 executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
 
 
-class StudentCodeResult(NamedTuple):
-    """
-    A named tuple to hold the result of the student code execution.
-    """
-
-    student_local_vars: dict
-    captured_stdout: str
-    captured_stderr: str
-    execution_error: Exception | None
-    execution_traceback: str | None = None
-
-
 class StudentFunctionResult(NamedTuple):
     """
     A named tuple to hold the result of the student function.
@@ -50,7 +38,7 @@ class StudentFunctionResult(NamedTuple):
     execution_traceback: str | None = None
 
 
-def populate_linecache(fname: str, contents: str) -> None:
+def populate_linecache(contents: str, fname: str) -> None:
     """
     TODO do what's in this file here
     https://github.com/PrairieLearn/PrairieLearn/commit/28c1f0bfb3792c950e5df30061469bfaf0ca199f
@@ -86,7 +74,7 @@ def student_function_runner(student_function: Callable, args_tup: Any, kwargs_di
     )
 
 
-def student_code_runner(student_code: str, student_file_name: str) -> StudentCodeResult:
+async def student_code_runner(student_code: str, student_file_name: str) -> tuple[dict[str, Any], ProcessStartResponse]:
     stdout_capture = io.StringIO()
     stderr_capture = io.StringIO()
     execution_error = None
@@ -98,19 +86,24 @@ def student_code_runner(student_code: str, student_file_name: str) -> StudentCod
         # TODO have a better filename
         code_setup = compile(student_code, student_file_name, "exec")
         with redirect_stdout(stdout_capture), redirect_stderr(stderr_capture):
-            exec(code_setup, student_code_vars, student_code_vars)  # noqa: S102
+            await asyncio.wait_for(
+                asyncio.get_event_loop().run_in_executor(executor, exec, code_setup, student_code_vars, student_code_vars), timeout=1
+            )
+
     except Exception as e:
         execution_error = e
         # TODO this traceback is not very useful
         exception_traceback = traceback.format_exc()
 
-    return StudentCodeResult(
-        student_local_vars=student_code_vars,
-        captured_stdout=stdout_capture.getvalue(),
-        captured_stderr=stderr_capture.getvalue(),
-        execution_error=execution_error,
-        execution_traceback=exception_traceback,
-    )
+    result_dict: ProcessStartResponse = {
+        "status": "success" if execution_error is None else "exception",
+        "stdout": stdout_capture.getvalue(),
+        "stderr": stderr_capture.getvalue(),
+        "execution_error": str(execution_error),
+        "execution_traceback": str(exception_traceback),
+    }
+
+    return student_code_vars, result_dict
 
 
 async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
@@ -154,31 +147,9 @@ async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWrit
                 student_code = json_message["student_code"]
                 student_file_name = json_message.get("student_file_name")
 
-                populate_linecache(student_file_name, student_code)
+                populate_linecache(student_code, student_file_name)
 
-                try:
-                    student_code_result = await asyncio.wait_for(
-                        asyncio.get_event_loop().run_in_executor(executor, student_code_runner, student_code, student_file_name), timeout=1
-                    )
-
-                    student_code_vars = student_code_result.student_local_vars
-                    status = "success" if student_code_result.execution_error is None else "exception"
-
-                    start_response: ProcessStartResponse = {
-                        "status": status,
-                        "stdout": student_code_result.captured_stdout,
-                        "stderr": student_code_result.captured_stderr,
-                        "execution_error": str(student_code_result.execution_error),
-                        "execution_traceback": str(student_code_result.execution_traceback),
-                    }
-                except asyncio.TimeoutError as e:
-                    start_response = {
-                        "status": "timeout",
-                        "stdout": "",
-                        "stderr": "",
-                        "execution_error": str(e),
-                        "execution_traceback": "",
-                    }
+                student_code_vars, start_response = await student_code_runner(student_code, student_file_name)
 
                 writer.write(json.dumps(start_response).encode())
 
