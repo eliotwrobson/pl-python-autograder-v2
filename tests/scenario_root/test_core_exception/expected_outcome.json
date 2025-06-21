@@ -1,9 +1,9 @@
 {
   "expected_passed_count": 0,
-  "expected_failed_count": 1,
+  "expected_failed_count": 2,
   "expected_errors_count": 3,
   "expected_data_object": {
-    "score": 0.2,
+    "score": 0.4,
     "tests": [
       {
         "max_points": 2,
@@ -32,6 +32,12 @@
         "name": "test_exception",
         "points": 0.0,
         "test_id": "test_core_exception.py::test_core_exception[student_code_exit]"
+      },
+      {
+        "max_points": 2,
+        "name": "test_exception",
+        "points": 0.1,
+        "test_id": "test_core_exception.py::test_core_exception[student_code_custom_class]"
       }
     ]
   }
