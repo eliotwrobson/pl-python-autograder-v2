@@ -60,12 +60,15 @@ class StudentFixture:
     trailing_file: Path
     student_code_file: Path
     student_socket: socket.socket | None
+    initialization_timeout: float
 
-    def __init__(self, file_names: StudentFiles) -> None:
+    def __init__(self, file_names: StudentFiles, *, initialization_timeout: float) -> None:
         self.leading_file = file_names.leading_file
         self.trailing_file = file_names.trailing_file
         self.student_code_file = file_names.student_code_file
+        self.initialization_timeout = initialization_timeout
 
+        # Initialize the process and socket to None
         self.process = None
         self.student_socket = None
 
@@ -97,16 +100,19 @@ class StudentFixture:
             student_code += os.linesep
             student_code += self.trailing_file.read_text(encoding="utf-8")
 
+        # TODO make this a shared type
         json_message = {
             "type": "start",
             "student_code": student_code,
             "student_file_name": str(self.student_code_file),
+            "initialization_timeout": self.initialization_timeout,
         }
 
         line = self.process.stdout.readline().decode()  # Read the initial output from the process to ensure it's ready
         host, port = line.strip().split(",")
 
         self.student_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.student_socket.settimeout(self.initialization_timeout)
         self.student_socket.connect((host, int(port)))
 
         self.student_socket.sendall(json.dumps(json_message).encode("utf-8") + os.linesep.encode("utf-8"))

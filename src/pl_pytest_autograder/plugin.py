@@ -60,7 +60,18 @@ def data_json(request: pytest.FixtureRequest) -> dict[str, Any]:
 # TODO maybe change to the module scope??
 @pytest.fixture
 def sandbox(request: pytest.FixtureRequest) -> Iterable[StudentFixture]:
-    fixture = StudentFixture(request.param)
+    # Default timeout TODO make this a command line option?
+    initialization_timeout = 1
+
+    # Check for the custom mark
+    marker = request.node.get_closest_marker("sandbox_timeout")
+    if marker:
+        # Markers can have positional arguments (args) or keyword arguments (kwargs)
+        # We'll assume the timeout is the first positional argument
+        if marker.args:
+            initialization_timeout = marker.args[0]
+
+    fixture = StudentFixture(request.param, initialization_timeout=initialization_timeout)
 
     try:
         response = fixture.start_student_code_server()
@@ -259,6 +270,9 @@ def pytest_configure(config: Config) -> None:
     # bs = config._benchmarksession = BenchmarkSession(config)
     # bs.handle_loading()
     # config.pluginmanager.register(bs, "pytest-benchmark")
+
+    # Add a marker for the sandbox fixture to set the initialization timeout
+    config.addinivalue_line("markers", "sandbox_timeout(timeout_value): sets a timeout for the sandbox fixture")
 
     # Only register our plugin if it hasn't been already (e.g., in case of multiple conftests)
     if not hasattr(config, "my_result_collector_plugin"):

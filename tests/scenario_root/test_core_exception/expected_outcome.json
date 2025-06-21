@@ -1,7 +1,7 @@
 {
   "expected_passed_count": 0,
   "expected_failed_count": 1,
-  "expected_errors_count": 2,
+  "expected_errors_count": 3,
   "expected_data_object": {
     "score": 0.2,
     "tests": [
@@ -10,7 +10,7 @@
         "message": "Student code execution failed with an exception: division by zero",
         "name": "test_exception",
         "points": 0.0,
-        "test_id": "test_core_exception.py::test_core_exception[student_code]"
+        "test_id": "test_core_exception.py::test_core_exception[student_code_exception]"
       },
       {
         "max_points": 2,
@@ -25,6 +25,13 @@
         "name": "test_exception",
         "points": 0.1,
         "test_id": "test_core_exception.py::test_core_exception[student_code_wrong_var]"
+      },
+      {
+        "max_points": 2,
+        "message": "Failed: no response from initialization",
+        "name": "test_exception",
+        "points": 0.0,
+        "test_id": "test_core_exception.py::test_core_exception[student_code_exit]"
       }
     ]
   }

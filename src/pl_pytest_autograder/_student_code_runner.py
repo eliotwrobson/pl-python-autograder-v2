@@ -143,10 +143,11 @@ async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWrit
                 # variables into the student_code_vars dictionary
                 student_code = json_message["student_code"]
                 student_file_name = json_message.get("student_file_name")
+                initialization_timeout = json_message["initialization_timeout"]
 
                 populate_linecache(student_code, student_file_name)
 
-                student_code_vars, start_response = await student_code_runner(student_code, student_file_name, TIMEOUT)
+                student_code_vars, start_response = await student_code_runner(student_code, student_file_name, initialization_timeout)
 
                 writer.write(json.dumps(start_response).encode())
 
