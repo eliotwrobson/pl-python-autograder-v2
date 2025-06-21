@@ -617,11 +617,28 @@ QueryStatusCode = Literal["success", "not_found"]
 FunctionStatusCode = Literal["success", "exception", "timeout", "not_found"]
 ProcessStatusCode = Literal["success", "exception", "timeout", "no_response"]
 
+# TODO use some inheritance on the query and response types
+
+
+# Variable query dict types
+class StudentQueryRequest(TypedDict):
+    message_type: Literal["query"]
+    var: str
+    query_timeout: float
+
 
 class StudentQueryResponse(TypedDict):
     # This is meant to be deserialized into a Python object
     status: QueryStatusCode
     value: Any
+
+
+# Function query dict types
+class StudentFunctionRequest(TypedDict):
+    message_type: Literal["query_function"]
+    function_name: str
+    args_encoded: str  # TODO add a stronger type for the input/output of the serialized function
+    kwargs_encoded: str
 
 
 class StudentFunctionResponse(TypedDict):
@@ -635,12 +652,14 @@ class StudentFunctionResponse(TypedDict):
     traceback: str | None
 
 
-# class ProcessStartRequest(TypedDict):
+# Process start dict types
 
-#             "type": "start",
-#             "student_code": student_code,
-#             "student_file_name": str(self.student_code_file),
-#             "initialization_timeout": initialization_timeout,
+
+class ProcessStartRequest(TypedDict):
+    message_type: Literal["start"]
+    student_code: str
+    student_file_name: str
+    initialization_timeout: float
 
 
 class ProcessStartResponse(TypedDict):

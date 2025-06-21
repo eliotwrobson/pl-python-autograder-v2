@@ -10,11 +10,15 @@ from contextlib import redirect_stderr
 from contextlib import redirect_stdout
 from typing import Any
 
-from utils import ProcessStartResponse
-from utils import StudentFunctionResponse
-from utils import StudentQueryResponse
-
+# TODO make it so that other files in this package cannot import from this one
+# ask Gemini how to do it
 from pl_pytest_autograder.json_utils import to_json
+from pl_pytest_autograder.utils import ProcessStartRequest
+from pl_pytest_autograder.utils import ProcessStartResponse
+from pl_pytest_autograder.utils import StudentFunctionRequest
+from pl_pytest_autograder.utils import StudentFunctionResponse
+from pl_pytest_autograder.utils import StudentQueryRequest
+from pl_pytest_autograder.utils import StudentQueryResponse
 from pl_pytest_autograder.utils import deserialize_object_unsafe
 
 HOST = "127.0.0.1"  # Loopback address, means "this computer only"
@@ -40,7 +44,7 @@ def populate_linecache(contents: str, fname: str) -> None:
 
 
 async def student_function_runner(
-    student_code_vars: dict[str, Any], func_name: str, timeout: int, args_tup: Any, kwargs_dict: Any
+    student_code_vars: dict[str, Any], func_name: str, timeout: float, args_tup: Any, kwargs_dict: Any
 ) -> StudentFunctionResponse:
     stdout_capture = io.StringIO()
     stderr_capture = io.StringIO()
@@ -71,7 +75,7 @@ async def student_function_runner(
     return function_response
 
 
-async def student_code_runner(student_code: str, student_file_name: str, timeout: int) -> tuple[dict[str, Any], ProcessStartResponse]:
+async def student_code_runner(student_code: str, student_file_name: str, timeout: float) -> tuple[dict[str, Any], ProcessStartResponse]:
     stdout_capture = io.StringIO()
     stderr_capture = io.StringIO()
     execution_error = None
@@ -137,13 +141,14 @@ async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWrit
 
             json_message = json.loads(line)
 
-            msg_type = json_message.get("type")
+            msg_type = json_message.get("message_type")
             if msg_type == "start":
+                start_json_message: ProcessStartRequest = json_message
                 # Execute the student code for the first time and load
                 # variables into the student_code_vars dictionary
-                student_code = json_message["student_code"]
-                student_file_name = json_message.get("student_file_name")
-                initialization_timeout = json_message["initialization_timeout"]
+                student_code = start_json_message["student_code"]
+                student_file_name = start_json_message["student_file_name"]
+                initialization_timeout = start_json_message["initialization_timeout"]
 
                 populate_linecache(student_code, student_file_name)
 
@@ -153,7 +158,9 @@ async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWrit
 
             elif msg_type == "query":
                 assert student_code_vars is not None
-                var_to_query = json_message["var"]
+                query_json_message: StudentQueryRequest = json_message
+
+                var_to_query = query_json_message["var"]
 
                 # Check if the variable exists in the student_code_vars
                 if var_to_query in student_code_vars:
@@ -165,9 +172,11 @@ async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWrit
 
             elif msg_type == "query_function":
                 assert student_code_vars is not None
-                func_name = json_message["function_name"]
-                args = deserialize_object_unsafe(json_message["args_encoded"])
-                kwargs = deserialize_object_unsafe(json_message["kwargs_encoded"])
+                query_function_json_message: StudentFunctionRequest = json_message
+
+                func_name = query_function_json_message["function_name"]
+                args = deserialize_object_unsafe(query_function_json_message["args_encoded"])
+                kwargs = deserialize_object_unsafe(query_function_json_message["kwargs_encoded"])
 
                 function_response = await student_function_runner(student_code_vars, func_name, TIMEOUT, args, kwargs)
 

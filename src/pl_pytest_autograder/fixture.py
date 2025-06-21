@@ -9,8 +9,11 @@ from typing import Any
 from typing import NamedTuple
 
 from .json_utils import from_json
+from .utils import ProcessStartRequest
 from .utils import ProcessStartResponse
+from .utils import StudentFunctionRequest
 from .utils import StudentFunctionResponse
+from .utils import StudentQueryRequest
 from .utils import StudentQueryResponse
 from .utils import serialize_object_unsafe
 
@@ -104,8 +107,8 @@ class StudentFixture:
             student_code += self.trailing_file.read_text(encoding="utf-8")
 
         # TODO make this a shared type
-        json_message = {
-            "type": "start",
+        json_message: ProcessStartRequest = {
+            "message_type": "start",
             "student_code": student_code,
             "student_file_name": str(self.student_code_file),
             "initialization_timeout": initialization_timeout,
@@ -137,7 +140,7 @@ class StudentFixture:
     def query_raw(self, var_to_query: str, *, query_timeout: float = DEFAULT_TIMEOUT) -> StudentQueryResponse:
         self._assert_process_running()
 
-        json_message = {"type": "query", "var": var_to_query, "query_timeout": query_timeout}
+        json_message: StudentQueryRequest = {"message_type": "query", "var": var_to_query, "query_timeout": query_timeout}
 
         assert self.student_socket is not None
         self.student_socket.sendall(json.dumps(json_message).encode("utf-8") + os.linesep.encode("utf-8"))
@@ -162,8 +165,8 @@ class StudentFixture:
         """
         self._assert_process_running()
 
-        json_message = {
-            "type": "query_function",
+        json_message: StudentFunctionRequest = {
+            "message_type": "query_function",
             "function_name": function_name,
             "args_encoded": serialize_object_unsafe(args),
             "kwargs_encoded": serialize_object_unsafe(kwargs),
