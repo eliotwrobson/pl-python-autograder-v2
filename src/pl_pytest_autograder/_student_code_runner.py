@@ -22,7 +22,6 @@ from pl_pytest_autograder.utils import StudentQueryResponse
 from pl_pytest_autograder.utils import deserialize_object_unsafe
 
 HOST = "127.0.0.1"  # Loopback address, means "this computer only"
-TIMEOUT = 1  # Default timeout for student code execution in seconds
 
 # Global ThreadPoolExecutor for CPU-bound tasks
 # It's good practice to create this once and reuse it.
@@ -53,11 +52,13 @@ async def student_function_runner(
     result = None
 
     try:
-        student_function = student_code_vars[func_name]
+
+        def student_function_temp() -> Any:
+            student_function = student_code_vars[func_name]
+            return student_function(*args_tup, **kwargs_dict)
+
         with redirect_stdout(stdout_capture), redirect_stderr(stderr_capture):
-            result = await asyncio.wait_for(
-                asyncio.get_event_loop().run_in_executor(executor, student_function, *args_tup, **kwargs_dict), timeout=timeout
-            )
+            result = await asyncio.wait_for(asyncio.get_event_loop().run_in_executor(executor, student_function_temp), timeout=timeout)
     except Exception as e:
         execution_error = e
         exception_traceback = traceback.format_exc()
@@ -177,8 +178,9 @@ async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWrit
                 func_name = query_function_json_message["function_name"]
                 args = deserialize_object_unsafe(query_function_json_message["args_encoded"])
                 kwargs = deserialize_object_unsafe(query_function_json_message["kwargs_encoded"])
+                query_timeout = query_function_json_message["query_timeout"]
 
-                function_response = await student_function_runner(student_code_vars, func_name, TIMEOUT, args, kwargs)
+                function_response = await student_function_runner(student_code_vars, func_name, query_timeout, args, kwargs)
 
                 writer.write(json.dumps(function_response).encode())
 

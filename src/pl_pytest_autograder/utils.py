@@ -639,6 +639,7 @@ class StudentFunctionRequest(TypedDict):
     function_name: str
     args_encoded: str  # TODO add a stronger type for the input/output of the serialized function
     kwargs_encoded: str
+    query_timeout: float
 
 
 class StudentFunctionResponse(TypedDict):

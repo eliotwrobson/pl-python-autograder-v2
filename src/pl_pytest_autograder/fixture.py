@@ -159,7 +159,7 @@ class StudentFixture:
 
         return from_json(response["value"])
 
-    def query_function_raw(self, function_name: str, *args, **kwargs) -> StudentFunctionResponse:
+    def query_function_raw(self, function_name: str, *args, query_timeout: float = DEFAULT_TIMEOUT, **kwargs) -> StudentFunctionResponse:
         """
         TODO add query timeout keyword only argument
         """
@@ -170,19 +170,20 @@ class StudentFixture:
             "function_name": function_name,
             "args_encoded": serialize_object_unsafe(args),
             "kwargs_encoded": serialize_object_unsafe(kwargs),
+            "query_timeout": query_timeout,
         }
 
         self.student_socket.sendall(json.dumps(json_message).encode("utf-8") + os.linesep.encode("utf-8"))
-
+        self.student_socket.settimeout(query_timeout)
         data: StudentFunctionResponse = json.loads(self.student_socket.recv(BUFFSIZE).decode())
 
         return data
 
-    def query_function(self, function_name: str, *args, **kwargs) -> Any:
+    def query_function(self, function_name: str, *args, query_timeout: float = DEFAULT_TIMEOUT, **kwargs) -> Any:
         """
         Queries a function from the student code and returns its return value.
         """
-        response = self.query_function_raw(function_name, *args, **kwargs)
+        response = self.query_function_raw(function_name, *args, query_timeout=query_timeout, **kwargs)
         assert response["status"] == "success", f"Query for function {function_name} failed: {response['exception_message']}"
 
         return from_json(response["value"])
