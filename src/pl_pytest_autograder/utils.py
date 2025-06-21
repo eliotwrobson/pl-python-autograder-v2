@@ -635,6 +635,14 @@ class StudentFunctionResponse(TypedDict):
     traceback: str | None
 
 
+# class ProcessStartRequest(TypedDict):
+
+#             "type": "start",
+#             "student_code": student_code,
+#             "student_file_name": str(self.student_code_file),
+#             "initialization_timeout": initialization_timeout,
+
+
 class ProcessStartResponse(TypedDict):
     status: ProcessStatusCode
     stdout: str

@@ -18,6 +18,7 @@ DataFixture = dict[str, Any]
 
 SCRIPT_PATH = str(files("pl_pytest_autograder").joinpath("_student_code_runner.py"))
 BUFFSIZE = 4096
+DEFAULT_TIMEOUT = 1.0
 
 
 class StudentFiles(NamedTuple):
@@ -60,19 +61,21 @@ class StudentFixture:
     trailing_file: Path
     student_code_file: Path
     student_socket: socket.socket | None
-    initialization_timeout: float
 
-    def __init__(self, file_names: StudentFiles, *, initialization_timeout: float) -> None:
+    def __init__(self, file_names: StudentFiles) -> None:
         self.leading_file = file_names.leading_file
         self.trailing_file = file_names.trailing_file
         self.student_code_file = file_names.student_code_file
-        self.initialization_timeout = initialization_timeout
 
         # Initialize the process and socket to None
         self.process = None
         self.student_socket = None
 
     def _assert_process_running(self) -> None:
+        """
+        TODO make the type of this a typeguard for process and socket
+        """
+
         if self.process is None:
             raise RuntimeError("Student code server process is not running. Please start it first.")
 
@@ -80,7 +83,7 @@ class StudentFixture:
         if process_return_code is not None:
             raise RuntimeError(f"Student code server process terminated with code {process_return_code}.")
 
-    def start_student_code_server(self) -> ProcessStartResponse:
+    def start_student_code_server(self, *, initialization_timeout: float = DEFAULT_TIMEOUT) -> ProcessStartResponse:
         self.process = subprocess.Popen(
             [sys.executable, SCRIPT_PATH], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE
         )
@@ -105,14 +108,14 @@ class StudentFixture:
             "type": "start",
             "student_code": student_code,
             "student_file_name": str(self.student_code_file),
-            "initialization_timeout": self.initialization_timeout,
+            "initialization_timeout": initialization_timeout,
         }
 
         line = self.process.stdout.readline().decode()  # Read the initial output from the process to ensure it's ready
         host, port = line.strip().split(",")
 
         self.student_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.student_socket.settimeout(self.initialization_timeout)
+        self.student_socket.settimeout(initialization_timeout)
         self.student_socket.connect((host, int(port)))
 
         self.student_socket.sendall(json.dumps(json_message).encode("utf-8") + os.linesep.encode("utf-8"))
@@ -131,30 +134,32 @@ class StudentFixture:
 
         return res
 
-    def query_raw(self, var_to_query: str) -> StudentQueryResponse:
+    def query_raw(self, var_to_query: str, *, query_timeout: float = DEFAULT_TIMEOUT) -> StudentQueryResponse:
         self._assert_process_running()
 
-        json_message = {
-            "type": "query",
-            "var": var_to_query,
-        }
+        json_message = {"type": "query", "var": var_to_query, "query_timeout": query_timeout}
 
+        assert self.student_socket is not None
         self.student_socket.sendall(json.dumps(json_message).encode("utf-8") + os.linesep.encode("utf-8"))
+        self.student_socket.settimeout(query_timeout)
         data: StudentQueryResponse = json.loads(self.student_socket.recv(BUFFSIZE).decode())
 
         return data
 
-    def query(self, var_to_query: str) -> Any:
+    def query(self, var_to_query: str, *, query_timeout: float = DEFAULT_TIMEOUT) -> Any:
         """
         Queries a variable from the student code and returns its value.
         """
-        response = self.query_raw(var_to_query)
+        response = self.query_raw(var_to_query, query_timeout=query_timeout)
 
         assert response["status"] == "success", f"Query for '{var_to_query}' failed"
 
         return from_json(response["value"])
 
     def query_function_raw(self, function_name: str, *args, **kwargs) -> StudentFunctionResponse:
+        """
+        TODO add query timeout keyword only argument
+        """
         self._assert_process_running()
 
         json_message = {

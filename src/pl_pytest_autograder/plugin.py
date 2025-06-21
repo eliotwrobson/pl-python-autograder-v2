@@ -71,10 +71,10 @@ def sandbox(request: pytest.FixtureRequest) -> Iterable[StudentFixture]:
         if marker.args:
             initialization_timeout = marker.args[0]
 
-    fixture = StudentFixture(request.param, initialization_timeout=initialization_timeout)
+    fixture = StudentFixture(request.param)
 
     try:
-        response = fixture.start_student_code_server()
+        response = fixture.start_student_code_server(initialization_timeout=initialization_timeout)
         response_status = response["status"]
 
         if response_status == "exception":
@@ -87,7 +87,7 @@ def sandbox(request: pytest.FixtureRequest) -> Iterable[StudentFixture]:
 
         elif response_status == "no_response":
             # Don't get the exception message since there usually isn't one for timeouts
-            pytest.fail("No response from initialization", pytrace=False)
+            pytest.fail(f"No response from initialization with timeout {initialization_timeout}", pytrace=False)
 
         assert response_status == "success", f"Unexpected status from student code server: {response_status}"
 
@@ -272,7 +272,7 @@ def pytest_configure(config: Config) -> None:
     # config.pluginmanager.register(bs, "pytest-benchmark")
 
     # Add a marker for the sandbox fixture to set the initialization timeout
-    config.addinivalue_line("markers", "sandbox_timeout(timeout_value): sets a timeout for the sandbox fixture")
+    config.addinivalue_line("markers", "sandbox_timeout(timeout_value): sets a timeout for initialization of the sandbox fixture")
 
     # Only register our plugin if it hasn't been already (e.g., in case of multiple conftests)
     if not hasattr(config, "my_result_collector_plugin"):
