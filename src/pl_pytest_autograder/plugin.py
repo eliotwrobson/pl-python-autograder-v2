@@ -8,8 +8,10 @@ from typing import Any
 
 import _pytest
 import _pytest.reports
+import _pytest.terminal
 import pytest
 from _pytest.config import Config
+from prettytable import PrettyTable
 
 from .fixture import FeedbackFixture
 from .fixture import StudentFiles
@@ -414,7 +416,10 @@ class MyResultCollectorPlugin:
             "tests": final_results,
         }
 
+        print_autograder_summary(session, final_results)
+
         # Example: Save to a JSON file
+        # TODO make this configurable via command line options
         output_path = session.config.rootpath / "autograder_results.json"
         with open(output_path, "w") as f:
             json.dump(res_dict, f, indent=4, sort_keys=True)
@@ -431,3 +436,98 @@ class MyResultCollectorPlugin:
         #     ...
         #   ]
         # }
+
+
+def print_autograder_summary(session: pytest.Session, test_results: list[dict[str, Any]]) -> None:
+    """
+    Print a summary of the autograder results in a formatted table.
+    This function is called at the end of the test session to display
+    the results in a readable format.
+    """
+    if not session.config.pluginmanager.hasplugin("terminalreporter"):
+        print("Terminal reporter plugin not found. Cannot print autograder summary.")
+        return
+
+    # Get the terminal reporter and its writer
+    reporter: _pytest.terminal.TerminalReporter = session.config.pluginmanager.getplugin("terminalreporter")
+    writer = reporter._tw  # Access the internal TerminalWriter instance
+
+    if not test_results:
+        writer.line("No tests were run or no results collected.")
+        return
+
+    # Create a PrettyTable instance
+    table = PrettyTable()
+    table_headers = ["Test Name", "Score", "Feedback"]
+    table.field_names = table_headers
+
+    # Set alignment for columns
+    table.align["Test Name"] = "l"
+    table.align["Score"] = "c"
+    table.align["Feedback"] = "l"
+
+    # Add data rows
+    for result in test_results:
+        table.add_row([result["test_id"], result["points"], result["message"]])
+
+    # Calculate total score
+    total_score = sum(result["points"] for result in test_results)
+    max_score = len(test_results)
+
+    # Add total score row
+    table.add_row(["Total Score", f"{total_score}/{max_score}", ""])
+
+    # Set table style (optional, but 'grid' is similar to previous tabulate output)
+    # You can experiment with other styles like:
+    # table.set_style(MARKDOWN)
+    # table.set_style(SINGLE_BORDER)
+    # table.set_style(DOUBLE_BORDER)
+    # For a grid-like appearance, PrettyTable's default is quite good,
+    # or you can explicitly set it to something like:
+    # from prettytable import MSWORD_FRIENDLY, PLAIN_COLUMNS, ORGMODE
+    # table.set_style(MSWORD_FRIENDLY)
+
+    # Try to make the table fit the terminal width
+    # PrettyTable's get_string method has a 'max_width' parameter for columns
+    # We distribute the available width among the columns.
+    terminal_width = writer.fullwidth
+
+    # Estimate average column width, subtracting for borders and padding
+    # This is a heuristic, PrettyTable will adjust
+    num_columns = len(table_headers)
+    estimated_col_width = (terminal_width // num_columns) - 4  # Subtract for borders/padding
+
+    # Set max_width for each column to attempt fitting
+    # PrettyTable will wrap text if it exceeds max_width
+    for field in table.field_names:
+        table.max_width[field] = estimated_col_width
+
+    # Generate the table string
+    # prettytable's get_string() will automatically handle column width adjustments
+    # and wrapping based on max_width and terminal size.
+    table_string = table.get_string()
+
+    # Get the width of the generated table from the first line
+    # Prettytable's output includes the borders, so this should be accurate.
+    table_width = len(table_string.splitlines()[0])
+
+    # Print the autograder summary as a centered header above the table
+    summary_title = "Autograder Summary"
+    # Calculate padding for centering. Subtract 2 for the outer '+' characters.
+    # If the title is longer than the table width, just print it without centering.
+    if table_width > len(summary_title) + 2:
+        padding_left = (table_width - len(summary_title) - 2) // 2
+        padding_right = (table_width - len(summary_title) - 2) - padding_left
+        header_line = f"+{'=' * padding_left} {summary_title} {'=' * padding_right}+"
+    else:
+        # Fallback if the table is very narrow
+        header_line = f"+{summary_title.center(table_width - 2)}+"
+
+    writer.line("\n")  # Add a newline before the custom header
+    writer.line(header_line, bold=True)
+
+    # Print the generated table using the TerminalWriter
+    for line in table_string.splitlines():
+        writer.line(line)
+
+    writer.write(f"\nFinal Grade: {total_score}/{max_score}\n", bold=True)
