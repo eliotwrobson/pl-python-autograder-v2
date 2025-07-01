@@ -1,17 +1,11 @@
 import argparse
-from functools import partial
 
 from _pytest import pathlib
-from _pytest._io import TerminalWriter
-from _pytest.config import Config
 from _pytest.config.findpaths import locate_config
 
 from . import plugin
 from .logger import Logger
 from .plugin import add_csv_options
-from .table import TableResults
-from .utils import NAME_FORMATTERS
-from .utils import report_noprogress
 
 COMPARE_HELP = """examples:
 
@@ -133,54 +127,9 @@ def main():
         for file in storage.query():
             print(file)
     elif args.command == "compare":
-        results_table = TableResults(
-            columns=args.columns,
-            sort=args.sort,
-            histogram=first_or_value(args.histogram, False),
-            name_format=NAME_FORMATTERS[args.name],
-            logger=logger,
-            scale_unit=partial(
-                hook.pytest_benchmark_scale_unit,
-                config=Config.fromdictargs({"benchmark_time_unit": args.time_unit}, []),
-            ),
-        )
-        groups = hook.pytest_benchmark_group_stats(
-            benchmarks=storage.load_benchmarks(*args.glob_or_file),
-            group_by=args.group_by,
-            config=None,
-        )
-        results_table.display(TerminalReporter(), groups, progress_reporter=report_noprogress)
+        pass
 
     elif args.command is None:
         parser.error("missing command (available commands: {})".format(", ".join(map(repr, parser.commands.choices))))
     else:
         parser.error(f"unexpected command {args.command!r}")
-
-
-class TerminalReporter:
-    def __init__(self):
-        self._tw = TerminalWriter()
-
-    def ensure_newline(self):
-        pass
-
-    def write(self, content, **markup):
-        self._tw.write(content, **markup)
-
-    def write_line(self, line, **markup):
-        if not isinstance(line, str):
-            line = line.decode(errors="replace")
-        self._tw.line(line, **markup)
-
-    def rewrite(self, line, **markup):
-        line = str(line)
-        self._tw.write("\r" + line, **markup)
-
-    def write_sep(self, sep, title=None, **markup):
-        self._tw.sep(sep, title, **markup)
-
-    def section(self, title, sep="=", **kw):
-        self._tw.sep(sep, title, **kw)
-
-    def line(self, msg, **kw):
-        self._tw.line(msg, **kw)
