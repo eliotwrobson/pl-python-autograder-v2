@@ -75,7 +75,7 @@ def test_autograder_scenario_with_pytester(pytester: pytest.Pytester, scenario_d
                 pytester.path.joinpath(new_file_name).write_text(item.read_text())  # Copy the file content
             elif item.name == "expected_outcome.json":
                 expected_outcome_dict = json.loads(item.read_text())
-            else:
+            elif item.name != "__init__.py":  # Ignore __init__.py files
                 pytester_scenario_dir.joinpath(item.name).write_text(item.read_text())  # Copy the file content
                 print(f"Copied '{item.name}' to pytester's testdir.")
         elif item.is_dir():
