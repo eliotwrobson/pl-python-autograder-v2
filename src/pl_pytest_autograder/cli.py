@@ -4,7 +4,6 @@ from _pytest import pathlib
 from _pytest.config.findpaths import locate_config
 
 from . import plugin
-from .logger import Logger
 from .plugin import add_csv_options
 
 COMPARE_HELP = """examples:
@@ -115,10 +114,6 @@ class HookDispatch:
 def main():
     parser = make_parser()
     args = parser.parse_args()
-    level = Logger.QUIET if args.quiet else Logger.NORMAL
-    if args.verbose:
-        level = Logger.VERBOSE
-    logger = Logger(level)
     storage = None
 
     hook = HookDispatch(mode=args.importmode, root=pathlib.Path("."))

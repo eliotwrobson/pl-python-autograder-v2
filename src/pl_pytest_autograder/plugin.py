@@ -16,7 +16,6 @@ from prettytable import PrettyTable
 from .fixture import FeedbackFixture
 from .fixture import StudentFiles
 from .fixture import StudentFixture
-from .utils import get_current_time
 
 
 def get_datadir(test_module: ModuleType) -> Path | None:
@@ -158,16 +157,17 @@ def pytest_report_header(config):
 
 
 def add_csv_options(addoption, prefix="benchmark-"):
-    filename_prefix = f"benchmark_{get_current_time()}"
-    addoption(
-        f"--{prefix}csv",
-        action="append",
-        metavar="FILENAME",
-        nargs="?",
-        default=[],
-        const=filename_prefix,
-        help=f"Save a csv report. If FILENAME contains slashes ('/') then directories will be created. Default: {filename_prefix!r}",
-    )
+    pass
+    # filename_prefix = f"benchmark_{}"
+    # addoption(
+    #     f"--{prefix}csv",
+    #     action="append",
+    #     metavar="FILENAME",
+    #     nargs="?",
+    #     default=[],
+    #     const=filename_prefix,
+    #     help=f"Save a csv report. If FILENAME contains slashes ('/') then directories will be created. Default: {filename_prefix!r}",
+    # )
 
 
 def pytest_addoption(parser):
