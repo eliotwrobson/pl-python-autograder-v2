@@ -67,9 +67,3 @@ pl_pytest_autograder = "pl_pytest_autograder.plugin"
 
 [project.scripts]
 pl-pytest-autograder = "pl_pytest_autograder.cli:main"
-
-
-[tool.mypy]
-# TODO this exclude is just because the files all have the same name, but can
-# probably be removed
-exclude = ["scenario.py"]
