@@ -1,5 +1,6 @@
 {
   "params": {
+    "import_whitelist": [],
     "pairs": [
       { "input": "hamster", "output": "herring" },
       { "input": "ministry", "output": "quest" },
