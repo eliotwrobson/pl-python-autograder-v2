@@ -1,4 +1,5 @@
 import base64
+import builtins
 from typing import Any
 from typing import Literal
 from typing import TypedDict
@@ -102,3 +103,103 @@ def deserialize_object_unsafe(base64_string: str) -> object:
 
     # 3. Deserialize the object using dill
     return dill.loads(dilled_bytes)
+
+
+def get_safe_builtins() -> dict[str, Any]:
+    """
+    Returns a dictionary of safe built-in functions and exceptions.
+    This is used to restrict the built-ins available in the student code execution environment.
+    From https://github.com/zopefoundation/RestrictedPython/blob/master/src/RestrictedPython/Guards.py
+    """
+    safe_builtins = {}
+
+    _safe_names = [
+        "__build_class__",
+        "None",
+        "False",
+        "True",
+        "abs",
+        "bool",
+        "bytes",
+        "callable",
+        "chr",
+        "complex",
+        "divmod",
+        "float",
+        "hash",
+        "hex",
+        "id",
+        "int",
+        "isinstance",
+        "issubclass",
+        "len",
+        "oct",
+        "ord",
+        "pow",
+        "range",
+        "repr",
+        "round",
+        "slice",
+        "sorted",
+        "str",
+        "tuple",
+        "zip",
+    ]
+
+    _safe_exceptions = [
+        "ArithmeticError",
+        "AssertionError",
+        "AttributeError",
+        "BaseException",
+        "BufferError",
+        "BytesWarning",
+        "DeprecationWarning",
+        "EOFError",
+        "EnvironmentError",
+        "Exception",
+        "FloatingPointError",
+        "FutureWarning",
+        "GeneratorExit",
+        "IOError",
+        "ImportError",
+        "ImportWarning",
+        "IndentationError",
+        "IndexError",
+        "KeyError",
+        "KeyboardInterrupt",
+        "LookupError",
+        "MemoryError",
+        "NameError",
+        "NotImplementedError",
+        "OSError",
+        "OverflowError",
+        "PendingDeprecationWarning",
+        "ReferenceError",
+        "RuntimeError",
+        "RuntimeWarning",
+        "StopIteration",
+        "SyntaxError",
+        "SyntaxWarning",
+        "SystemError",
+        "SystemExit",
+        "TabError",
+        "TypeError",
+        "UnboundLocalError",
+        "UnicodeDecodeError",
+        "UnicodeEncodeError",
+        "UnicodeError",
+        "UnicodeTranslateError",
+        "UnicodeWarning",
+        "UserWarning",
+        "ValueError",
+        "Warning",
+        "ZeroDivisionError",
+    ]
+
+    for name in _safe_names:
+        safe_builtins[name] = getattr(builtins, name)
+
+    for name in _safe_exceptions:
+        safe_builtins[name] = getattr(builtins, name)
+
+    return safe_builtins

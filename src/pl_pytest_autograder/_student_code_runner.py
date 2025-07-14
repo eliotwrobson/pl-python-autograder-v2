@@ -24,6 +24,7 @@ from pl_pytest_autograder.utils import StudentFunctionResponse
 from pl_pytest_autograder.utils import StudentQueryRequest
 from pl_pytest_autograder.utils import StudentQueryResponse
 from pl_pytest_autograder.utils import deserialize_object_unsafe
+from pl_pytest_autograder.utils import get_safe_builtins
 
 ImportFunction = Callable[[str, Mapping[str, object] | None, Mapping[str, object] | None, Sequence[str], int], types.ModuleType]
 
@@ -122,7 +123,10 @@ async def student_code_runner(
     exception_traceback = None
     student_code_vars: dict[str, Any] = {}
 
-    student_code_vars["__builtins__"] = {"__import__": get_custom_importer(import_whitelist, import_blacklist)}
+    student_code_vars = {"__builtins__": get_safe_builtins()}
+
+    student_code_vars["__builtins__"]["__name__"] = "__main__"  # Set __name__ to "__main__" to mimic the main module
+    student_code_vars["__builtins__"]["__import__"] = get_custom_importer(import_whitelist, import_blacklist)
 
     try:
         # First, compile student code. Make sure to handle errors in this later
