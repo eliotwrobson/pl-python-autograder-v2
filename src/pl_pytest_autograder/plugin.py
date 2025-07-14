@@ -407,6 +407,11 @@ class MyResultCollectorPlugin:
             res_obj["name"] = grading_data.get("name", nodeid)
             res_obj["max_points"] = grading_data.get("points", 1)
 
+            if report.when in ["setup", "teardown"] and report.outcome == "failed":
+                res_obj["outcome"] = "error"
+            else:
+                res_obj["outcome"] = outcome
+
             if outcome == "passed":
                 res_obj["points"] = 1.0
 

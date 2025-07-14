@@ -1,7 +1,4 @@
 {
-  "expected_passed_count": 0,
-  "expected_failed_count": 2,
-  "expected_errors_count": 3,
   "expected_data_object": {
     "score": 0.4,
     "tests": [
@@ -10,34 +7,39 @@
         "message": "Student code execution failed with an exception: division by zero",
         "name": "test_exception",
         "points": 0.0,
-        "test_id": "test_core_exception.py::test_core_exception[student_code_exception]"
+        "test_id": "test_core_exception.py::test_core_exception[student_code_exception]",
+        "outcome": "error"
       },
       {
         "max_points": 2,
         "message": "Student code initialization timed out",
         "name": "test_exception",
         "points": 0.0,
-        "test_id": "test_core_exception.py::test_core_exception[student_code_timeout]"
+        "test_id": "test_core_exception.py::test_core_exception[student_code_timeout]",
+        "outcome": "error"
       },
       {
         "max_points": 2,
         "message": "Query for 'x' failed",
         "name": "test_exception",
         "points": 0.1,
-        "test_id": "test_core_exception.py::test_core_exception[student_code_wrong_var]"
+        "test_id": "test_core_exception.py::test_core_exception[student_code_wrong_var]",
+        "outcome": "failed"
       },
       {
         "max_points": 2,
         "message": "Failed: no response from initialization",
         "name": "test_exception",
         "points": 0.0,
-        "test_id": "test_core_exception.py::test_core_exception[student_code_exit]"
+        "test_id": "test_core_exception.py::test_core_exception[student_code_exit]",
+        "outcome": "error"
       },
       {
         "max_points": 2,
         "name": "test_exception",
         "points": 0.1,
-        "test_id": "test_core_exception.py::test_core_exception[student_code_custom_class]"
+        "test_id": "test_core_exception.py::test_core_exception[student_code_custom_class]",
+        "outcome": "failed"
       }
     ]
   }

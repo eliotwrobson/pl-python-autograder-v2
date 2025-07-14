@@ -1,5 +1,6 @@
 import math
 import platform
+from collections import defaultdict
 from pathlib import Path
 
 import pytest
@@ -15,6 +16,13 @@ SCENARIO_ROOT = Path(__file__).parent / "scenario_root"
 # The file you want to copy into each scenario directory.
 # This could be your autograder's conftest.py, or a specific test file.
 # FILE_TO_COPY = Path(__file__).parent / "scenario_root" / "scenario.py"
+
+CONVERSION_DICT = {
+    "error": "errors",
+    "passed": "passed",
+    "failed": "failed",
+    "skipped": "skipped",
+}
 
 
 # --- Helper Functions ---
@@ -86,19 +94,6 @@ def test_autograder_scenario_with_pytester(pytester: pytest.Pytester, scenario_d
 
     # You can pass additional arguments to pytest here, e.g., '-s' for print statements
     result = pytester.runpytest("-v", new_file_name)
-    # print(result.stdout)
-    # print_file_structure(pytester.path)
-    # exit()
-    # 3. Assert on the pytest outcome
-    # pytester.assert_outcomes() provides a convenient way to check the results.
-    # It takes keyword arguments for the expected number of passed, failed, skipped, etc. tests.
-    #
-    # For a scenario where student code is expected to pass:
-    result.assert_outcomes(
-        passed=expected_outcome_dict.get("expected_passed_count", 0),
-        failed=expected_outcome_dict.get("expected_failed_count", 0),
-        errors=expected_outcome_dict.get("expected_errors_count", 0),
-    )
 
     results_obj = json.loads((pytester.path / "autograder_results.json").read_text())
 
@@ -114,6 +109,8 @@ def test_autograder_scenario_with_pytester(pytester: pytest.Pytester, scenario_d
 
     assert math.isclose(expected_data_obj["score"], results_obj["score"])
 
+    outcome_dict = defaultdict(int)
+
     # TODO add tests for the tests object
     test_results_obj = {test_result["test_id"]: test_result for test_result in results_obj["tests"]}
     for expected_test in expected_data_obj["tests"]:
@@ -124,6 +121,10 @@ def test_autograder_scenario_with_pytester(pytester: pytest.Pytester, scenario_d
         # assert actual_test["message"] == expected_test["message"], f"Message mismatch for test '{test_id}'."
         assert actual_test["max_points"] == expected_test["max_points"], f"Max points mismatch for test '{test_id}'."
         assert math.isclose(expected_test["points"], actual_test["points"]), f"Points mismatch for test '{test_id}'."
+        assert actual_test["outcome"] == expected_test["outcome"], f"Outcome mismatch for test '{test_id}'."
+        outcome_dict[CONVERSION_DICT[actual_test["outcome"]]] += 1
+
+    result.assert_outcomes(**outcome_dict)
 
     # For a scenario where student code is expected to fail:
     # result.assert_outcomes(failed=1, passed=1) # If one test fails and one passes
