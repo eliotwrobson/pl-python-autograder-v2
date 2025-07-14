@@ -53,6 +53,8 @@ class ProcessStartRequest(TypedDict):
     student_code: str
     student_file_name: str
     initialization_timeout: float
+    import_whitelist: list[str] | None
+    import_blacklist: list[str] | None
 
 
 class ProcessStartResponse(TypedDict):

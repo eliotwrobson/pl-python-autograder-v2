@@ -64,11 +64,16 @@ class StudentFixture:
     trailing_file: Path
     student_code_file: Path
     student_socket: socket.socket | None
+    import_whitelist: list[str] | None
+    import_blacklist: list[str] | None
 
-    def __init__(self, file_names: StudentFiles) -> None:
+    def __init__(self, file_names: StudentFiles, import_whitelist: list[str] | None, import_blacklist: list[str] | None) -> None:
         self.leading_file = file_names.leading_file
         self.trailing_file = file_names.trailing_file
         self.student_code_file = file_names.student_code_file
+
+        self.import_whitelist = import_whitelist
+        self.import_blacklist = import_blacklist
 
         # Initialize the process and socket to None
         self.process = None
@@ -112,6 +117,8 @@ class StudentFixture:
             "student_code": student_code,
             "student_file_name": str(self.student_code_file),
             "initialization_timeout": initialization_timeout,
+            "import_whitelist": self.import_whitelist,
+            "import_blacklist": self.import_blacklist,
         }
 
         line = self.process.stdout.readline().decode()  # Read the initial output from the process to ensure it's ready

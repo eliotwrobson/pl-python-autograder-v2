@@ -6,9 +6,13 @@ import linecache
 import os
 import sys
 import traceback
+import types
+from collections.abc import Mapping
+from collections.abc import Sequence
 from contextlib import redirect_stderr
 from contextlib import redirect_stdout
 from typing import Any
+from typing import Callable
 
 # TODO make it so that other files in this package cannot import from this one
 # ask Gemini how to do it
@@ -20,6 +24,8 @@ from pl_pytest_autograder.utils import StudentFunctionResponse
 from pl_pytest_autograder.utils import StudentQueryRequest
 from pl_pytest_autograder.utils import StudentQueryResponse
 from pl_pytest_autograder.utils import deserialize_object_unsafe
+
+ImportFunction = Callable[[str, Mapping[str, object] | None, Mapping[str, object] | None, Sequence[str], int], types.ModuleType]
 
 HOST = "127.0.0.1"  # Loopback address, means "this computer only"
 
@@ -76,12 +82,47 @@ async def student_function_runner(
     return function_response
 
 
-async def student_code_runner(student_code: str, student_file_name: str, timeout: float) -> tuple[dict[str, Any], ProcessStartResponse]:
+def get_custom_importer(import_whitelist: list[str] | None, import_blacklist: list[str] | None) -> ImportFunction:
+    """
+    Returns a custom import function that restricts imports based on the provided whitelist and blacklist.
+    If a whitelist is provided, only those modules can be imported.
+    """
+
+    original_import = __import__
+
+    def custom_import(
+        name: str,
+        globals: Mapping[str, object] | None = None,
+        locals: Mapping[str, object] | None = None,
+        fromlist: Sequence[str] = (),
+        level: int = 0,
+    ) -> types.ModuleType:
+        # Allow specific modules to be imported
+        if import_blacklist is not None and name in import_blacklist:
+            raise ImportError(f"Module '{name}' is blacklisted and cannot be imported.")
+        elif (
+            (import_whitelist is not None and name in import_whitelist)
+            or name.startswith("__")  # Allow internal dunder imports if necessary for basic functionality
+            or import_whitelist is None
+        ):
+            return original_import(name, globals, locals, fromlist, level)
+        else:
+            # Forbid other imports
+            raise ImportError(f"Module '{name}' is not allowed to be imported.")
+
+    return custom_import
+
+
+async def student_code_runner(
+    student_code: str, student_file_name: str, timeout: float, import_whitelist: list[str] | None, import_blacklist: list[str] | None
+) -> tuple[dict[str, Any], ProcessStartResponse]:
     stdout_capture = io.StringIO()
     stderr_capture = io.StringIO()
     execution_error = None
     exception_traceback = None
     student_code_vars: dict[str, Any] = {}
+
+    student_code_vars["__builtins__"] = {"__import__": get_custom_importer(import_whitelist, import_blacklist)}
 
     try:
         # First, compile student code. Make sure to handle errors in this later
@@ -150,10 +191,14 @@ async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWrit
                 student_code = start_json_message["student_code"]
                 student_file_name = start_json_message["student_file_name"]
                 initialization_timeout = start_json_message["initialization_timeout"]
+                import_whitelist = start_json_message["import_whitelist"]
+                import_blacklist = start_json_message["import_blacklist"]
 
                 populate_linecache(student_code, student_file_name)
 
-                student_code_vars, start_response = await student_code_runner(student_code, student_file_name, initialization_timeout)
+                student_code_vars, start_response = await student_code_runner(
+                    student_code, student_file_name, initialization_timeout, import_whitelist, import_blacklist
+                )
 
                 writer.write(json.dumps(start_response).encode())
 

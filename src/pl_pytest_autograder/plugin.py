@@ -44,25 +44,37 @@ def get_datadir(test_module: ModuleType) -> Path | None:
 
 
 @pytest.fixture(scope="module")
-def data_json(request: pytest.FixtureRequest) -> dict[str, Any]:
-    datadir = get_datadir(request.module)
+def data_json(request: pytest.FixtureRequest) -> dict[str, Any] | None:
+    try:
+        datadir = get_datadir(request.module)
+        data_file = datadir / "data.json"
+        return json.loads(data_file.read_text(encoding="utf-8"))
+    except Exception:
+        pass  # TODO add logging
 
-    if datadir is None or not datadir.is_dir():
-        raise ValueError(f"Data directory '{datadir}' not found or is not a directory.")
+    # If the data file is not found or cannot be read, return None
+    return None
 
-    data_file = datadir / "data.json"
+    # if datadir is None or not datadir.is_dir():
+    #     raise ValueError(f"Data directory '{datadir}' not found or is not a directory.")
 
-    if not data_file.is_file():
-        raise ValueError(f"Data file '{data_file.name}' not found in '{datadir}'.")
-
-    return json.loads(data_file.read_text(encoding="utf-8"))
+    # if not data_file.is_file():
+    #     raise ValueError(f"Data file '{data_file.name}' not found in '{datadir}'.")
 
 
 # TODO maybe change to the module scope??
 @pytest.fixture
-def sandbox(request: pytest.FixtureRequest) -> Iterable[StudentFixture]:
+def sandbox(request: pytest.FixtureRequest, data_json: dict[str, Any] | None) -> Iterable[StudentFixture]:
     # Default timeout TODO make this a command line option?
     initialization_timeout = 1
+
+    if data_json is None:
+        params_dict = {}
+    else:
+        params_dict = data_json.get("params", {})
+
+    import_whitelist = params_dict.get("import_whitelist")
+    import_blacklist = params_dict.get("import_blacklist")
 
     # Check for the custom mark
     marker = request.node.get_closest_marker("sandbox_timeout")
@@ -72,7 +84,7 @@ def sandbox(request: pytest.FixtureRequest) -> Iterable[StudentFixture]:
         if marker.args:
             initialization_timeout = marker.args[0]
 
-    fixture = StudentFixture(request.param)
+    fixture = StudentFixture(request.param, import_whitelist, import_blacklist)
 
     try:
         response = fixture.start_student_code_server(initialization_timeout=initialization_timeout)
