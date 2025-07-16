@@ -28,6 +28,7 @@ class StudentFiles(NamedTuple):
     leading_file: Path
     trailing_file: Path
     student_code_file: Path
+    setup_code_file: Path
 
 
 class FeedbackFixture:
@@ -38,17 +39,28 @@ class FeedbackFixture:
     test_id: str
     messages: list[str]
     score: float | None
+    final_score_override: bool
 
     def __init__(self, test_id: str) -> None:
         self.test_id = test_id
         self.messages = []
         self.score = None
+        self.final_score_override = False
 
     def add_message(self, message: str) -> None:
         self.messages.append(message)
 
     def set_score(self, score: float) -> None:
         self.score = score
+
+    def set_score_final(self, score: float) -> None:
+        """
+        Sets the final score for the test. This should be called at the end of the test.
+        """
+        if self.score is not None:
+            raise RuntimeError("Final score has already been set.")
+        self.score = score
+        self.final_score_override = True
 
     def to_dict(self) -> dict:
         return {
@@ -71,6 +83,7 @@ class StudentFixture:
         self.leading_file = file_names.leading_file
         self.trailing_file = file_names.trailing_file
         self.student_code_file = file_names.student_code_file
+        self.setup_code_file = file_names.setup_code_file
 
         self.import_whitelist = import_whitelist
         self.import_blacklist = import_blacklist
@@ -111,11 +124,17 @@ class StudentFixture:
             student_code += os.linesep
             student_code += self.trailing_file.read_text(encoding="utf-8")
 
+        # TODO maybe add an error message for this?
+        setup_code = None
+        if self.setup_code_file.is_file():
+            setup_code = self.setup_code_file.read_text(encoding="utf-8")
+
         # TODO make this a shared type
         json_message: ProcessStartRequest = {
             "message_type": "start",
             "student_code": student_code,
             "student_file_name": str(self.student_code_file),
+            "setup_code": setup_code,
             "initialization_timeout": initialization_timeout,
             "import_whitelist": self.import_whitelist,
             "import_blacklist": self.import_blacklist,

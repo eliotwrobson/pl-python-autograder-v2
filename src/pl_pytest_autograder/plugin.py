@@ -128,10 +128,13 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
             # Find a specific data file, e.g., 'test_data.txt'
             leading_file = data_dir / "leading_code.py"
             trailing_file = data_dir / "trailing_code.py"
+            setup_code_file = data_dir / "setup_code.py"
 
             student_code_files = list(data_dir.glob(student_code_pattern))
 
-            file_tups = [StudentFiles(leading_file, trailing_file, student_code_file) for student_code_file in student_code_files]
+            file_tups = [
+                StudentFiles(leading_file, trailing_file, student_code_file, setup_code_file) for student_code_file in student_code_files
+            ]
             file_stems = [file_tup.student_code_file.stem for file_tup in file_tups]
 
             metafunc.parametrize("sandbox", file_tups, indirect=True, ids=file_stems)
@@ -413,7 +416,9 @@ class MyResultCollectorPlugin:
                 res_obj["outcome"] = outcome
 
             if outcome == "passed":
-                res_obj["points"] = 1.0
+                if not feedback_obj.final_score_override:
+                    res_obj["points"] = 1.0
+                # Otherwise, we just use the set points value
 
             elif res_obj["points"] is None:
                 if outcome == "failed":

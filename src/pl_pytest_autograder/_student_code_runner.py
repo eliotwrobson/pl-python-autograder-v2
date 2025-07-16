@@ -115,7 +115,12 @@ def get_custom_importer(import_whitelist: list[str] | None, import_blacklist: li
 
 
 async def student_code_runner(
-    student_code: str, student_file_name: str, timeout: float, import_whitelist: list[str] | None, import_blacklist: list[str] | None
+    setup_code: str | None,
+    student_code: str,
+    student_file_name: str,
+    timeout: float,
+    import_whitelist: list[str] | None,
+    import_blacklist: list[str] | None,
 ) -> tuple[dict[str, Any], ProcessStartResponse]:
     stdout_capture = io.StringIO()
     stderr_capture = io.StringIO()
@@ -128,19 +133,38 @@ async def student_code_runner(
     student_code_vars["__builtins__"]["__name__"] = "__main__"  # Set __name__ to "__main__" to mimic the main module
     student_code_vars["__builtins__"]["__import__"] = get_custom_importer(import_whitelist, import_blacklist)
 
-    try:
-        # First, compile student code. Make sure to handle errors in this later
-        # TODO have a better filename
-        code_setup = compile(student_code, student_file_name, "exec")
-        with redirect_stdout(stdout_capture), redirect_stderr(stderr_capture):
-            await asyncio.wait_for(
-                asyncio.get_event_loop().run_in_executor(executor, exec, code_setup, student_code_vars, student_code_vars), timeout=timeout
-            )
+    # TODO the data object is not passed into the setup code. Add this if needed.
 
+    try:
+        # First, execute the setup code if provided
+        if setup_code:
+            # Compile the setup code
+            code_setup = compile(setup_code, "<setup>", "exec")
+            with redirect_stdout(stdout_capture), redirect_stderr(stderr_capture):
+                await asyncio.wait_for(
+                    asyncio.get_event_loop().run_in_executor(executor, exec, code_setup, student_code_vars, student_code_vars),
+                    timeout=timeout,
+                )
     except Exception as e:
         execution_error = e
-        # TODO this traceback is not very useful
-        exception_traceback = traceback.format_exc()
+        # TODO need to create a different message for setup code errors. This should result
+        # in a different error message reported from the test case.
+
+    if execution_error is None:
+        try:
+            # Next, compile student code. Make sure to handle errors in this later
+            # TODO have a better filename
+            code_setup = compile(student_code, student_file_name, "exec")
+            with redirect_stdout(stdout_capture), redirect_stderr(stderr_capture):
+                await asyncio.wait_for(
+                    asyncio.get_event_loop().run_in_executor(executor, exec, code_setup, student_code_vars, student_code_vars),
+                    timeout=timeout,
+                )
+
+        except Exception as e:
+            execution_error = e
+            # TODO this traceback is not very useful
+            exception_traceback = traceback.format_exc()
 
     result_dict: ProcessStartResponse = {
         "status": "success" if execution_error is None else "exception",
@@ -194,6 +218,7 @@ async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWrit
                 # variables into the student_code_vars dictionary
                 student_code = start_json_message["student_code"]
                 student_file_name = start_json_message["student_file_name"]
+                setup_code = start_json_message["setup_code"]
                 initialization_timeout = start_json_message["initialization_timeout"]
                 import_whitelist = start_json_message["import_whitelist"]
                 import_blacklist = start_json_message["import_blacklist"]
@@ -201,7 +226,7 @@ async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWrit
                 populate_linecache(student_code, student_file_name)
 
                 student_code_vars, start_response = await student_code_runner(
-                    student_code, student_file_name, initialization_timeout, import_whitelist, import_blacklist
+                    setup_code, student_code, student_file_name, initialization_timeout, import_whitelist, import_blacklist
                 )
 
                 writer.write(json.dumps(start_response).encode())

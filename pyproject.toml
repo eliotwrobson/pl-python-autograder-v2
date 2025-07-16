@@ -9,7 +9,7 @@ dependencies = ["dill>=0.4.0", "pytest", "prettytable>=3.8.0"]
 license = { file = "LICENSE" }
 
 [dependency-groups]
-dev = ["numpy>=2.0", "pandas>=2.0", "mypy", "ruff>=0.11.12"]
+dev = ["numpy>=2.0", "pandas>=2.0", "mypy", "ruff>=0.11.12", "sympy"]
 
 [build-system]
 requires = ["hatchling"]
