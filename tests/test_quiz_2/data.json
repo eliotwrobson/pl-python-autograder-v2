@@ -1,0 +1,8 @@
+{
+  "params": {
+    "sin_coefficient": 6,
+    "cos_coefficient": 3,
+    "constant_term": 6,
+    "taylor_degree": 3
+  }
+}
