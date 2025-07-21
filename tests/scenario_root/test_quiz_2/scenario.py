@@ -1,5 +1,4 @@
 import math
-import random
 
 import numpy as np
 import pytest
@@ -43,7 +42,7 @@ def analyze_vibration(x_hat, threshold, sin_coefficient, cos_coefficient, consta
 @pytest.mark.sandbox_timeout(5)
 @pytest.mark.parametrize(
     ("i", "x_hat", "threshold"),
-    [(1, random.uniform(-1, 1), random.uniform(-30, -20)), (2, random.uniform(-1, 1), random.uniform(20, 30))],
+    [(1, 0.7235132915688036, 23.137774021447807), (2, 0.23796317102834275, 23.50476117422776)],
 )
 def test_0(sandbox: StudentFixture, feedback: FeedbackFixture, data_json: DataFixture, i: int, x_hat: float, threshold: float) -> None:
     points = 0

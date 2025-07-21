@@ -1,0 +1,87 @@
+{
+  "expected_data_object": {
+    "score": 24.0,
+    "tests": [
+      {
+        "max_points": 6,
+        "message": " Test #1",
+        "name": "Test analyze_vibration function",
+        "outcome": "failed",
+        "points": 0.0,
+        "test_id": "test_quiz_2.py::test_0[student_code_0-1-0.7235132915688036-23.137774021447807]"
+      },
+      {
+        "max_points": 6,
+        "message": " Test #2",
+        "name": "Test analyze_vibration function",
+        "outcome": "failed",
+        "points": 0.0,
+        "test_id": "test_quiz_2.py::test_0[student_code_0-2-0.23796317102834275-23.50476117422776]"
+      },
+      {
+        "max_points": 6,
+        "message": "Student code execution failed with an exception: RuntimeError",
+        "name": "Test analyze_vibration function",
+        "outcome": "error",
+        "points": 0.0,
+        "test_id": "test_quiz_2.py::test_0[student_code_0_bad_func-1-0.7235132915688036-23.137774021447807]"
+      },
+      {
+        "max_points": 6,
+        "message": "Student code execution failed with an exception: RuntimeError",
+        "name": "Test analyze_vibration function",
+        "outcome": "error",
+        "points": 0.0,
+        "test_id": "test_quiz_2.py::test_0[student_code_0_bad_func-2-0.23796317102834275-23.50476117422776]"
+      },
+      {
+        "max_points": 6,
+        "message": " Test #1'production_ready' looks good",
+        "name": "Test analyze_vibration function",
+        "outcome": "passed",
+        "points": 1.0,
+        "test_id": "test_quiz_2.py::test_0[student_code_100-1-0.7235132915688036-23.137774021447807]"
+      },
+      {
+        "max_points": 6,
+        "message": " Test #2'production_ready' looks good",
+        "name": "Test analyze_vibration function",
+        "outcome": "passed",
+        "points": 1.0,
+        "test_id": "test_quiz_2.py::test_0[student_code_100-2-0.23796317102834275-23.50476117422776]"
+      },
+      {
+        "max_points": 6,
+        "message": " Test #1'production_ready' is incorrect and has type <class 'int'>",
+        "name": "Test analyze_vibration function",
+        "outcome": "passed",
+        "points": 0.3333333333333333,
+        "test_id": "test_quiz_2.py::test_0[student_code_33-1-0.7235132915688036-23.137774021447807]"
+      },
+      {
+        "max_points": 6,
+        "message": " Test #2'production_ready' is incorrect and has type <class 'int'>",
+        "name": "Test analyze_vibration function",
+        "outcome": "passed",
+        "points": 0.3333333333333333,
+        "test_id": "test_quiz_2.py::test_0[student_code_33-2-0.23796317102834275-23.50476117422776]"
+      },
+      {
+        "max_points": 6,
+        "message": " Test #1'production_ready' looks good",
+        "name": "Test analyze_vibration function",
+        "outcome": "passed",
+        "points": 0.6666666666666666,
+        "test_id": "test_quiz_2.py::test_0[student_code_66-1-0.7235132915688036-23.137774021447807]"
+      },
+      {
+        "max_points": 6,
+        "message": " Test #2'production_ready' looks good",
+        "name": "Test analyze_vibration function",
+        "outcome": "passed",
+        "points": 0.6666666666666666,
+        "test_id": "test_quiz_2.py::test_0[student_code_66-2-0.23796317102834275-23.50476117422776]"
+      }
+    ]
+  }
+}
