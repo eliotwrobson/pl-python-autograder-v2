@@ -1,0 +1,79 @@
+{
+  "expected_data_object": {
+    "score": 10.0,
+    "tests": [
+      {
+        "max_points": 4,
+        "message": "Bob is not a known team memberSusan is not a known team memberGreg is not a known team member",
+        "name": "ratings",
+        "outcome": "passed",
+        "points": 0.0,
+        "test_id": "test_quiz_3_1.py::test_0[student_code_0]"
+      },
+      {
+        "max_points": 4,
+        "message": "",
+        "name": "ratings",
+        "outcome": "passed",
+        "points": 1.0,
+        "test_id": "test_quiz_3_1.py::test_0[student_code_100]"
+      },
+      {
+        "max_points": 4,
+        "message": "",
+        "name": "ratings",
+        "outcome": "passed",
+        "points": 1.0,
+        "test_id": "test_quiz_3_1.py::test_0[student_code_66]"
+      },
+      {
+        "max_points": 1,
+        "message": "",
+        "name": "highest_performing",
+        "outcome": "failed",
+        "points": 0.0,
+        "test_id": "test_quiz_3_1.py::test_1[student_code_0]"
+      },
+      {
+        "max_points": 1,
+        "message": "",
+        "name": "highest_performing",
+        "outcome": "passed",
+        "points": 1.0,
+        "test_id": "test_quiz_3_1.py::test_1[student_code_100]"
+      },
+      {
+        "max_points": 1,
+        "message": "",
+        "name": "highest_performing",
+        "outcome": "failed",
+        "points": 0.0,
+        "test_id": "test_quiz_3_1.py::test_1[student_code_66]"
+      },
+      {
+        "max_points": 1,
+        "message": "",
+        "name": "lowest_performing",
+        "outcome": "failed",
+        "points": 0.0,
+        "test_id": "test_quiz_3_1.py::test_2[student_code_0]"
+      },
+      {
+        "max_points": 1,
+        "message": "",
+        "name": "lowest_performing",
+        "outcome": "passed",
+        "points": 1.0,
+        "test_id": "test_quiz_3_1.py::test_2[student_code_100]"
+      },
+      {
+        "max_points": 1,
+        "message": "",
+        "name": "lowest_performing",
+        "outcome": "failed",
+        "points": 0.0,
+        "test_id": "test_quiz_3_1.py::test_2[student_code_66]"
+      }
+    ]
+  }
+}

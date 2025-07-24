@@ -76,7 +76,11 @@ def sandbox(request: pytest.FixtureRequest, data_json: dict[str, Any] | None) ->
     import_whitelist = params_dict.get("import_whitelist")
     import_blacklist = params_dict.get("import_blacklist")
 
-    names_for_user_list = params_dict.get("names_for_user", None)
+    # TODO make sure this contains only valid builtins
+    builtin_whitelist = params_dict.get("builtin_whitelist")
+
+    names_for_user_list = params_dict.get("names_for_user")
+    # TODO maybe make it possible to add custom generators for starting variables?
     starting_vars = None
 
     if names_for_user_list is not None:
@@ -96,7 +100,7 @@ def sandbox(request: pytest.FixtureRequest, data_json: dict[str, Any] | None) ->
         if marker.args:
             initialization_timeout = marker.args[0]
 
-    fixture = StudentFixture(request.param, import_whitelist, import_blacklist, starting_vars)
+    fixture = StudentFixture(request.param, import_whitelist, import_blacklist, starting_vars, builtin_whitelist)
 
     try:
         response = fixture.start_student_code_server(initialization_timeout=initialization_timeout)

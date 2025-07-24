@@ -59,6 +59,9 @@ class FeedbackFixture:
         """
         if self.score is not None:
             raise RuntimeError("Final score has already been set.")
+
+        # TODO maybe change this to assert the score is 1? Then it will fail if the score is not 1.
+        # Will maintain invariant that score should be 1 if all tests pass.
         self.score = score
         self.final_score_override = True
 
@@ -79,6 +82,7 @@ class StudentFixture:
     import_whitelist: list[str] | None
     import_blacklist: list[str] | None
     starting_vars: dict[str, Any] | None
+    builtin_whitelist: list[str] | None
 
     def __init__(
         self,
@@ -86,6 +90,7 @@ class StudentFixture:
         import_whitelist: list[str] | None,
         import_blacklist: list[str] | None,
         starting_vars: dict[str, Any] | None,
+        builtin_whitelist: list[str] | None,
     ) -> None:
         self.leading_file = file_names.leading_file
         self.trailing_file = file_names.trailing_file
@@ -95,6 +100,7 @@ class StudentFixture:
         self.import_whitelist = import_whitelist
         self.import_blacklist = import_blacklist
         self.starting_vars = starting_vars
+        self.builtin_whitelist = builtin_whitelist
 
         # Initialize the process and socket to None
         self.process = None
@@ -147,6 +153,7 @@ class StudentFixture:
             "import_whitelist": self.import_whitelist,
             "import_blacklist": self.import_blacklist,
             "starting_vars": self.starting_vars,
+            "builtin_whitelist": self.builtin_whitelist,
         }
 
         line = self.process.stdout.readline().decode()  # Read the initial output from the process to ensure it's ready
@@ -211,7 +218,7 @@ class StudentFixture:
         self.student_socket.sendall(json.dumps(json_message).encode("utf-8") + os.linesep.encode("utf-8"))
         self.student_socket.settimeout(query_timeout)
         data: StudentFunctionResponse = json.loads(self.student_socket.recv(BUFFSIZE).decode())
-
+        print(data)
         return data
 
     def query_function(self, function_name: str, *args, query_timeout: float = DEFAULT_TIMEOUT, **kwargs) -> Any:

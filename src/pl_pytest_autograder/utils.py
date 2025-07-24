@@ -58,6 +58,7 @@ class ProcessStartRequest(TypedDict):
     import_whitelist: list[str] | None
     import_blacklist: list[str] | None
     starting_vars: dict[str, Any] | None
+    builtin_whitelist: list[str] | None
 
 
 class ProcessStartResponse(TypedDict):
@@ -107,13 +108,13 @@ def deserialize_object_unsafe(base64_string: str) -> object:
     return dill.loads(dilled_bytes)
 
 
-def get_safe_builtins() -> dict[str, Any]:
+def get_builtins(builtin_whitelist: list[str] | None) -> dict[str, Any]:
     """
     Returns a dictionary of safe built-in functions and exceptions.
     This is used to restrict the built-ins available in the student code execution environment.
     From https://github.com/zopefoundation/RestrictedPython/blob/master/src/RestrictedPython/Guards.py
     """
-    safe_builtins = {}
+    final_builtins = {}
 
     _safe_names = [
         "__build_class__",
@@ -199,9 +200,16 @@ def get_safe_builtins() -> dict[str, Any]:
     ]
 
     for name in _safe_names:
-        safe_builtins[name] = getattr(builtins, name)
+        final_builtins[name] = getattr(builtins, name)
 
     for name in _safe_exceptions:
-        safe_builtins[name] = getattr(builtins, name)
+        final_builtins[name] = getattr(builtins, name)
 
-    return safe_builtins
+    # TODO raise exception if the name is not in the built-ins?
+    if builtin_whitelist is not None:
+        # Filter the built-ins based on the whitelist
+        for name in builtin_whitelist:
+            if name not in final_builtins:
+                final_builtins[name] = getattr(builtins, name)
+
+    return final_builtins
