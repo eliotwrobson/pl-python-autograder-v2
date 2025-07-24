@@ -115,6 +115,8 @@ def test_autograder_scenario_with_pytester(pytester: pytest.Pytester, scenario_d
     test_results_obj = {test_result["test_id"]: test_result for test_result in results_obj["tests"]}
     for expected_test in expected_data_obj["tests"]:
         test_id = expected_test["test_id"]
+
+        # TODO make this not depend on the file name
         assert test_id in test_results_obj, f"Test '{test_id}' not found in results."
         actual_test = test_results_obj[test_id]
 

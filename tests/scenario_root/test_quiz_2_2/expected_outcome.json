@@ -1,0 +1,79 @@
+{
+  "expected_data_object": {
+    "score": 12.0,
+    "tests": [
+      {
+        "max_points": 1,
+        "message": "Student code execution failed with an exception: TypeError",
+        "name": "largest_fp",
+        "outcome": "error",
+        "points": 0.0,
+        "test_id": "test_quiz_2_2.py::test_0[student_code_0]"
+      },
+      {
+        "max_points": 1,
+        "message": "Good Job!",
+        "name": "largest_fp",
+        "outcome": "passed",
+        "points": 1.0,
+        "test_id": "test_quiz_2_2.py::test_0[student_code_100]"
+      },
+      {
+        "max_points": 1,
+        "message": "Good Job!",
+        "name": "largest_fp",
+        "outcome": "passed",
+        "points": 1.0,
+        "test_id": "test_quiz_2_2.py::test_0[student_code_20]"
+      },
+      {
+        "max_points": 1,
+        "message": "Student code execution failed with an exception: TypeError",
+        "name": "machine_epsilon",
+        "outcome": "error",
+        "points": 0.0,
+        "test_id": "test_quiz_2_2.py::test_1[student_code_0]"
+      },
+      {
+        "max_points": 1,
+        "message": "Good Job!",
+        "name": "machine_epsilon",
+        "outcome": "passed",
+        "points": 1.0,
+        "test_id": "test_quiz_2_2.py::test_1[student_code_100]"
+      },
+      {
+        "max_points": 1,
+        "message": "Good Job!",
+        "name": "machine_epsilon",
+        "outcome": "passed",
+        "points": 1.0,
+        "test_id": "test_quiz_2_2.py::test_1[student_code_20]"
+      },
+      {
+        "max_points": 8,
+        "message": "Student code execution failed with an exception: TypeError",
+        "name": "fp_lst",
+        "outcome": "error",
+        "points": 0.0,
+        "test_id": "test_quiz_2_2.py::test_2[student_code_0]"
+      },
+      {
+        "max_points": 8,
+        "message": "Good Job!",
+        "name": "fp_lst",
+        "outcome": "passed",
+        "points": 1.0,
+        "test_id": "test_quiz_2_2.py::test_2[student_code_100]"
+      },
+      {
+        "max_points": 8,
+        "message": "",
+        "name": "fp_lst",
+        "outcome": "failed",
+        "points": 0.0,
+        "test_id": "test_quiz_2_2.py::test_2[student_code_20]"
+      }
+    ]
+  }
+}
