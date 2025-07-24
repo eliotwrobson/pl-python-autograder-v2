@@ -121,14 +121,15 @@ async def student_code_runner(
     timeout: float,
     import_whitelist: list[str] | None,
     import_blacklist: list[str] | None,
+    starting_vars: dict[str, Any] | None,
 ) -> tuple[dict[str, Any], ProcessStartResponse]:
     stdout_capture = io.StringIO()
     stderr_capture = io.StringIO()
     execution_error = None
     exception_traceback = None
-    student_code_vars: dict[str, Any] = {}
 
-    student_code_vars = {"__builtins__": get_safe_builtins()}
+    student_code_vars: dict[str, Any] = starting_vars.copy() if starting_vars else {}
+    student_code_vars["__builtins__"] = get_safe_builtins()
 
     student_code_vars["__builtins__"]["__name__"] = "__main__"  # Set __name__ to "__main__" to mimic the main module
     student_code_vars["__builtins__"]["__import__"] = get_custom_importer(import_whitelist, import_blacklist)
@@ -222,11 +223,12 @@ async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWrit
                 initialization_timeout = start_json_message["initialization_timeout"]
                 import_whitelist = start_json_message["import_whitelist"]
                 import_blacklist = start_json_message["import_blacklist"]
+                starting_vars = start_json_message["starting_vars"]
 
                 populate_linecache(student_code, student_file_name)
 
                 student_code_vars, start_response = await student_code_runner(
-                    setup_code, student_code, student_file_name, initialization_timeout, import_whitelist, import_blacklist
+                    setup_code, student_code, student_file_name, initialization_timeout, import_whitelist, import_blacklist, starting_vars
                 )
 
                 writer.write(json.dumps(start_response).encode())

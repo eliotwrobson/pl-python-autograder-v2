@@ -76,6 +76,18 @@ def sandbox(request: pytest.FixtureRequest, data_json: dict[str, Any] | None) ->
     import_whitelist = params_dict.get("import_whitelist")
     import_blacklist = params_dict.get("import_blacklist")
 
+    names_for_user_list = params_dict.get("names_for_user", None)
+    starting_vars = None
+
+    if names_for_user_list is not None:
+        starting_vars = {}
+
+        for names_dict in names_for_user_list:
+            name = names_dict["name"]
+            value = params_dict.get(name, None)
+            assert names_dict["type"] == type(value).__name__
+            starting_vars[name] = value
+
     # Check for the custom mark
     marker = request.node.get_closest_marker("sandbox_timeout")
     if marker:
@@ -84,13 +96,14 @@ def sandbox(request: pytest.FixtureRequest, data_json: dict[str, Any] | None) ->
         if marker.args:
             initialization_timeout = marker.args[0]
 
-    fixture = StudentFixture(request.param, import_whitelist, import_blacklist)
+    fixture = StudentFixture(request.param, import_whitelist, import_blacklist, starting_vars)
 
     try:
         response = fixture.start_student_code_server(initialization_timeout=initialization_timeout)
         response_status = response["status"]
 
         if response_status == "exception":
+            print(response)
             exception_message = response.get("execution_error", "Unknown error")
             pytest.fail(f"Student code execution failed with an exception: {exception_message}", pytrace=False)
 

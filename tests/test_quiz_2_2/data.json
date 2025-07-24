@@ -1,0 +1,38 @@
+{
+  "params": {
+    "L": -6,
+    "n": 3,
+    "end": 1.4056299544316324,
+    "start": 0.14056966176841285,
+    "smallest_fp": 0.015625,
+    "names_for_user": [
+      {
+        "name": "start",
+        "type": "float",
+        "description": "the lower bound for the list of floating point numbers (inclusive)."
+      },
+      {
+        "name": "end",
+        "type": "float",
+        "description": "the upper bound for the list of floating point numbers (inclusive)."
+      }
+    ],
+    "names_from_user": [
+      {
+        "name": "largest_fp",
+        "type": "float",
+        "description": "the largest positive normalized floating point number."
+      },
+      {
+        "name": "machine_epsilon",
+        "type": "float",
+        "description": "the machine epsilon."
+      },
+      {
+        "name": "fp_lst",
+        "type": "list",
+        "description": "a list of all possible normalized floating point numbers in the range [start, end]."
+      }
+    ]
+  }
+}

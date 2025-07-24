@@ -57,6 +57,7 @@ class ProcessStartRequest(TypedDict):
     initialization_timeout: float
     import_whitelist: list[str] | None
     import_blacklist: list[str] | None
+    starting_vars: dict[str, Any] | None
 
 
 class ProcessStartResponse(TypedDict):
