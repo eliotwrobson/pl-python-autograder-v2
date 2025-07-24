@@ -75,7 +75,7 @@ def test_0(sandbox: StudentFixture, feedback: FeedbackFixture) -> None:
 
 
 @pytest.mark.grading_data(name="highest_performing", points=1)
-def test_1(sandbox: StudentFixture, feedback: FeedbackFixture) -> None:
+def test_1(sandbox: StudentFixture) -> None:
     members, sale_metadata = compute_starting_parameters()
 
     _, student_highest_performing, _ = sandbox.query_function("solve_ratings", members, sale_metadata)
@@ -86,7 +86,7 @@ def test_1(sandbox: StudentFixture, feedback: FeedbackFixture) -> None:
 
 
 @pytest.mark.grading_data(name="lowest_performing", points=1)
-def test_2(sandbox: StudentFixture, feedback: FeedbackFixture) -> None:
+def test_2(sandbox: StudentFixture) -> None:
     members, sale_metadata = compute_starting_parameters()
 
     _, _, student_lowest_performing = sandbox.query_function("solve_ratings", members, sale_metadata)

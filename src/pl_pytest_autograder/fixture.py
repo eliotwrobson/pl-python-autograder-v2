@@ -185,8 +185,8 @@ class StudentFixture:
         json_message: StudentQueryRequest = {"message_type": "query", "var": var_to_query, "query_timeout": query_timeout}
 
         assert self.student_socket is not None
-        self.student_socket.sendall(json.dumps(json_message).encode("utf-8") + os.linesep.encode("utf-8"))
         self.student_socket.settimeout(query_timeout)
+        self.student_socket.sendall(json.dumps(json_message).encode("utf-8") + os.linesep.encode("utf-8"))
         data: StudentQueryResponse = json.loads(self.student_socket.recv(BUFFSIZE).decode())
 
         return data
@@ -215,10 +215,10 @@ class StudentFixture:
             "query_timeout": query_timeout,
         }
 
-        self.student_socket.sendall(json.dumps(json_message).encode("utf-8") + os.linesep.encode("utf-8"))
         self.student_socket.settimeout(query_timeout)
+        self.student_socket.sendall(json.dumps(json_message).encode("utf-8") + os.linesep.encode("utf-8"))
         data: StudentFunctionResponse = json.loads(self.student_socket.recv(BUFFSIZE).decode())
-        print(data)
+
         return data
 
     def query_function(self, function_name: str, *args, query_timeout: float = DEFAULT_TIMEOUT, **kwargs) -> Any:

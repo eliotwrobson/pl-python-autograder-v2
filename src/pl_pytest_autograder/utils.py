@@ -147,6 +147,7 @@ def get_builtins(builtin_whitelist: list[str] | None) -> dict[str, Any]:
         "str",
         "tuple",
         "zip",
+        "enumerate",
     ]
 
     _safe_exceptions = [
