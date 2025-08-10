@@ -19,7 +19,7 @@ from .utils import serialize_object_unsafe
 
 DataFixture = dict[str, Any]
 
-SCRIPT_PATH = str(files("pytest-pl-grader").joinpath("_student_code_runner.py"))
+SCRIPT_PATH = str(files("pytest_pl_grader").joinpath("_student_code_runner.py"))
 BUFFSIZE = 4096
 DEFAULT_TIMEOUT = 1.0
 
