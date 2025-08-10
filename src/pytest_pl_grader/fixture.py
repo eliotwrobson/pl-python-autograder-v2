@@ -68,7 +68,7 @@ class FeedbackFixture:
     def to_dict(self) -> dict:
         return {
             "test_id": self.test_id,
-            "message": "".join(self.messages),
+            "message": os.linesep.join(self.messages),
             "points": self.score,
         }
 
