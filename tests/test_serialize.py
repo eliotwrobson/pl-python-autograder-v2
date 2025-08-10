@@ -1,3 +1,5 @@
+from typing import cast
+
 import numpy as np
 
 from pl_pytest_autograder.utils import deserialize_object_unsafe
@@ -12,7 +14,7 @@ def test_serialize_numpy_array() -> None:
     serialized = serialize_object_unsafe(arr)
 
     # Deserialize the numpy array
-    deserialized = deserialize_object_unsafe(serialized)
+    deserialized = cast(np.typing.ArrayLike, deserialize_object_unsafe(serialized))
 
     # Check if the original and deserialized arrays are equal
     assert np.array_equal(arr, deserialized)

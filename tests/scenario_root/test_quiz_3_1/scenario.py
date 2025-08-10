@@ -1,3 +1,5 @@
+from typing import TypedDict
+
 import numpy as np
 import numpy.linalg as la
 import pytest
@@ -6,7 +8,12 @@ from pl_pytest_autograder.fixture import FeedbackFixture
 from pl_pytest_autograder.fixture import StudentFixture
 
 
-def compute_starting_parameters() -> tuple[list[str], list[dict]]:
+class ParameterDict(TypedDict):
+    hours: list[tuple[str, np.int_]]
+    units_sold: np.int_
+
+
+def compute_starting_parameters() -> tuple[list[str], list[ParameterDict]]:
     overall_members = ["Alex", "Jordan", "Taylor", "Casey", "Riley", "Chris", "Avery", "Sam", "Devon", "Morgan"]
 
     rng = np.random.default_rng()
@@ -15,7 +22,7 @@ def compute_starting_parameters() -> tuple[list[str], list[dict]]:
     N_sales = len(members)
 
     hours_set = set()
-    sale_metadata = []
+    sale_metadata: list[ParameterDict] = []
 
     # Avoid edge case where two lists of hours are the same, causing a singularity
     while len(sale_metadata) < N_sales:
@@ -29,7 +36,7 @@ def compute_starting_parameters() -> tuple[list[str], list[dict]]:
     return members, sale_metadata
 
 
-def compute_answers(members: list[str], sale_metadata: list[dict]) -> tuple[dict[str, float], str, str]:
+def compute_answers(members: list[str], sale_metadata: list[ParameterDict]) -> tuple[dict[str, float], str, str]:
     member_id = {member: i for i, member in enumerate(members)}
     A = np.zeros((len(sale_metadata), len(members)))
     sales = np.zeros(len(sale_metadata))

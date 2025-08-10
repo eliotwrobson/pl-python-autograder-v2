@@ -47,6 +47,7 @@ def get_datadir(test_module: ModuleType) -> Path | None:
 def data_json(request: pytest.FixtureRequest) -> dict[str, Any] | None:
     try:
         datadir = get_datadir(request.module)
+        assert datadir is not None
         data_file = datadir / "data.json"
         return json.loads(data_file.read_text(encoding="utf-8"))
     except Exception:
@@ -298,7 +299,7 @@ def pytest_runtest_setup(item):
                 raise ValueError(f"benchmark mark can't have {name!r} keyword argument.")
 
 
-@pytest.hookimpl(trylast=True)  # force the other plugins to initialise, fixes issue with capture not being properly initialised
+@pytest.hookimpl(trylast=True)  # force the other plugins to initialise, fixes issue with capture not being properly initialized
 def pytest_configure(config: Config) -> None:
     # config.addinivalue_line("markers", "benchmark: mark a test with custom benchmark settings.")
     # bs = config._benchmarksession = BenchmarkSession(config)
@@ -309,12 +310,12 @@ def pytest_configure(config: Config) -> None:
     config.addinivalue_line("markers", "sandbox_timeout(timeout_value): sets a timeout for initialization of the sandbox fixture")
 
     # Only register our plugin if it hasn't been already (e.g., in case of multiple conftests)
-    if not hasattr(config, "my_result_collector_plugin"):
-        config.my_result_collector_plugin = MyResultCollectorPlugin()
-        config.pluginmanager.register(config.my_result_collector_plugin)
+    if not hasattr(config, "result_collector_plugin"):
+        config.result_collector_plugin = ResultCollectorPlugin()  # type: ignore[attr-defined]
+        config.pluginmanager.register(config.result_collector_plugin)  # type: ignore[attr-defined]
 
 
-class MyResultCollectorPlugin:
+class ResultCollectorPlugin:
     collected_results: dict[str, _pytest.reports.TestReport]
     student_feedback_data: dict[str, FeedbackFixture]
     grading_data: dict[str, Any]
@@ -336,7 +337,7 @@ class MyResultCollectorPlugin:
         Hook wrapper to capture test outcomes.
         """
         outcome = yield
-        report: _pytest.reports.TestReport = outcome.get_result()
+        report: _pytest.reports.TestReport = outcome.get_result()  # type: ignore[attr-defined]
         marker = item.get_closest_marker("grading_data")  # Ensure the marker is registered
 
         if marker:

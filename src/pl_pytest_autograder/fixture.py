@@ -111,8 +111,7 @@ class StudentFixture:
         TODO make the type of this a typeguard for process and socket
         """
 
-        if self.process is None:
-            raise RuntimeError("Student code server process is not running. Please start it first.")
+        assert self.process is not None, "Student code server process is not running. Please start it first."
 
         process_return_code = self.process.poll()
         if process_return_code is not None:
@@ -156,6 +155,8 @@ class StudentFixture:
             "builtin_whitelist": self.builtin_whitelist,
         }
 
+        assert self.process.stdout is not None, "Process stdout is None. Ensure the process is started correctly."
+
         line = self.process.stdout.readline().decode()  # Read the initial output from the process to ensure it's ready
         host, port = line.strip().split(",")
 
@@ -184,7 +185,7 @@ class StudentFixture:
 
         json_message: StudentQueryRequest = {"message_type": "query", "var": var_to_query, "query_timeout": query_timeout}
 
-        assert self.student_socket is not None
+        assert self.student_socket is not None, "Student socket is not connected. Please start the student code server first."
         self.student_socket.settimeout(query_timeout)
         self.student_socket.sendall(json.dumps(json_message).encode("utf-8") + os.linesep.encode("utf-8"))
         data: StudentQueryResponse = json.loads(self.student_socket.recv(BUFFSIZE).decode())
@@ -205,7 +206,6 @@ class StudentFixture:
         """
         TODO add query timeout keyword only argument
         """
-        self._assert_process_running()
 
         json_message: StudentFunctionRequest = {
             "message_type": "query_function",
@@ -215,6 +215,7 @@ class StudentFixture:
             "query_timeout": query_timeout,
         }
 
+        assert self.student_socket is not None, "Student socket is not connected. Please start the student code server first."
         self.student_socket.settimeout(query_timeout)
         self.student_socket.sendall(json.dumps(json_message).encode("utf-8") + os.linesep.encode("utf-8"))
         data: StudentFunctionResponse = json.loads(self.student_socket.recv(BUFFSIZE).decode())
