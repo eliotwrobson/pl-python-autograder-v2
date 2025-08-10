@@ -16,15 +16,15 @@ from typing import Callable
 
 # TODO make it so that other files in this package cannot import from this one
 # ask Gemini how to do it
-from pl_pytest_autograder.json_utils import to_json
-from pl_pytest_autograder.utils import ProcessStartRequest
-from pl_pytest_autograder.utils import ProcessStartResponse
-from pl_pytest_autograder.utils import StudentFunctionRequest
-from pl_pytest_autograder.utils import StudentFunctionResponse
-from pl_pytest_autograder.utils import StudentQueryRequest
-from pl_pytest_autograder.utils import StudentQueryResponse
-from pl_pytest_autograder.utils import deserialize_object_unsafe
-from pl_pytest_autograder.utils import get_builtins
+from pytest_pl_grader.json_utils import to_json
+from pytest_pl_grader.utils import ProcessStartRequest
+from pytest_pl_grader.utils import ProcessStartResponse
+from pytest_pl_grader.utils import StudentFunctionRequest
+from pytest_pl_grader.utils import StudentFunctionResponse
+from pytest_pl_grader.utils import StudentQueryRequest
+from pytest_pl_grader.utils import StudentQueryResponse
+from pytest_pl_grader.utils import deserialize_object_unsafe
+from pytest_pl_grader.utils import get_builtins
 
 ImportFunction = Callable[[str, Mapping[str, object] | None, Mapping[str, object] | None, Sequence[str], int], types.ModuleType]
 

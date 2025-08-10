@@ -1,5 +1,5 @@
 [project]
-name = "pl-pytest-autograder"
+name = "pytest-pl-grader"
 dynamic = ["version"]
 description = "A pytest plugin for autograding Python code. Designed for use with the PrairieLearn platform."
 readme = "README.md"
@@ -76,7 +76,7 @@ forced-separate = ["conftest"]
 force-single-line = true
 
 [project.entry-points.pytest11]
-pl_pytest_autograder = "pl_pytest_autograder.plugin"
+pl-grader = "pytest_pl_grader.plugin"
 
 # TODO uncomment to add a separate CLI entrypoint.
 # [project.scripts]

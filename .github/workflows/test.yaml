@@ -27,7 +27,7 @@ jobs:
       #   run: |
       #     uv run mypy --config-file pyproject.toml src tests
       - name: Test with pytest
-        run: uv run pytest tests -p no:pl_pytest_autograder
+        run: uv run pytest tests -p no:pl-grader
 
         # |
         #   uv pip install -e .

@@ -2,8 +2,8 @@ from typing import cast
 
 import numpy as np
 
-from pl_pytest_autograder.utils import deserialize_object_unsafe
-from pl_pytest_autograder.utils import serialize_object_unsafe
+from pytest_pl_grader.utils import deserialize_object_unsafe
+from pytest_pl_grader.utils import serialize_object_unsafe
 
 
 def test_serialize_numpy_array() -> None:

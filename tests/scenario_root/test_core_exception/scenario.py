@@ -1,7 +1,7 @@
 import pytest
 
-from pl_pytest_autograder.fixture import FeedbackFixture
-from pl_pytest_autograder.fixture import StudentFixture
+from pytest_pl_grader.fixture import FeedbackFixture
+from pytest_pl_grader.fixture import StudentFixture
 
 
 @pytest.mark.grading_data(name="test_exception", points=2)

@@ -1,9 +1,9 @@
 import numpy as np
 import pytest
 
-from pl_pytest_autograder.fixture import DataFixture
-from pl_pytest_autograder.fixture import FeedbackFixture
-from pl_pytest_autograder.fixture import StudentFixture
+from pytest_pl_grader.fixture import DataFixture
+from pytest_pl_grader.fixture import FeedbackFixture
+from pytest_pl_grader.fixture import StudentFixture
 
 
 def compute_fp_list(L: float, n: int, start: float, end: float) -> tuple[float, float, list[float]]:

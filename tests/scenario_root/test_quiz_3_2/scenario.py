@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from pl_pytest_autograder.fixture import StudentFixture
+from pytest_pl_grader.fixture import StudentFixture
 
 ### Start of simulation code ###
 
