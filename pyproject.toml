@@ -1,7 +1,7 @@
 [project]
 name = "pl-pytest-autograder"
-version = "0.1.1"
-description = "A pytest plugin for autograding Python code."
+dynamic = ["version"]
+description = "A pytest plugin for autograding Python code. Designed for use with the PrairieLearn platform."
 readme = "README.md"
 authors = [{ name = "Eliot Robson", email = "eliot.robson24@gmail.com" }]
 requires-python = ">=3.10"
@@ -12,8 +12,14 @@ license = { file = "LICENSE" }
 dev = ["numpy>=2.0", "pandas>=2.0", "mypy", "ruff>=0.11.12", "sympy"]
 
 [build-system]
-requires = ["hatchling"]
+requires = ["hatchling", "uv-dynamic-versioning"]
 build-backend = "hatchling.build"
+
+[tool.hatch.version]
+source = "uv-dynamic-versioning"
+
+[tool.uv-dynamic-versioning]
+fallback-version = "0.0.0"
 
 [tool.ruff]
 line-length = 140
@@ -65,5 +71,6 @@ force-single-line = true
 [project.entry-points.pytest11]
 pl_pytest_autograder = "pl_pytest_autograder.plugin"
 
-[project.scripts]
-pl-pytest-autograder = "pl_pytest_autograder.cli:main"
+# TODO uncomment to add a separate CLI entrypoint.
+# [project.scripts]
+# pl-pytest-autograder = "pl_pytest_autograder.cli:main"
