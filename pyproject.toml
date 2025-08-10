@@ -76,8 +76,8 @@ pl_pytest_autograder = "pl_pytest_autograder.plugin"
 # pl-pytest-autograder = "pl_pytest_autograder.cli:main"
 
 [tool.mypy]
-exclude = "tests/scenario_root/**/student_code.*\\.py"
+exclude = "tests/scenario_root/.*student_code.*\\.py"
 
 [[tool.mypy.overrides]]
-module = ["sympy.*"]
+module = ["sympy.*", "dill.*"]
 ignore_missing_imports = true
