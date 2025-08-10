@@ -7,6 +7,14 @@ authors = [{ name = "Eliot Robson", email = "eliot.robson24@gmail.com" }]
 requires-python = ">=3.10"
 dependencies = ["dill>=0.4.0", "pytest", "prettytable>=3.8.0"]
 license = { file = "LICENSE" }
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+]
 
 [project.urls]
 repository = "https://github.com/eliotwrobson/pl-python-autograder-v2"
