@@ -1,0 +1,20 @@
+name: publish
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - name: Test package
+        run: uv run pytest
+      - name: Typecheck package
+        run: uv run mypy --config-file pyproject.toml src tests
+      - name: Build and publish to pypi
+        run: |
+          uv build
+          uv publish --token ${{ secrets.PYPI_TOKEN }}

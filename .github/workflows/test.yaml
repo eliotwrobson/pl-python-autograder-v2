@@ -18,18 +18,5 @@ jobs:
         uses: astral-sh/setup-uv@v5
       - name: Check lockfile
         run: uv lock --check
-      # - name: Lint with ruff
-      #   run: |
-      #     # Fail if codebase contains any of these issues
-      #     uv run ruff check .
-      #     uv run ruff format --check .
-      # - name: Static Typechecking with mypy
-      #   run: |
-      #     uv run mypy --config-file pyproject.toml src tests
       - name: Test with pytest
         run: uv run pytest tests -p no:pl-grader
-
-        # |
-        #   uv pip install -e .
-        #   set -o pipefail
-        #   uv run pytest --cache-clear --cov | tee pytest-coverage.txt

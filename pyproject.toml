@@ -8,6 +8,9 @@ requires-python = ">=3.10"
 dependencies = ["dill>=0.4.0", "pytest", "prettytable>=3.8.0"]
 license = { file = "LICENSE" }
 
+[project.urls]
+repository = "https://github.com/eliotwrobson/pl-python-autograder-v2"
+
 [dependency-groups]
 dev = [
     "numpy>=2.0",
