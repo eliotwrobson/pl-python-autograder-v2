@@ -89,6 +89,17 @@ There are three fixtures defined by the `pytest_pl_grader` package:
 
 To look at the code for each fixture, see the [file defining these fixtures](https://github.com/eliotwrobson/pl-python-autograder-v2/blob/main/src/pytest_pl_grader/fixture.py).
 
+## Querying student code
+
+There are two basic functions on the sandbox that can be used to query the student code.
+
+1. `sandbox.query(variable_name)`: This function retrieves the value of a variable defined in the student code. If the variable does not exist, it will raise an error.
+
+2. `sandbox.query_function(function_name, *args, **kwargs)`: This function calls a function defined in the student code with the given arguments and keyword arguments. It returns the result of the function call.
+
+Note that symbols must be defined in the student code for these functions to work. Also,
+they must return a type that the autograder can json serialize (right now this includes `int`, `float`, `list`, `dict`, numpy arrays, and pandas dataframes).
+
 ### Testing flow
 
 Tests in this package are designed to flow in a linear way, where partial credit can be
