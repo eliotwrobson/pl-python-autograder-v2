@@ -89,6 +89,14 @@ There are three fixtures defined by the `pytest_pl_grader` package:
 
 To look at the code for each fixture, see the [file defining these fixtures](https://github.com/eliotwrobson/pl-python-autograder-v2/blob/main/src/pytest_pl_grader/fixture.py).
 
+### Testing flow
+
+Tests in this package are designed to flow in a linear way, where partial credit can be
+given after certain asserts pass. Once an assert fails, the amount of partial credit awarded
+will be the last value given before the failure, and the failure message in the assert will
+be given as feedback. To set partial credit, simply call `feedback.set_score(<points>)`, where
+`<points>` is in the range [0, 1]. To set custom feedback, set `feedback.add_message(<message>)`.
+
 ## More examples
 
 To see more examples of what is possible in these test files, look at the test cases in
