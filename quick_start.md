@@ -8,6 +8,16 @@ is powered by the autograder pytest extension code here.
 The following discussion is based on the converted example question here:
 https://github.com/PrairieLearn/PrairieLearn/pull/12603
 
+## Editor setup
+
+Be sure to install the `pytest` and `pytest-pl-grader` packages in your Python environment. You can do this using pip:
+
+```
+pip install pytest pytest-pl-grader
+```
+
+This will ensure you can use pylance and GitHub copilot to help write test cases.
+
 ## File structure
 
 The required file structure for a PL question using this grader image is below
