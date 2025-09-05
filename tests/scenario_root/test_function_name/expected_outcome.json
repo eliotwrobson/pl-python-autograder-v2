@@ -5,20 +5,23 @@
       {
         "max_points": 4,
         "name": "Test expected inputs",
-        "points": 1.0,
+        "points_frac": 1.0,
+        "points": 4.0,
         "test_id": "test_function_name.py::test_input[func_name_code_student]",
         "outcome": "passed"
       },
       {
         "max_points": 1,
         "name": "Test default output",
-        "points": 1,
+        "points_frac": 1,
+        "points": 1.0,
         "test_id": "test_function_name.py::test_default_output[func_name_code_student]",
         "outcome": "passed"
       },
       {
         "max_points": 4,
         "name": "Test expected inputs",
+        "points_frac": 0.0,
         "points": 0.0,
         "test_id": "test_function_name.py::test_input[func_name_code_bad_import]",
         "outcome": "error"
@@ -26,6 +29,7 @@
       {
         "max_points": 1,
         "name": "Test default output",
+        "points_frac": 0.0,
         "points": 0.0,
         "test_id": "test_function_name.py::test_default_output[func_name_code_bad_import]",
         "outcome": "error"
@@ -33,6 +37,7 @@
       {
         "max_points": 4,
         "name": "Test expected inputs",
+        "points_frac": 0.0,
         "points": 0.0,
         "test_id": "test_function_name.py::test_input[func_name_code_inner_bad_import]",
         "outcome": "failed"
@@ -40,6 +45,7 @@
       {
         "max_points": 1,
         "name": "Test default output",
+        "points_frac": 0.0,
         "points": 0.0,
         "test_id": "test_function_name.py::test_default_output[func_name_code_inner_bad_import]",
         "outcome": "failed"

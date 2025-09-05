@@ -6,6 +6,7 @@
         "max_points": 2,
         "message": "Student code execution failed with an exception: division by zero",
         "name": "test_exception",
+        "points_frac": 0.0,
         "points": 0.0,
         "test_id": "test_core_exception.py::test_core_exception[student_code_exception]",
         "outcome": "error"
@@ -14,6 +15,7 @@
         "max_points": 2,
         "message": "Student code initialization timed out",
         "name": "test_exception",
+        "points_frac": 0.0,
         "points": 0.0,
         "test_id": "test_core_exception.py::test_core_exception[student_code_timeout]",
         "outcome": "error"
@@ -22,7 +24,8 @@
         "max_points": 2,
         "message": "Query for 'x' failed",
         "name": "test_exception",
-        "points": 0.1,
+        "points_frac": 0.1,
+        "points": 0.2,
         "test_id": "test_core_exception.py::test_core_exception[student_code_wrong_var]",
         "outcome": "failed"
       },
@@ -30,6 +33,7 @@
         "max_points": 2,
         "message": "Failed: no response from initialization",
         "name": "test_exception",
+        "points_frac": 0.0,
         "points": 0.0,
         "test_id": "test_core_exception.py::test_core_exception[student_code_exit]",
         "outcome": "error"
@@ -37,7 +41,8 @@
       {
         "max_points": 2,
         "name": "test_exception",
-        "points": 0.1,
+        "points_frac": 0.1,
+        "points": 0.2,
         "test_id": "test_core_exception.py::test_core_exception[student_code_custom_class]",
         "outcome": "failed"
       }

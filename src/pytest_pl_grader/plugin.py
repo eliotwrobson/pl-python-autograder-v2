@@ -435,23 +435,24 @@ class ResultCollectorPlugin:
 
             if outcome == "passed":
                 if not feedback_obj.final_score_override:
-                    res_obj["points"] = 1.0
+                    res_obj["points_frac"] = 1.0
                 # Otherwise, we just use the set points value
 
-            elif res_obj["points"] is None:
+            elif res_obj["points_frac"] is None:
                 if outcome == "failed":
-                    res_obj["points"] = 0.0
+                    res_obj["points_frac"] = 0.0
                 else:
                     # TODO fill in logic for other outcomes
                     # e.g., "skipped", "xpassed", etc.
                     # For now, we raise an error for unexpected outcomes
                     raise ValueError(f"Unexpected outcome '{outcome}' for test '{nodeid}'.")
 
+            res_obj["points"] = res_obj["points_frac"] * res_obj["max_points"]
             final_results.append(res_obj)
         # TODO add gradable property
         # https://prairielearn.readthedocs.io/en/latest/externalGrading/#grading-results
 
-        total_score = sum(res["points"] * res["max_points"] for res in final_results)
+        total_score = sum(res["points_frac"] * res["max_points"] for res in final_results)
 
         # TODO should probably just raise an exception if this is zero bc it's almost certainly a mistake
         total_possible_score = sum(res["max_points"] for res in final_results)

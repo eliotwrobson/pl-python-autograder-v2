@@ -69,7 +69,7 @@ class FeedbackFixture:
         return {
             "test_id": self.test_id,
             "message": os.linesep.join(self.messages),
-            "points": self.score,
+            "points_frac": self.score,
         }
 
 

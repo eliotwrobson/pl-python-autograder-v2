@@ -122,6 +122,7 @@ def test_autograder_scenario_with_pytester(pytester: pytest.Pytester, scenario_d
 
         # assert actual_test["message"] == expected_test["message"], f"Message mismatch for test '{test_id}'."
         assert actual_test["max_points"] == expected_test["max_points"], f"Max points mismatch for test '{test_id}'."
+        assert math.isclose(expected_test["points_frac"], actual_test["points_frac"]), f"Points fraction mismatch for test '{test_id}'."
         assert math.isclose(expected_test["points"], actual_test["points"]), f"Points mismatch for test '{test_id}'."
         assert actual_test["outcome"] == expected_test["outcome"], f"Outcome mismatch for test '{test_id}'."
         outcome_dict[CONVERSION_DICT[actual_test["outcome"]]] += 1

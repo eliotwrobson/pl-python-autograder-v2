@@ -7,6 +7,7 @@
         "message": "Bob is not a known team memberSusan is not a known team memberGreg is not a known team member",
         "name": "ratings",
         "outcome": "passed",
+        "points_frac": 0.0,
         "points": 0.0,
         "test_id": "test_quiz_3_1.py::test_0[student_code_0]"
       },
@@ -15,7 +16,8 @@
         "message": "",
         "name": "ratings",
         "outcome": "passed",
-        "points": 1.0,
+        "points_frac": 1.0,
+        "points": 4.0,
         "test_id": "test_quiz_3_1.py::test_0[student_code_100]"
       },
       {
@@ -23,7 +25,8 @@
         "message": "",
         "name": "ratings",
         "outcome": "passed",
-        "points": 1.0,
+        "points_frac": 1.0,
+        "points": 4.0,
         "test_id": "test_quiz_3_1.py::test_0[student_code_66]"
       },
       {
@@ -31,6 +34,7 @@
         "message": "",
         "name": "highest_performing",
         "outcome": "failed",
+        "points_frac": 0.0,
         "points": 0.0,
         "test_id": "test_quiz_3_1.py::test_1[student_code_0]"
       },
@@ -39,6 +43,7 @@
         "message": "",
         "name": "highest_performing",
         "outcome": "passed",
+        "points_frac": 1.0,
         "points": 1.0,
         "test_id": "test_quiz_3_1.py::test_1[student_code_100]"
       },
@@ -47,6 +52,7 @@
         "message": "",
         "name": "highest_performing",
         "outcome": "failed",
+        "points_frac": 0.0,
         "points": 0.0,
         "test_id": "test_quiz_3_1.py::test_1[student_code_66]"
       },
@@ -55,6 +61,7 @@
         "message": "",
         "name": "lowest_performing",
         "outcome": "failed",
+        "points_frac": 0.0,
         "points": 0.0,
         "test_id": "test_quiz_3_1.py::test_2[student_code_0]"
       },
@@ -63,6 +70,7 @@
         "message": "",
         "name": "lowest_performing",
         "outcome": "passed",
+        "points_frac": 1.0,
         "points": 1.0,
         "test_id": "test_quiz_3_1.py::test_2[student_code_100]"
       },
@@ -71,6 +79,7 @@
         "message": "",
         "name": "lowest_performing",
         "outcome": "failed",
+        "points_frac": 0.0,
         "points": 0.0,
         "test_id": "test_quiz_3_1.py::test_2[student_code_66]"
       }
