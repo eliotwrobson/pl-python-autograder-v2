@@ -450,8 +450,14 @@ class ResultCollectorPlugin:
             final_results.append(res_obj)
         # TODO add gradable property
         # https://prairielearn.readthedocs.io/en/latest/externalGrading/#grading-results
+
+        total_score = sum(res["points"] * res["max_points"] for res in final_results)
+
+        # TODO should probably just raise an exception if this is zero bc it's almost certainly a mistake
+        total_possible_score = sum(res["max_points"] for res in final_results)
+
         res_dict = {
-            "score": sum(res["points"] * res["max_points"] for res in final_results),
+            "score": total_score / total_possible_score if total_possible_score > 0 else 0,
             "output": "Overall feedback for the autograder session.",
             "tests": final_results,
         }
