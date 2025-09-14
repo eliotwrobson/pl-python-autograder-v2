@@ -108,9 +108,9 @@ def sandbox(request: pytest.FixtureRequest, data_json: dict[str, Any] | None) ->
         response_status = response["status"]
 
         if response_status == "exception":
-            print(response)
-            exception_message = response.get("execution_error", "Unknown error")
-            pytest.fail(f"Student code execution failed with an exception: {exception_message}", pytrace=False)
+            exception_name = response.get("execution_error", "Unknown error")
+            exception_message = response.get("execution_message", "")
+            pytest.fail(f"Student code execution failed with an exception:{os.linesep}{exception_name}: {exception_message}", pytrace=False)
 
         elif response_status == "timeout":
             # Don't get the exception message since there usually isn't one for timeouts
@@ -516,6 +516,9 @@ def print_autograder_summary(session: pytest.Session, test_results: list[dict[st
     # Add data rows
     for result in test_results:
         table.add_row([result["test_id"], result["points"], result["message"]])
+
+    # TODO this is incorrect as the fractions were changed in the display shown to PL.
+    # Can fix this later since most people will just see the output shown in PL.
 
     # Calculate total score
     total_score = sum(result["points"] for result in test_results)

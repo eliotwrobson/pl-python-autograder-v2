@@ -66,6 +66,7 @@ class ProcessStartResponse(TypedDict):
     stdout: str
     stderr: str
     execution_error: str | None
+    execution_message: str | None
     execution_traceback: str
 
 
@@ -116,7 +117,7 @@ def get_builtins(builtin_whitelist: list[str] | None) -> dict[str, Any]:
     """
     final_builtins = {}
 
-    _safe_names = [
+    _safe_names = (
         "__build_class__",
         "None",
         "False",
@@ -148,9 +149,11 @@ def get_builtins(builtin_whitelist: list[str] | None) -> dict[str, Any]:
         "tuple",
         "zip",
         "enumerate",
-    ]
+        "min",
+        "max",
+    )
 
-    _safe_exceptions = [
+    _safe_exceptions = (
         "ArithmeticError",
         "AssertionError",
         "AttributeError",
@@ -198,7 +201,7 @@ def get_builtins(builtin_whitelist: list[str] | None) -> dict[str, Any]:
         "ValueError",
         "Warning",
         "ZeroDivisionError",
-    ]
+    )
 
     for name in _safe_names:
         final_builtins[name] = getattr(builtins, name)

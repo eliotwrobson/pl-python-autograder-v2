@@ -173,6 +173,7 @@ async def student_code_runner(
         "stdout": stdout_capture.getvalue(),
         "stderr": stderr_capture.getvalue(),
         "execution_error": type(execution_error).__name__ if execution_error else None,
+        "execution_message": str(execution_error) if execution_error else None,
         "execution_traceback": str(exception_traceback),
     }
 
