@@ -110,7 +110,17 @@ def sandbox(request: pytest.FixtureRequest, data_json: dict[str, Any] | None) ->
         if response_status == "exception":
             exception_name = response.get("execution_error", "Unknown error")
             exception_message = response.get("execution_message", "")
-            pytest.fail(f"Student code execution failed with an exception:{os.linesep}{exception_name}: {exception_message}", pytrace=False)
+            exception_traceback = response.get("execution_traceback", "")
+
+            # TODO add an option to hide the traceback if desired
+            # TODO maybe format this better?
+
+            pytest.fail(
+                f"Student code execution failed with an exception:{os.linesep}"
+                f"{exception_name}: {exception_message}{os.linesep * 2}"
+                f"{exception_traceback}",
+                pytrace=False,
+            )
 
         elif response_status == "timeout":
             # Don't get the exception message since there usually isn't one for timeouts

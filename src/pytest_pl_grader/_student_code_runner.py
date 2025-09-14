@@ -68,7 +68,7 @@ async def student_function_runner(
             result = await asyncio.wait_for(asyncio.get_event_loop().run_in_executor(executor, student_function_temp), timeout=timeout)
     except Exception as e:
         execution_error = e
-        exception_traceback = traceback.format_exc()
+        exception_traceback = traceback.format_exc(limit=-1)
 
     function_response: StudentFunctionResponse = {
         "status": "success" if execution_error is None else "exception",
@@ -165,8 +165,11 @@ async def student_code_runner(
 
         except Exception as e:
             execution_error = e
-            # TODO this traceback is not very useful
-            exception_traceback = traceback.format_exc()
+            # TODO this traceback only shows the last line with the exception.
+            # Would be better if we could give the full traceback within the student code
+            # for example, if the student code calls a function that raises an exception,
+            # we should show the full self-contained traceback including the function call.
+            exception_traceback = traceback.format_exc(limit=-1)
 
     result_dict: ProcessStartResponse = {
         "status": "success" if execution_error is None else "exception",
