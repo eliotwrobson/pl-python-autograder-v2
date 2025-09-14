@@ -173,6 +173,7 @@ class StudentFixture:
             res = {
                 "status": "no_response",
                 "execution_error": type(e).__name__,
+                "execution_message": str(e),
                 "execution_traceback": "",
                 "stdout": "",
                 "stderr": "",
