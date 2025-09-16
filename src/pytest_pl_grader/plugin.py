@@ -430,13 +430,16 @@ class ResultCollectorPlugin:
             if nodeid in self.student_feedback_data:
                 feedback_obj = self.student_feedback_data[nodeid]
             else:
+                # Create an empty feedback object if none was created during the test
                 feedback_obj = FeedbackFixture(test_id=nodeid)
-                if report.outcome == "failed" and call.excinfo is not None:
-                    # TODO show more sophisticated error messages for different exceptions
-                    exception_message = str(call.excinfo.value)
-                    exception_message = exception_message.split(os.linesep)[0]
 
-                    feedback_obj.add_message(exception_message)
+            # If the test failed, we can add the exception message to the feedback
+            if report.outcome == "failed" and call.excinfo is not None:
+                # TODO show more sophisticated error messages for different exceptions
+                exception_message = str(call.excinfo.value)
+                exception_message = exception_message.split(os.linesep)[0]
+
+                feedback_obj.add_message(exception_message)
 
             res_obj = feedback_obj.to_dict()
             res_obj["name"] = grading_data.get("name", nodeid)
