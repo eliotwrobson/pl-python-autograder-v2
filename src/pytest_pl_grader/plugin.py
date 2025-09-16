@@ -326,7 +326,7 @@ def pytest_configure(config: Config) -> None:
 
 
 class ResultCollectorPlugin:
-    collected_results: dict[str, _pytest.reports.TestReport]
+    collected_results: dict[str, tuple[_pytest.reports.TestReport, pytest.CallInfo]]
     student_feedback_data: dict[str, FeedbackFixture]
     grading_data: dict[str, Any]
 
@@ -355,11 +355,11 @@ class ResultCollectorPlugin:
 
         # Make a report for the setup phase, replace with the call phase if it happens later
         if report.when == "setup":
-            self.collected_results[report.nodeid] = report
+            self.collected_results[report.nodeid] = (report, call)
             # Add a default outcome if not already set
 
         elif report.when == "call":
-            self.collected_results[report.nodeid] = report
+            self.collected_results[report.nodeid] = (report, call)
             # You could store more details here if needed
             # item.config.my_test_results[report.nodeid] = {
             #     "outcome": report.outcome,
@@ -424,15 +424,19 @@ class ResultCollectorPlugin:
             if nodeid not in self.collected_results:
                 continue  # Skip if no results collected for this test
 
-            report = self.collected_results[nodeid]
+            report, call = self.collected_results[nodeid]
             outcome = report.outcome
 
             if nodeid in self.student_feedback_data:
                 feedback_obj = self.student_feedback_data[nodeid]
             else:
                 feedback_obj = FeedbackFixture(test_id=nodeid)
-                if report.outcome == "failed":
-                    feedback_obj.add_message(str(report.longrepr))
+                if report.outcome == "failed" and call.excinfo is not None:
+                    # TODO show more sophisticated error messages for different exceptions
+                    exception_message = str(call.excinfo.value)
+                    exception_message = exception_message.split(os.linesep)[0]
+
+                    feedback_obj.add_message(exception_message)
 
             res_obj = feedback_obj.to_dict()
             res_obj["name"] = grading_data.get("name", nodeid)
