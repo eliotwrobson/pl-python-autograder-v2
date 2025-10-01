@@ -13,6 +13,11 @@ def to_json(v: Any) -> Any:
             "_concrete_type": type(v).__name__,
             "_value": str(v),
         }
+    elif isinstance(v, np.bool_):
+        return {
+            "_type": "np_bool",
+            "_value": str(v),
+        }
     elif isinstance(v, np.ndarray):
         if np.isrealobj(v):
             return {"_type": "ndarray", "_value": v.tolist(), "_dtype": str(v.dtype)}
@@ -56,6 +61,11 @@ def from_json(v_json) -> Any:
                 return complex(v_json["_value"]["real"], v_json["_value"]["imag"])
             else:
                 raise ValueError("variable of type complex should have value with real and imaginary pair")
+        elif v_json["_type"] == "np_bool":
+            if "_value" in v_json:
+                return np.bool_(v_json["_value"] == "True")
+            else:
+                raise ValueError("variable of type np_bool should have value")
         elif v_json["_type"] == "np_scalar":
             if "_concrete_type" in v_json and "_value" in v_json:
                 return getattr(np, v_json["_concrete_type"])(v_json["_value"])

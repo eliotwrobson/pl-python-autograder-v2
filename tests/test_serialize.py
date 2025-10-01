@@ -24,7 +24,7 @@ def test_serialize_numpy_array() -> None:
     assert np.array_equal(arr, deserialized)
 
 
-@pytest.mark.parametrize("obj", [np.bool(True), np.int32(42), np.float64(3.14), complex(1, 2)])
+@pytest.mark.parametrize("obj", [np.bool(True), np.int32(42), np.float64(3.14), complex(1, 2), True])
 def test_serialize_json(obj: Any) -> None:
     # Serialize the object to JSON-compatible format
     json_compatible = to_json(obj)

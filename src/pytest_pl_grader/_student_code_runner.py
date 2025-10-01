@@ -72,7 +72,7 @@ async def student_function_runner(
 
     function_response: StudentFunctionResponse = {
         "status": "success" if execution_error is None else "exception",
-        "value": result,
+        "value": to_json(result),
         "stdout": stdout_capture.getvalue(),
         "stderr": stderr_capture.getvalue(),
         "exception_name": type(execution_error).__name__,
