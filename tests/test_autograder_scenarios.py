@@ -72,20 +72,19 @@ def test_autograder_scenario_with_pytester(pytester: pytest.Pytester, scenario_d
     pytester_scenario_dir = pytester.mkdir(scenario_dir.name)
 
     new_file_name = scenario_dir.name + ".py"
-    expected_outcome_file_name = "expected_outcome.json"
     expected_outcome_dict = None
 
     # Copy files from the specific scenario directory
     for item in scenario_dir.iterdir():
         if item.is_file():
             if item.name == "scenario.py":
-                print("in the scenario.py branch", scenario_dir.name)
+                # print("in the scenario.py branch", scenario_dir.name)
                 pytester.path.joinpath(new_file_name).write_text(item.read_text())  # Copy the file content
             elif item.name == "expected_outcome.json":
                 expected_outcome_dict = json.loads(item.read_text())
             elif item.name != "__init__.py":  # Ignore __init__.py files
                 pytester_scenario_dir.joinpath(item.name).write_text(item.read_text())  # Copy the file content
-                print(f"Copied '{item.name}' to pytester's testdir.")
+                # print(f"Copied '{item.name}' to pytester's testdir.")
         elif item.is_dir():
             raise ValueError("Scenario directories should not contain subdirectories. Please flatten the structure.")
 
@@ -120,7 +119,12 @@ def test_autograder_scenario_with_pytester(pytester: pytest.Pytester, scenario_d
         assert test_id in test_results_obj, f"Test '{test_id}' not found in results."
         actual_test = test_results_obj[test_id]
 
-        # assert actual_test["message"] == expected_test["message"], f"Message mismatch for test '{test_id}'."
+        # NOTE the message here is just a pattern that has to be contained in the actual message
+        # this is to avoid issues with longer messages
+        print(repr(expected_test["message"]))
+        print(repr(actual_test["message"]))
+        print(test_id)
+        assert expected_test["message"] in actual_test["message"], f"Message mismatch for test '{test_id}'."
         assert actual_test["max_points"] == expected_test["max_points"], f"Max points mismatch for test '{test_id}'."
         assert math.isclose(expected_test["points_frac"], actual_test["points_frac"]), f"Points fraction mismatch for test '{test_id}'."
         assert math.isclose(expected_test["points"], actual_test["points"]), f"Points mismatch for test '{test_id}'."
@@ -128,6 +132,7 @@ def test_autograder_scenario_with_pytester(pytester: pytest.Pytester, scenario_d
         outcome_dict[CONVERSION_DICT[actual_test["outcome"]]] += 1
 
     result.assert_outcomes(**outcome_dict)
+    assert False
 
     # For a scenario where student code is expected to fail:
     # result.assert_outcomes(failed=1, passed=1) # If one test fails and one passes

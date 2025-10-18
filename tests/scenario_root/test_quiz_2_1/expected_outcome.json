@@ -4,7 +4,7 @@
     "tests": [
       {
         "max_points": 6,
-        "message": " Test #1",
+        "message": " \nTest #1\nQuery for function analyze_vibration failed: 'analyze_vibration'",
         "name": "Test analyze_vibration function",
         "outcome": "failed",
         "points_frac": 0.0,
@@ -13,7 +13,7 @@
       },
       {
         "max_points": 6,
-        "message": " Test #2",
+        "message": " \nTest #2\nQuery for function analyze_vibration failed: 'analyze_vibration'",
         "name": "Test analyze_vibration function",
         "outcome": "failed",
         "points_frac": 0.0,
@@ -22,7 +22,7 @@
       },
       {
         "max_points": 6,
-        "message": "Student code execution failed with an exception: RuntimeError",
+        "message": "Student code execution failed with an exception:\nRuntimeError",
         "name": "Test analyze_vibration function",
         "outcome": "error",
         "points_frac": 0.0,
@@ -31,7 +31,7 @@
       },
       {
         "max_points": 6,
-        "message": "Student code execution failed with an exception: RuntimeError",
+        "message": "Student code execution failed with an exception:\nRuntimeError",
         "name": "Test analyze_vibration function",
         "outcome": "error",
         "points_frac": 0.0,
@@ -40,7 +40,7 @@
       },
       {
         "max_points": 6,
-        "message": " Test #1'production_ready' looks good",
+        "message": "Test #1\n'production_ready' looks good",
         "name": "Test analyze_vibration function",
         "outcome": "passed",
         "points_frac": 1.0,

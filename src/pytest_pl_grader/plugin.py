@@ -437,7 +437,8 @@ class ResultCollectorPlugin:
             if report.outcome == "failed" and call.excinfo is not None:
                 # TODO show more sophisticated error messages for different exceptions
                 exception_message = str(call.excinfo.value)
-                exception_message = exception_message.split(os.linesep)[0]
+                print("full exception message:", repr(exception_message))
+                # exception_message = exception_message.split(os.linesep)[0]
 
                 feedback_obj.add_message(exception_message)
 
