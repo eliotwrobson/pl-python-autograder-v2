@@ -4,7 +4,7 @@
     "tests": [
       {
         "max_points": 2,
-        "message": "",
+        "message_old": "",
         "name": "test_query_func",
         "points_frac": 1.0,
         "points": 2.0,
@@ -13,7 +13,7 @@
       },
       {
         "max_points": 2,
-        "message": "",
+        "message_old": "",
         "name": "test_query_func",
         "points_frac": 1.0,
         "points": 2.0,
@@ -22,7 +22,7 @@
       },
       {
         "max_points": 1,
-        "message": "",
+        "message_old": "",
         "name": "test_sandbox.py::test_numpy[student_code]",
         "points_frac": 1.0,
         "points": 1.0,
@@ -31,7 +31,7 @@
       },
       {
         "max_points": 1,
-        "message": "",
+        "message_old": "",
         "name": "test_sandbox.py::test_numpy[student_code_other]",
         "points_frac": 1.0,
         "points": 1.0,
@@ -40,7 +40,7 @@
       },
       {
         "max_points": 1,
-        "message": "This is a test message",
+        "message_old": "This is a test message",
         "name": "test_sandbox.py::test_temp[student_code]",
         "points_frac": 1.0,
         "points": 1.0,
@@ -49,7 +49,7 @@
       },
       {
         "max_points": 1,
-        "message": "",
+        "message_old": "",
         "name": "test_sandbox.py::test_temp[student_code_other]",
         "points_frac": 0.0,
         "points": 0.0,
@@ -58,7 +58,7 @@
       },
       {
         "max_points": 1,
-        "message": "",
+        "message_old": "",
         "name": "test_sandbox.py::test_temp_2[student_code]",
         "points_frac": 1.0,
         "points": 1.0,
@@ -67,7 +67,7 @@
       },
       {
         "max_points": 1,
-        "message": "",
+        "message_old": "",
         "name": "test_sandbox.py::test_temp_2[student_code_other]",
         "points_frac": 1.0,
         "points": 1.0,

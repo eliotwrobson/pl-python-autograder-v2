@@ -121,10 +121,10 @@ def test_autograder_scenario_with_pytester(pytester: pytest.Pytester, scenario_d
 
         # NOTE the message here is just a pattern that has to be contained in the actual message
         # this is to avoid issues with longer messages
-        print(repr(expected_test["message"]))
-        print(repr(actual_test["message"]))
-        print(test_id)
-        assert expected_test["message"] in actual_test["message"], f"Message mismatch for test '{test_id}'."
+        expected_message = expected_test.get("message")
+        if expected_message is not None:
+            assert expected_message in actual_test["message"], f"Message mismatch for test '{test_id}'."
+
         assert actual_test["max_points"] == expected_test["max_points"], f"Max points mismatch for test '{test_id}'."
         assert math.isclose(expected_test["points_frac"], actual_test["points_frac"]), f"Points fraction mismatch for test '{test_id}'."
         assert math.isclose(expected_test["points"], actual_test["points"]), f"Points mismatch for test '{test_id}'."

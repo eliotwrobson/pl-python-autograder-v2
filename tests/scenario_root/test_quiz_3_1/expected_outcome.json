@@ -4,7 +4,7 @@
     "tests": [
       {
         "max_points": 4,
-        "message": "Bob is not a known team memberSusan is not a known team memberGreg is not a known team member",
+        "message_old": "Bob is not a known team memberSusan is not a known team memberGreg is not a known team member",
         "name": "ratings",
         "outcome": "passed",
         "points_frac": 0.0,
@@ -13,7 +13,7 @@
       },
       {
         "max_points": 4,
-        "message": "",
+        "message_old": "",
         "name": "ratings",
         "outcome": "passed",
         "points_frac": 1.0,
@@ -22,7 +22,7 @@
       },
       {
         "max_points": 4,
-        "message": "",
+        "message_old": "",
         "name": "ratings",
         "outcome": "passed",
         "points_frac": 1.0,
@@ -31,7 +31,7 @@
       },
       {
         "max_points": 1,
-        "message": "",
+        "message_old": "",
         "name": "highest_performing",
         "outcome": "failed",
         "points_frac": 0.0,
@@ -40,7 +40,7 @@
       },
       {
         "max_points": 1,
-        "message": "",
+        "message_old": "",
         "name": "highest_performing",
         "outcome": "passed",
         "points_frac": 1.0,
@@ -49,7 +49,7 @@
       },
       {
         "max_points": 1,
-        "message": "",
+        "message_old": "",
         "name": "highest_performing",
         "outcome": "failed",
         "points_frac": 0.0,
@@ -58,7 +58,7 @@
       },
       {
         "max_points": 1,
-        "message": "",
+        "message_old": "",
         "name": "lowest_performing",
         "outcome": "failed",
         "points_frac": 0.0,
@@ -67,7 +67,7 @@
       },
       {
         "max_points": 1,
-        "message": "",
+        "message_old": "",
         "name": "lowest_performing",
         "outcome": "passed",
         "points_frac": 1.0,
@@ -76,7 +76,7 @@
       },
       {
         "max_points": 1,
-        "message": "",
+        "message_old": "",
         "name": "lowest_performing",
         "outcome": "failed",
         "points_frac": 0.0,

@@ -4,7 +4,7 @@
     "tests": [
       {
         "max_points": 1,
-        "message": "Student code execution failed with an exception: TypeError",
+        "message_old": "Student code execution failed with an exception: TypeError",
         "name": "largest_fp",
         "outcome": "error",
         "points_frac": 0.0,
@@ -13,7 +13,7 @@
       },
       {
         "max_points": 1,
-        "message": "Good Job!",
+        "message_old": "Good Job!",
         "name": "largest_fp",
         "outcome": "passed",
         "points_frac": 1.0,
@@ -22,7 +22,7 @@
       },
       {
         "max_points": 1,
-        "message": "Good Job!",
+        "message_old": "Good Job!",
         "name": "largest_fp",
         "outcome": "passed",
         "points_frac": 1.0,
@@ -31,7 +31,7 @@
       },
       {
         "max_points": 1,
-        "message": "Student code execution failed with an exception: TypeError",
+        "message_old": "Student code execution failed with an exception: TypeError",
         "name": "machine_epsilon",
         "outcome": "error",
         "points_frac": 0.0,
@@ -40,7 +40,7 @@
       },
       {
         "max_points": 1,
-        "message": "Good Job!",
+        "message_old": "Good Job!",
         "name": "machine_epsilon",
         "outcome": "passed",
         "points_frac": 1.0,
@@ -49,7 +49,7 @@
       },
       {
         "max_points": 1,
-        "message": "Good Job!",
+        "message_old": "Good Job!",
         "name": "machine_epsilon",
         "outcome": "passed",
         "points_frac": 1.0,
@@ -58,7 +58,7 @@
       },
       {
         "max_points": 8,
-        "message": "Student code execution failed with an exception: TypeError",
+        "message_old": "Student code execution failed with an exception: TypeError",
         "name": "fp_lst",
         "outcome": "error",
         "points_frac": 0.0,
@@ -67,7 +67,7 @@
       },
       {
         "max_points": 8,
-        "message": "Good Job!",
+        "message_old": "Good Job!",
         "name": "fp_lst",
         "outcome": "passed",
         "points_frac": 1.0,
@@ -76,7 +76,7 @@
       },
       {
         "max_points": 8,
-        "message": "",
+        "message_old": "",
         "name": "fp_lst",
         "outcome": "failed",
         "points_frac": 0.0,

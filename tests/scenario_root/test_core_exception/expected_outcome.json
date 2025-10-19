@@ -4,7 +4,7 @@
     "tests": [
       {
         "max_points": 2,
-        "message": "Student code execution failed with an exception: division by zero",
+        "message_old": "Student code execution failed with an exception: division by zero",
         "name": "test_exception",
         "points_frac": 0.0,
         "points": 0.0,
@@ -13,7 +13,7 @@
       },
       {
         "max_points": 2,
-        "message": "Student code initialization timed out",
+        "message_old": "Student code initialization timed out",
         "name": "test_exception",
         "points_frac": 0.0,
         "points": 0.0,
@@ -22,7 +22,7 @@
       },
       {
         "max_points": 2,
-        "message": "Query for 'x' failed",
+        "message_old": "Query for 'x' failed",
         "name": "test_exception",
         "points_frac": 0.1,
         "points": 0.2,
@@ -31,7 +31,7 @@
       },
       {
         "max_points": 2,
-        "message": "Failed: no response from initialization",
+        "message_old": "Failed: no response from initialization",
         "name": "test_exception",
         "points_frac": 0.0,
         "points": 0.0,

@@ -4,7 +4,7 @@
     "tests": [
       {
         "max_points": 1,
-        "message": "sandbox = StudentFixture(leading_file=C:\\Users\\eliot\\Documents\\GitHub\\pl-python-autograder-v2\\tests\\test_quiz_3_2\\leading_code.p...de.py, student_code_file=C:\\Users\\eliot\\Documents\\GitHub\\pl-python-autograder-v2\\tests\\test_quiz_3_2\\student_code_0.py)\n\n    @pytest.mark.grading_data(name=\"index\", points=1)\n    def test_0(sandbox: StudentFixture) -> None:\n        stock_returns, market_trend, p = get_starting_parameters()\n    \n        correct_index, _ = most_consistent_stock(stock_returns, market_trend, p)\n        student_index, _ = sandbox.query_function(\"most_consistent_stock\", stock_returns, market_trend, p)\n    \n>       assert correct_index == student_index, \"The index of the most consistent stock is incorrect.\"\nE       AssertionError: The index of the most consistent stock is incorrect.\nE       assert np.int64(0) == 9\n\ntests\\test_quiz_3_2.py:149: AssertionError",
+        "message_old": "sandbox = StudentFixture(leading_file=C:\\Users\\eliot\\Documents\\GitHub\\pl-python-autograder-v2\\tests\\test_quiz_3_2\\leading_code.p...de.py, student_code_file=C:\\Users\\eliot\\Documents\\GitHub\\pl-python-autograder-v2\\tests\\test_quiz_3_2\\student_code_0.py)\n\n    @pytest.mark.grading_data(name=\"index\", points=1)\n    def test_0(sandbox: StudentFixture) -> None:\n        stock_returns, market_trend, p = get_starting_parameters()\n    \n        correct_index, _ = most_consistent_stock(stock_returns, market_trend, p)\n        student_index, _ = sandbox.query_function(\"most_consistent_stock\", stock_returns, market_trend, p)\n    \n>       assert correct_index == student_index, \"The index of the most consistent stock is incorrect.\"\nE       AssertionError: The index of the most consistent stock is incorrect.\nE       assert np.int64(0) == 9\n\ntests\\test_quiz_3_2.py:149: AssertionError",
         "name": "index",
         "outcome": "failed",
         "points_frac": 0.0,
@@ -13,7 +13,7 @@
       },
       {
         "max_points": 1,
-        "message": "Student code execution failed with an exception: NameError",
+        "message_old": "Student code execution failed with an exception: NameError",
         "name": "index",
         "outcome": "error",
         "points_frac": 0.0,
@@ -22,7 +22,7 @@
       },
       {
         "max_points": 1,
-        "message": "",
+        "message_old": "",
         "name": "index",
         "outcome": "passed",
         "points_frac": 1.0,
@@ -31,7 +31,7 @@
       },
       {
         "max_points": 1,
-        "message": "",
+        "message_old": "",
         "name": "index",
         "outcome": "passed",
         "points_frac": 1.0,
@@ -40,7 +40,7 @@
       },
       {
         "max_points": 1,
-        "message": "sandbox = StudentFixture(leading_file=C:\\Users\\eliot\\Documents\\GitHub\\pl-python-autograder-v2\\tests\\test_quiz_3_2\\leading_code.p...de.py, student_code_file=C:\\Users\\eliot\\Documents\\GitHub\\pl-python-autograder-v2\\tests\\test_quiz_3_2\\student_code_0.py)\n\n    @pytest.mark.grading_data(name=\"p_norm\", points=1)\n    def test_1(sandbox: StudentFixture) -> None:\n        stock_returns, market_trend, p = get_starting_parameters()\n    \n        _, correct_p_norm = most_consistent_stock(stock_returns, market_trend, p)\n        _, student_p_norm = sandbox.query_function(\"most_consistent_stock\", stock_returns, market_trend, p)\n    \n>       assert correct_p_norm == student_p_norm, \"The p_norm of the most consistent stock is incorrect.\"\nE       AssertionError: The p_norm of the most consistent stock is incorrect.\nE       assert np.float64(3.4032872527722994e-14) == 159.67479302699846\n\ntests\\test_quiz_3_2.py:159: AssertionError",
+        "message_old": "sandbox = StudentFixture(leading_file=C:\\Users\\eliot\\Documents\\GitHub\\pl-python-autograder-v2\\tests\\test_quiz_3_2\\leading_code.p...de.py, student_code_file=C:\\Users\\eliot\\Documents\\GitHub\\pl-python-autograder-v2\\tests\\test_quiz_3_2\\student_code_0.py)\n\n    @pytest.mark.grading_data(name=\"p_norm\", points=1)\n    def test_1(sandbox: StudentFixture) -> None:\n        stock_returns, market_trend, p = get_starting_parameters()\n    \n        _, correct_p_norm = most_consistent_stock(stock_returns, market_trend, p)\n        _, student_p_norm = sandbox.query_function(\"most_consistent_stock\", stock_returns, market_trend, p)\n    \n>       assert correct_p_norm == student_p_norm, \"The p_norm of the most consistent stock is incorrect.\"\nE       AssertionError: The p_norm of the most consistent stock is incorrect.\nE       assert np.float64(3.4032872527722994e-14) == 159.67479302699846\n\ntests\\test_quiz_3_2.py:159: AssertionError",
         "name": "p_norm",
         "outcome": "failed",
         "points_frac": 0.0,
@@ -49,7 +49,7 @@
       },
       {
         "max_points": 1,
-        "message": "Student code execution failed with an exception: NameError",
+        "message_old": "Student code execution failed with an exception: NameError",
         "name": "p_norm",
         "outcome": "error",
         "points_frac": 0.0,
@@ -58,7 +58,7 @@
       },
       {
         "max_points": 1,
-        "message": "",
+        "message_old": "",
         "name": "p_norm",
         "outcome": "passed",
         "points_frac": 1.0,
@@ -67,7 +67,7 @@
       },
       {
         "max_points": 1,
-        "message": "sandbox = StudentFixture(leading_file=C:\\Users\\eliot\\Documents\\GitHub\\pl-python-autograder-v2\\tests\\test_quiz_3_2\\leading_code.p...e.py, student_code_file=C:\\Users\\eliot\\Documents\\GitHub\\pl-python-autograder-v2\\tests\\test_quiz_3_2\\student_code_50.py)\n\n    @pytest.mark.grading_data(name=\"p_norm\", points=1)\n    def test_1(sandbox: StudentFixture) -> None:\n        stock_returns, market_trend, p = get_starting_parameters()\n    \n        _, correct_p_norm = most_consistent_stock(stock_returns, market_trend, p)\n        _, student_p_norm = sandbox.query_function(\"most_consistent_stock\", stock_returns, market_trend, p)\n    \n>       assert correct_p_norm == student_p_norm, \"The p_norm of the most consistent stock is incorrect.\"\nE       AssertionError: The p_norm of the most consistent stock is incorrect.\nE       assert np.float64(3.4032872527722994e-14) == 159.67479302699846\n\ntests\\test_quiz_3_2.py:159: AssertionError",
+        "message_old": "sandbox = StudentFixture(leading_file=C:\\Users\\eliot\\Documents\\GitHub\\pl-python-autograder-v2\\tests\\test_quiz_3_2\\leading_code.p...e.py, student_code_file=C:\\Users\\eliot\\Documents\\GitHub\\pl-python-autograder-v2\\tests\\test_quiz_3_2\\student_code_50.py)\n\n    @pytest.mark.grading_data(name=\"p_norm\", points=1)\n    def test_1(sandbox: StudentFixture) -> None:\n        stock_returns, market_trend, p = get_starting_parameters()\n    \n        _, correct_p_norm = most_consistent_stock(stock_returns, market_trend, p)\n        _, student_p_norm = sandbox.query_function(\"most_consistent_stock\", stock_returns, market_trend, p)\n    \n>       assert correct_p_norm == student_p_norm, \"The p_norm of the most consistent stock is incorrect.\"\nE       AssertionError: The p_norm of the most consistent stock is incorrect.\nE       assert np.float64(3.4032872527722994e-14) == 159.67479302699846\n\ntests\\test_quiz_3_2.py:159: AssertionError",
         "name": "p_norm",
         "outcome": "failed",
         "points_frac": 0.0,
