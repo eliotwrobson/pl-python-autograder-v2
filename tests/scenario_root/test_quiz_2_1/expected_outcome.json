@@ -49,7 +49,7 @@
       },
       {
         "max_points": 6,
-        "message": " Test #2'production_ready' looks good",
+        "message": "Test #2\n'production_ready' looks good",
         "name": "Test analyze_vibration function",
         "outcome": "passed",
         "points_frac": 1.0,
@@ -58,7 +58,7 @@
       },
       {
         "max_points": 6,
-        "message": " Test #1'production_ready' is incorrect and has type <class 'int'>",
+        "message": "Test #1\n'production_ready' is incorrect and has type <class 'int'>",
         "name": "Test analyze_vibration function",
         "outcome": "passed",
         "points_frac": 0.3333333333333333,
@@ -67,7 +67,7 @@
       },
       {
         "max_points": 6,
-        "message": " Test #2'production_ready' is incorrect and has type <class 'int'>",
+        "message": "Test #2\n'production_ready' is incorrect and has type <class 'int'>",
         "name": "Test analyze_vibration function",
         "outcome": "passed",
         "points_frac": 0.3333333333333333,
@@ -76,7 +76,7 @@
       },
       {
         "max_points": 6,
-        "message": " Test #1'production_ready' looks good",
+        "message": "Test #1\n'production_ready' looks good",
         "name": "Test analyze_vibration function",
         "outcome": "passed",
         "points_frac": 0.6666666666666666,
@@ -85,7 +85,7 @@
       },
       {
         "max_points": 6,
-        "message": " Test #2'production_ready' looks good",
+        "message": "Test #2\n'production_ready' looks good",
         "name": "Test analyze_vibration function",
         "outcome": "passed",
         "points_frac": 0.6666666666666666,

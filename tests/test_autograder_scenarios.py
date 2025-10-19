@@ -132,7 +132,6 @@ def test_autograder_scenario_with_pytester(pytester: pytest.Pytester, scenario_d
         outcome_dict[CONVERSION_DICT[actual_test["outcome"]]] += 1
 
     result.assert_outcomes(**outcome_dict)
-    assert False
 
     # For a scenario where student code is expected to fail:
     # result.assert_outcomes(failed=1, passed=1) # If one test fails and one passes
