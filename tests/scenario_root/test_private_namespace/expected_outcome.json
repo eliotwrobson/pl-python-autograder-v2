@@ -1,0 +1,34 @@
+{
+  "expected_data_object": {
+    "score": 0.3333333333333333,
+    "tests": [
+      {
+        "max_points": 1,
+        "message": "NameError: name 'other_secret_value' is not defined",
+        "name": "test_private_namespace.py::test_random[student_code_fail_other]",
+        "outcome": "error",
+        "points": 0.0,
+        "points_frac": 0.0,
+        "test_id": "test_private_namespace.py::test_random[student_code_fail_other]"
+      },
+      {
+        "max_points": 1,
+        "message": "NameError: name 'super_secret_value' is not defined",
+        "name": "test_private_namespace.py::test_random[student_code_fail]",
+        "outcome": "error",
+        "points": 0.0,
+        "points_frac": 0.0,
+        "test_id": "test_private_namespace.py::test_random[student_code_fail]"
+      },
+      {
+        "max_points": 1,
+        "message": "",
+        "name": "test_private_namespace.py::test_random[student_code]",
+        "outcome": "passed",
+        "points": 1.0,
+        "points_frac": 1.0,
+        "test_id": "test_private_namespace.py::test_random[student_code]"
+      }
+    ]
+  }
+}

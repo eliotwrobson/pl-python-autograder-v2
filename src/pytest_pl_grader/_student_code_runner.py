@@ -135,9 +135,9 @@ async def student_code_runner(
     stderr_capture = io.StringIO()
     execution_error = None
     exception_traceback = None
-    local_vars = {}
+    local_vars = deepcopy(starting_vars) if starting_vars else {}
 
-    student_code_vars: dict[str, Any] = deepcopy(starting_vars) if starting_vars else {}
+    student_code_vars: dict[str, Any] = {}
     student_code_vars["__builtins__"] = get_builtins(builtin_whitelist)
 
     student_code_vars["__builtins__"]["__name__"] = "__main__"  # Set __name__ to "__main__" to mimic the main module
@@ -156,19 +156,19 @@ async def student_code_runner(
                     timeout=timeout,
                 )
 
-                if names_for_user_list is not None:
-                    for name_info in names_for_user_list:
-                        var_name = name_info["name"]
-
-                        if var_name in local_vars:
-                            # NOTE I think there might be issues with security with deepcopying certain
-                            # objects. If needed, we can prevent leaks here through serialization.
-                            student_code_vars[var_name] = deepcopy(local_vars[var_name])
-
     except Exception as e:
         execution_error = e
         # TODO need to create a different message for setup code errors. This should result
         # in a different error message reported from the test case.
+
+    if names_for_user_list is not None:
+        for name_info in names_for_user_list:
+            var_name = name_info["name"]
+
+            if var_name in local_vars:
+                # NOTE I think there might be issues with security with deepcopying certain
+                # objects. If needed, we can prevent leaks here through serialization.
+                student_code_vars[var_name] = deepcopy(local_vars[var_name])
 
     if execution_error is None:
         try:
