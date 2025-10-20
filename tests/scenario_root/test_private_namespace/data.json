@@ -14,6 +14,11 @@
         "name": "b",
         "type": "dict",
         "description": ""
+      },
+      {
+        "name": "f",
+        "type": "function",
+        "description": ""
       }
     ]
   }
