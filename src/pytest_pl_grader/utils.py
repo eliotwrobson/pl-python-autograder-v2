@@ -13,6 +13,22 @@ ProcessStatusCode = Literal["success", "exception", "timeout", "no_response"]
 # TODO use some inheritance on the query and response types
 
 
+class NamesForUserInfo(TypedDict):
+    name: str
+    description: str
+    type: str
+
+
+class SetupQueryRequest(TypedDict):
+    message_type: Literal["query_setup"]
+    var: str
+
+
+class SetupQueryResponse(TypedDict):
+    status: QueryStatusCode
+    value_encoded: str
+
+
 # Variable query dict types
 class StudentQueryRequest(TypedDict):
     message_type: Literal["query"]
@@ -59,6 +75,7 @@ class ProcessStartRequest(TypedDict):
     import_blacklist: list[str] | None
     starting_vars: dict[str, Any] | None
     builtin_whitelist: list[str] | None
+    names_for_user_list: list[NamesForUserInfo] | None
 
 
 class ProcessStartResponse(TypedDict):

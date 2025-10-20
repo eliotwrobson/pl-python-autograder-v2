@@ -11,24 +11,30 @@ from collections.abc import Mapping
 from collections.abc import Sequence
 from contextlib import redirect_stderr
 from contextlib import redirect_stdout
+from copy import deepcopy
 from typing import Any
 from typing import Callable
 
 # TODO make it so that other files in this package cannot import from this one
 # ask Gemini how to do it
 from pytest_pl_grader.json_utils import to_json
+from pytest_pl_grader.utils import NamesForUserInfo
 from pytest_pl_grader.utils import ProcessStartRequest
 from pytest_pl_grader.utils import ProcessStartResponse
+from pytest_pl_grader.utils import SetupQueryRequest
+from pytest_pl_grader.utils import SetupQueryResponse
 from pytest_pl_grader.utils import StudentFunctionRequest
 from pytest_pl_grader.utils import StudentFunctionResponse
 from pytest_pl_grader.utils import StudentQueryRequest
 from pytest_pl_grader.utils import StudentQueryResponse
 from pytest_pl_grader.utils import deserialize_object_unsafe
 from pytest_pl_grader.utils import get_builtins
+from pytest_pl_grader.utils import serialize_object_unsafe
 
 ImportFunction = Callable[[str, Mapping[str, object] | None, Mapping[str, object] | None, Sequence[str], int], types.ModuleType]
 
 HOST = "127.0.0.1"  # Loopback address, means "this computer only"
+
 
 # Global ThreadPoolExecutor for CPU-bound tasks
 # It's good practice to create this once and reuse it.
@@ -123,13 +129,15 @@ async def student_code_runner(
     import_blacklist: list[str] | None,
     starting_vars: dict[str, Any] | None,
     builtin_whitelist: list[str] | None,
-) -> tuple[dict[str, Any], ProcessStartResponse]:
+    names_for_user_list: list[NamesForUserInfo] | None,
+) -> tuple[dict[str, Any], dict[str, Any], ProcessStartResponse]:
     stdout_capture = io.StringIO()
     stderr_capture = io.StringIO()
     execution_error = None
     exception_traceback = None
+    local_vars = {}
 
-    student_code_vars: dict[str, Any] = starting_vars.copy() if starting_vars else {}
+    student_code_vars: dict[str, Any] = deepcopy(starting_vars) if starting_vars else {}
     student_code_vars["__builtins__"] = get_builtins(builtin_whitelist)
 
     student_code_vars["__builtins__"]["__name__"] = "__main__"  # Set __name__ to "__main__" to mimic the main module
@@ -144,9 +152,19 @@ async def student_code_runner(
             code_setup = compile(setup_code, "<setup>", "exec")
             with redirect_stdout(stdout_capture), redirect_stderr(stderr_capture):
                 await asyncio.wait_for(
-                    asyncio.get_event_loop().run_in_executor(executor, exec, code_setup, student_code_vars, student_code_vars),
+                    asyncio.get_event_loop().run_in_executor(executor, exec, code_setup, student_code_vars, local_vars),
                     timeout=timeout,
                 )
+
+                if names_for_user_list is not None:
+                    for name_info in names_for_user_list:
+                        var_name = name_info["name"]
+
+                        if var_name in local_vars:
+                            # NOTE I think there might be issues with security with deepcopying certain
+                            # objects. If needed, we can prevent leaks here through serialization.
+                            student_code_vars[var_name] = deepcopy(local_vars[var_name])
+
     except Exception as e:
         execution_error = e
         # TODO need to create a different message for setup code errors. This should result
@@ -180,7 +198,7 @@ async def student_code_runner(
         "execution_traceback": str(exception_traceback),
     }
 
-    return student_code_vars, result_dict
+    return local_vars, student_code_vars, result_dict
 
 
 async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
@@ -210,6 +228,8 @@ async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWrit
 
     try:
         student_code_vars: None | dict = None
+        local_vars: None | dict = None
+
         async for line_bytes in reader:
             line = line_bytes.decode().strip()
             if not line:  # Handle empty lines
@@ -230,21 +250,38 @@ async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWrit
                 import_blacklist = start_json_message["import_blacklist"]
                 starting_vars = start_json_message["starting_vars"]
                 builtin_whitelist = start_json_message["builtin_whitelist"]
+                names_for_user_list = start_json_message["names_for_user_list"]
 
                 populate_linecache(student_code, student_file_name)
 
-                student_code_vars, start_response = await student_code_runner(
-                    setup_code,
-                    student_code,
-                    student_file_name,
-                    initialization_timeout,
-                    import_whitelist,
-                    import_blacklist,
-                    starting_vars,
-                    builtin_whitelist,
+                local_vars, student_code_vars, start_response = await student_code_runner(
+                    setup_code=setup_code,
+                    student_code=student_code,
+                    student_file_name=student_file_name,
+                    timeout=initialization_timeout,
+                    import_whitelist=import_whitelist,
+                    import_blacklist=import_blacklist,
+                    starting_vars=starting_vars,
+                    builtin_whitelist=builtin_whitelist,
+                    names_for_user_list=names_for_user_list,
                 )
 
                 writer.write(json.dumps(start_response).encode())
+
+            elif msg_type == "query_setup":
+                assert local_vars is not None
+                query_setup_json_message: SetupQueryRequest = json_message
+
+                var_to_query = query_setup_json_message["var"]
+                if var_to_query in local_vars:
+                    setup_query_response: SetupQueryResponse = {
+                        "status": "success",
+                        "value_encoded": serialize_object_unsafe(local_vars[var_to_query]),
+                    }
+                else:
+                    setup_query_response = {"status": "not_found", "value_encoded": ""}
+
+                writer.write(json.dumps(setup_query_response).encode())
 
             elif msg_type == "query":
                 assert student_code_vars is not None

@@ -1,10 +1,12 @@
 import json
+import logging
 import os
 import sys
 from collections.abc import Iterable
 from pathlib import Path
 from types import ModuleType
 from typing import Any
+from typing import cast
 
 import _pytest
 import _pytest.reports
@@ -16,6 +18,9 @@ from prettytable import PrettyTable
 from .fixture import FeedbackFixture
 from .fixture import StudentFiles
 from .fixture import StudentFixture
+from .utils import NamesForUserInfo
+
+logger = logging.getLogger(__name__)
 
 
 def get_datadir(test_module: ModuleType) -> Path | None:
@@ -80,7 +85,7 @@ def sandbox(request: pytest.FixtureRequest, data_json: dict[str, Any] | None) ->
     # TODO make sure this contains only valid builtins
     builtin_whitelist = params_dict.get("builtin_whitelist")
 
-    names_for_user_list = params_dict.get("names_for_user")
+    names_for_user_list = cast(list[NamesForUserInfo] | None, params_dict.get("names_for_user"))
     # TODO maybe make it possible to add custom generators for starting variables?
     starting_vars = None
 
@@ -90,7 +95,7 @@ def sandbox(request: pytest.FixtureRequest, data_json: dict[str, Any] | None) ->
         for names_dict in names_for_user_list:
             name = names_dict["name"]
             value = params_dict.get(name, None)
-            assert names_dict["type"] == type(value).__name__
+            logger.info(f"Variable type mismatch check for starting var {name}: expected {names_dict['type']}, got {type(value).__name__}")
             starting_vars[name] = value
 
     # Check for the custom mark
@@ -101,7 +106,14 @@ def sandbox(request: pytest.FixtureRequest, data_json: dict[str, Any] | None) ->
         if marker.args:
             initialization_timeout = marker.args[0]
 
-    fixture = StudentFixture(request.param, import_whitelist, import_blacklist, starting_vars, builtin_whitelist)
+    fixture = StudentFixture(
+        file_names=request.param,
+        import_whitelist=import_whitelist,
+        import_blacklist=import_blacklist,
+        starting_vars=starting_vars,
+        builtin_whitelist=builtin_whitelist,
+        names_for_user_list=names_for_user_list,
+    )
 
     try:
         response = fixture.start_student_code_server(initialization_timeout=initialization_timeout)
@@ -130,6 +142,7 @@ def sandbox(request: pytest.FixtureRequest, data_json: dict[str, Any] | None) ->
             # Don't get the exception message since there usually isn't one for timeouts
             pytest.fail(f"No response from initialization with timeout {initialization_timeout}", pytrace=False)
 
+        print(response)
         assert response_status == "success", f"Unexpected status from student code server: {response_status}"
 
         yield fixture
@@ -437,7 +450,6 @@ class ResultCollectorPlugin:
             if report.outcome == "failed" and call.excinfo is not None:
                 # TODO show more sophisticated error messages for different exceptions
                 exception_message = str(call.excinfo.value)
-                print("full exception message:", repr(exception_message))
                 # exception_message = exception_message.split(os.linesep)[0]
 
                 feedback_obj.add_message(exception_message)

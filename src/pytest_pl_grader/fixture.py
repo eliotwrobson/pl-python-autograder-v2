@@ -9,12 +9,16 @@ from typing import Any
 from typing import NamedTuple
 
 from .json_utils import from_json
+from .utils import NamesForUserInfo
 from .utils import ProcessStartRequest
 from .utils import ProcessStartResponse
+from .utils import SetupQueryRequest
+from .utils import SetupQueryResponse
 from .utils import StudentFunctionRequest
 from .utils import StudentFunctionResponse
 from .utils import StudentQueryRequest
 from .utils import StudentQueryResponse
+from .utils import deserialize_object_unsafe
 from .utils import serialize_object_unsafe
 
 DataFixture = dict[str, Any]
@@ -83,6 +87,7 @@ class StudentFixture:
     import_blacklist: list[str] | None
     starting_vars: dict[str, Any] | None
     builtin_whitelist: list[str] | None
+    names_for_user_list: list[NamesForUserInfo] | None
 
     def __init__(
         self,
@@ -91,6 +96,7 @@ class StudentFixture:
         import_blacklist: list[str] | None,
         starting_vars: dict[str, Any] | None,
         builtin_whitelist: list[str] | None,
+        names_for_user_list: list[NamesForUserInfo] | None,
     ) -> None:
         self.leading_file = file_names.leading_file
         self.trailing_file = file_names.trailing_file
@@ -101,6 +107,7 @@ class StudentFixture:
         self.import_blacklist = import_blacklist
         self.starting_vars = starting_vars
         self.builtin_whitelist = builtin_whitelist
+        self.names_for_user_list = names_for_user_list
 
         # Initialize the process and socket to None
         self.process = None
@@ -153,6 +160,7 @@ class StudentFixture:
             "import_blacklist": self.import_blacklist,
             "starting_vars": self.starting_vars,
             "builtin_whitelist": self.builtin_whitelist,
+            "names_for_user_list": self.names_for_user_list,
         }
 
         assert self.process.stdout is not None, "Process stdout is None. Ensure the process is started correctly."
@@ -180,6 +188,27 @@ class StudentFixture:
             }
 
         return res
+
+    def query_setup_raw(self, var_to_query: str) -> SetupQueryResponse:
+        self._assert_process_running()
+
+        json_message: SetupQueryRequest = {"message_type": "query_setup", "var": var_to_query}
+
+        assert self.student_socket is not None, "Student socket is not connected. Please start the student code server first."
+        self.student_socket.sendall(json.dumps(json_message).encode("utf-8") + os.linesep.encode("utf-8"))
+        data: SetupQueryResponse = json.loads(self.student_socket.recv(BUFFSIZE).decode())
+
+        return data
+
+    def query_setup(self, var_to_query: str) -> Any:
+        """
+        Queries a variable from the setup code and returns its value.
+        """
+        response = self.query_setup_raw(var_to_query)
+
+        assert response["status"] == "success", f"Query for setup variable '{var_to_query}' failed"
+
+        return deserialize_object_unsafe(response["value_encoded"])
 
     def query_raw(self, var_to_query: str, *, query_timeout: float = DEFAULT_TIMEOUT) -> StudentQueryResponse:
         self._assert_process_running()
