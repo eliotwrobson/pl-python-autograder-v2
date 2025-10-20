@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 import socket
 import subprocess
@@ -19,6 +20,7 @@ from .utils import StudentFunctionResponse
 from .utils import StudentQueryRequest
 from .utils import StudentQueryResponse
 from .utils import deserialize_object_unsafe
+from .utils import drop_privileges
 from .utils import serialize_object_unsafe
 
 DataFixture = dict[str, Any]
@@ -26,6 +28,8 @@ DataFixture = dict[str, Any]
 SCRIPT_PATH = str(files("pytest_pl_grader").joinpath("_student_code_runner.py"))
 BUFFSIZE = 4096 * 8
 DEFAULT_TIMEOUT = 1.0
+
+logger = logging.getLogger(__name__)
 
 
 class StudentFiles(NamedTuple):
@@ -88,6 +92,7 @@ class StudentFixture:
     starting_vars: dict[str, Any] | None
     builtin_whitelist: list[str] | None
     names_for_user_list: list[NamesForUserInfo] | None
+    worker_username: str | None
 
     def __init__(
         self,
@@ -97,6 +102,7 @@ class StudentFixture:
         starting_vars: dict[str, Any] | None,
         builtin_whitelist: list[str] | None,
         names_for_user_list: list[NamesForUserInfo] | None,
+        worker_username: str | None,
     ) -> None:
         self.leading_file = file_names.leading_file
         self.trailing_file = file_names.trailing_file
@@ -108,6 +114,7 @@ class StudentFixture:
         self.starting_vars = starting_vars
         self.builtin_whitelist = builtin_whitelist
         self.names_for_user_list = names_for_user_list
+        self.worker_username = worker_username
 
         # Initialize the process and socket to None
         self.process = None
@@ -125,8 +132,21 @@ class StudentFixture:
             raise RuntimeError(f"Student code server process terminated with code {process_return_code}.")
 
     def start_student_code_server(self, *, initialization_timeout: float = DEFAULT_TIMEOUT) -> ProcessStartResponse:
+        if self.worker_username is not None:
+            logger.debug(f"Starting student code server with worker username: {self.worker_username}")
+        else:
+            logger.debug("Starting student code server without dropping privileges.")
+
+        def try_drop_privileges() -> None:
+            if self.worker_username is not None:
+                drop_privileges(self.worker_username)
+
         self.process = subprocess.Popen(
-            [sys.executable, SCRIPT_PATH], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+            args=(sys.executable, SCRIPT_PATH),
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            preexec_fn=try_drop_privileges,
         )
 
         # Assert process is running after popen call

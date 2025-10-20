@@ -95,7 +95,15 @@ def sandbox(request: pytest.FixtureRequest, data_json: dict[str, Any] | None) ->
         for names_dict in names_for_user_list:
             name = names_dict["name"]
             value = params_dict.get(name, None)
-            logger.info(f"Variable type mismatch check for starting var {name}: expected {names_dict['type']}, got {type(value).__name__}")
+
+            variable_type = type(value).__name__.strip()
+            expected_variable_type = names_dict["type"].strip()
+
+            if variable_type != expected_variable_type:
+                logger.debug(f"Variable type mismatch for starting var {name}: expected {expected_variable_type}, got {variable_type}")
+            else:
+                logger.debug(f"Variable type matched for starting var {name}: {variable_type}")
+
             starting_vars[name] = value
 
     # Check for the custom mark
@@ -113,6 +121,7 @@ def sandbox(request: pytest.FixtureRequest, data_json: dict[str, Any] | None) ->
         starting_vars=starting_vars,
         builtin_whitelist=builtin_whitelist,
         names_for_user_list=names_for_user_list,
+        worker_username=request.config.getoption("--worker-username"),
     )
 
     try:
@@ -187,93 +196,18 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
             # pytest.skip(f"Data directory '{data_dir}' not found.")
 
 
-### TODO delete all of the old stuff below here as much as we can ###
+def pytest_addoption(parser: pytest.Parser) -> None:
+    """
+    Registers command-line options for the plugin.
+    """
+    group = parser.getgroup("pytest_pl_autograder", "Prairielearn Python Autograder Options")
 
-
-def pytest_report_header(config):
-    pass
-    # bs = config._benchmarksession
-
-    # return (
-    #     "benchmark: {version} (defaults:"
-    #     " timer={timer}"
-    #     " disable_gc={0[disable_gc]}"
-    #     " min_rounds={0[min_rounds]}"
-    #     " min_time={0[min_time]}"
-    #     " max_time={0[max_time]}"
-    #     " calibration_precision={0[calibration_precision]}"
-    #     " warmup={0[warmup]}"
-    #     " warmup_iterations={0[warmup_iterations]}"
-    #     ")"
-    # ).format(
-    #     bs.options,
-    #     version=__version__,
-    #     timer=bs.options.get("timer"),
-    # )
-
-
-def add_csv_options(addoption, prefix="benchmark-"):
-    pass
-    # filename_prefix = f"benchmark_{}"
-    # addoption(
-    #     f"--{prefix}csv",
-    #     action="append",
-    #     metavar="FILENAME",
-    #     nargs="?",
-    #     default=[],
-    #     const=filename_prefix,
-    #     help=f"Save a csv report. If FILENAME contains slashes ('/') then directories will be created. Default: {filename_prefix!r}",
-    # )
-
-
-def pytest_addoption(parser):
-    pass
-    # group = parser.getgroup("benchmark")
-    # group.addoption(
-    #     "--benchmark-min-time",
-    #     metavar="SECONDS",
-    #     type=parse_seconds,
-    #     default="0.000005",
-    #     help="Minimum time per round in seconds. Default: %(default)r",
-    # )
-
-
-def pytest_addhooks(pluginmanager):
-    pass
-    # from . import hookspec
-
-    # method = getattr(pluginmanager, "add_hookspecs", None)
-    # if method is None:
-    #     method = pluginmanager.addhooks
-    # method(hookspec)
-
-
-def pytest_collection_modifyitems(config, items):
-    pass
-    # TODO check that all necessary autograding fixtures are present in
-    # each item
-    # bs = config._benchmarksession
-    # skip_bench = pytest.mark.skip(reason="Skipping benchmark (--benchmark-skip active).")
-    # skip_other = pytest.mark.skip(reason="Skipping non-benchmark (--benchmark-only active).")
-    # for item in items:
-    #     has_benchmark = hasattr(item, "fixturenames") and "benchmark" in item.fixturenames
-    #     if has_benchmark:
-    #         if bs.skip:
-    #             item.add_marker(skip_bench)
-    #     else:
-    #         if bs.only:
-    #             item.add_marker(skip_other)
-
-
-def pytest_terminal_summary(terminalreporter):
-    pass
-    # try:
-    #     terminalreporter.config._benchmarksession.display(terminalreporter)
-    # except PerformanceRegression:
-    #     raise
-    # except Exception:
-    #     terminalreporter.config._benchmarksession.logger.error(f"\n{traceback.format_exc()}")
-    #     raise
+    group.addoption(
+        "--worker-username",
+        action="store",
+        default=None,
+        help="The username for the user of the worker process.",
+    )
 
 
 def _win32_longpath(path):
@@ -302,6 +236,7 @@ def _win32_longpath(path):
 
 
 def pytest_runtest_setup(item):
+    # TODO clean up this function
     marker = item.get_closest_marker("sandbox")
     if marker:
         if marker.args:

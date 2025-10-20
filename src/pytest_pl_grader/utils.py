@@ -1,5 +1,7 @@
 import base64
 import builtins
+import os
+import pwd
 from typing import Any
 from typing import Literal
 from typing import TypedDict
@@ -238,3 +240,23 @@ def get_builtins(builtin_whitelist: list[str] | None) -> dict[str, Any]:
                 final_builtins[name] = getattr(builtins, name)
 
     return final_builtins
+
+
+def drop_privileges(user_name: str) -> None:
+    """Sets the process user and group to the specified non-root user."""
+    try:
+        # Get the UID and GID for the target user (e.g., 'nobody')
+        pwnam = pwd.getpwnam(user_name)
+        target_uid = pwnam.pw_uid
+        target_gid = pwnam.pw_gid
+    except KeyError:
+        raise ValueError(f"User '{user_name}' not found.")
+
+    # 1. Set the real and effective GID
+    # NOTE: Set GID before UID, as changing UID may restrict GID changes
+    os.setgid(target_gid)
+    os.setegid(target_gid)
+
+    # 2. Set the real and effective UID
+    os.setuid(target_uid)
+    os.seteuid(target_uid)
