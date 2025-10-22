@@ -100,5 +100,5 @@ pl-grader = "pytest_pl_grader.plugin"
 exclude = "tests/scenario_root/.*student_code.*\\.py"
 
 [[tool.mypy.overrides]]
-module = ["sympy.*", "dill.*"]
+module = ["sympy.*", "dill.*", "plot_serializer.*"]
 ignore_missing_imports = true
