@@ -247,7 +247,7 @@ class StudentFixture:
         Queries a variable from the student code and returns its value.
         """
         response = self.query_raw(var_to_query, query_timeout=query_timeout)
-
+        print(response)
         assert response["status"] == "success", f"Query for '{var_to_query}' failed"
 
         return from_json(response["value"])

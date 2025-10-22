@@ -27,6 +27,9 @@ dev = [
     "ruff>=0.11.12",
     "sympy",
     "pandas-stubs",
+    "matplotlib-stubs",
+    "matplotlib",
+    "plot-serializer",
 ]
 
 [build-system]

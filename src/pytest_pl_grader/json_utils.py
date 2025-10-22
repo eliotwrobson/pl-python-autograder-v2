@@ -4,6 +4,8 @@ from typing import Any
 
 import numpy as np
 import pandas as pd
+from plot_serializer.matplotlib.deserializer import deserialize_from_json
+from plot_serializer.matplotlib.serializer import MatplotlibSerializer
 
 
 def to_json(v: Any) -> Any:
@@ -45,6 +47,8 @@ def to_json(v: Any) -> Any:
         pure_json_df = json.loads(encoded_json_str_df)
 
         return {"_type": "dataframe_v2", "_value": pure_json_df}
+    elif isinstance(v, MatplotlibSerializer):
+        return {"_type": "matplotlib_serializer", "_value": v.to_json()}
     else:
         return v
 
@@ -92,6 +96,11 @@ def from_json(v_json) -> Any:
             # pandas read_json() can process it.
             value_str = StringIO(json.dumps(v_json["_value"]))
             return pd.read_json(value_str, orient="table")
+        elif v_json["_type"] == "matplotlib_serializer":
+            if "_value" in v_json:
+                return deserialize_from_json(v_json["_value"])
+            else:
+                raise ValueError("variable of type matplotlib_serializer should have value")
         else:
             raise ValueError("variable has unknown type {}".format(v_json["_type"]))
     return v_json

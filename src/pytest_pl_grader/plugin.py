@@ -151,7 +151,6 @@ def sandbox(request: pytest.FixtureRequest, data_json: dict[str, Any] | None) ->
             # Don't get the exception message since there usually isn't one for timeouts
             pytest.fail(f"No response from initialization with timeout {initialization_timeout}", pytrace=False)
 
-        print(response)
         assert response_status == "success", f"Unexpected status from student code server: {response_status}"
 
         yield fixture
@@ -424,7 +423,8 @@ class ResultCollectorPlugin:
 
         res_dict = {
             "score": total_score / total_possible_score if total_possible_score > 0 else 0,
-            "output": "Overall feedback for the autograder session.",
+            # TODO figure out something useful to put here (maybe single source of compilation failure??)
+            # "output": "Overall feedback for the autograder session.",
             "tests": final_results,
         }
 
