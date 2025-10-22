@@ -4,7 +4,7 @@
     "tests": [
       {
         "max_points": 6,
-        "message": " \nTest #1\nQuery for function analyze_vibration failed: 'analyze_vibration'",
+        "message": "Function 'analyze_vibration' raised an exception",
         "name": "Test analyze_vibration function",
         "outcome": "failed",
         "points_frac": 0.0,
@@ -13,7 +13,7 @@
       },
       {
         "max_points": 6,
-        "message": " \nTest #2\nQuery for function analyze_vibration failed: 'analyze_vibration'",
+        "message": "Function 'analyze_vibration' raised an exception",
         "name": "Test analyze_vibration function",
         "outcome": "failed",
         "points_frac": 0.0,

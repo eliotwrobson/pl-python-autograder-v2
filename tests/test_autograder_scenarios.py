@@ -122,6 +122,7 @@ def test_autograder_scenario_with_pytester(pytester: pytest.Pytester, scenario_d
         # NOTE the message here is just a pattern that has to be contained in the actual message
         # this is to avoid issues with longer messages
         expected_message = expected_test.get("message")
+
         if expected_message is not None:
             assert expected_message in actual_test["message"], f"Message mismatch for test '{test_id}'."
 

@@ -226,7 +226,8 @@ class StudentFixture:
         """
         response = self.query_setup_raw(var_to_query)
 
-        assert response["status"] == "success", f"Query for setup variable '{var_to_query}' failed"
+        if response["status"] == "not_found":
+            raise NameError(f"Query for setup variable '{var_to_query}' failed")
 
         return deserialize_object_unsafe(response["value_encoded"])
 
@@ -247,8 +248,9 @@ class StudentFixture:
         Queries a variable from the student code and returns its value.
         """
         response = self.query_raw(var_to_query, query_timeout=query_timeout)
-        print(response)
-        assert response["status"] == "success", f"Query for '{var_to_query}' failed"
+
+        if response["status"] == "not_found":
+            raise NameError(f"Query for '{var_to_query}' failed")
 
         return from_json(response["value"])
 
@@ -277,7 +279,16 @@ class StudentFixture:
         Queries a function from the student code and returns its return value.
         """
         response = self.query_function_raw(function_name, *args, query_timeout=query_timeout, **kwargs)
-        assert response["status"] == "success", f"Query for function {function_name} failed: {response['exception_message']}"
+
+        match response["status"]:
+            case "exception":
+                raise RuntimeError(
+                    f"Function '{function_name}' raised an exception {response['exception_name']}: {response['exception_message']}\n{response['traceback']}"
+                )
+            case "timeout":
+                raise TimeoutError(f"Query for function '{function_name}' timed out after {query_timeout} seconds.")
+            case "not_found":
+                raise NameError(f"Query for function '{function_name}' failed: {response['exception_message']}")
 
         return from_json(response["value"])
 
