@@ -2,6 +2,7 @@ import json
 from io import StringIO
 from typing import Any
 
+import networkx as nx
 import numpy as np
 import pandas as pd
 from plot_serializer.matplotlib.deserializer import deserialize_from_json
@@ -104,3 +105,54 @@ def from_json(v_json) -> Any:
         else:
             raise ValueError("variable has unknown type {}".format(v_json["_type"]))
     return v_json
+
+
+def from_server_json(v_json: dict) -> Any:
+    """
+    Copy of the corresponding function from `prairielearn.conversion_utils` that is used to convert JSON serialized values from the server.
+
+    https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/python/prairielearn/conversion_utils.py
+    """
+    if isinstance(v_json, dict) and "_type" in v_json:
+        if v_json["_type"] == "complex":
+            if _has_value_fields(v_json, ["real", "imag"]):
+                return complex(v_json["_value"]["real"], v_json["_value"]["imag"])
+            else:
+                raise ValueError("variable of type complex should have value with real and imaginary pair")
+        elif v_json["_type"] == "np_scalar":
+            if "_concrete_type" in v_json and "_value" in v_json:
+                return getattr(np, v_json["_concrete_type"])(v_json["_value"])
+            else:
+                raise ValueError(f"variable of type {v_json['_type']} needs both concrete type and value information")
+        elif v_json["_type"] == "ndarray":
+            if "_value" in v_json:
+                if "_dtype" in v_json:
+                    return np.array(v_json["_value"]).astype(v_json["_dtype"])
+                else:
+                    return np.array(v_json["_value"])
+            else:
+                raise ValueError("variable of type ndarray should have value")
+        elif v_json["_type"] == "complex_ndarray":
+            if _has_value_fields(v_json, ["real", "imag"]):
+                if "_dtype" in v_json:
+                    return (np.array(v_json["_value"]["real"]) + np.array(v_json["_value"]["imag"]) * 1j).astype(v_json["_dtype"])
+                else:
+                    return np.array(v_json["_value"]["real"]) + np.array(v_json["_value"]["imag"]) * 1j
+            else:
+                raise ValueError("variable of type complex_ndarray should have value with real and imaginary pair")
+        elif v_json["_type"] == "dataframe":
+            if _has_value_fields(v_json, ["index", "columns", "data"]):
+                val = v_json["_value"]
+                return pd.DataFrame(index=val["index"], columns=val["columns"], data=val["data"])
+            else:
+                raise ValueError("variable of type dataframe should have value with index, columns, and data")
+        elif v_json["_type"] == "dataframe_v2":
+            # Convert native JSON back to a string representation so that
+            # pandas read_json() can process it.
+            value_str = StringIO(json.dumps(v_json["_value"]))
+            return pd.read_json(value_str, orient="table")
+        elif v_json["_type"] == "networkx_graph":
+            return nx.adjacency_graph(v_json["_value"])
+        else:
+            raise ValueError(f"variable has unknown type {v_json['_type']}")
+    raise ValueError(f"Expected a JSON object with a '_type' field, but got: {v_json}")

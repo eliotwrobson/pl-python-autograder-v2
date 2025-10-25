@@ -30,6 +30,7 @@ dev = [
     "matplotlib-stubs",
     "matplotlib",
     "plot-serializer",
+    "networkx",
 ]
 
 [build-system]
