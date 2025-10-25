@@ -2,6 +2,7 @@ from typing import Any
 from typing import cast
 
 import numpy as np
+import pandas as pd
 import pytest
 
 from pytest_pl_grader.json_utils import from_json
@@ -50,12 +51,40 @@ def test_serialize_json(obj: Any) -> None:
                 "_dtype": "float64",
             },
             np.array([[0.68381872, 0.96876697, 0.87395366], [0.68631014, 0.18857604, 0.03678025], [0.35185975, 0.51566197, 0.14740928]]),
-        )
+        ),
+        (
+            {"_type": "ndarray", "_value": [[64, 41, 40], [93, 75, 87], [27, 91, 27]], "_dtype": "int64"},
+            np.array([[64, 41, 40], [93, 75, 87], [27, 91, 27]]),
+        ),
     ],
 )
-def test_from_server_json(obj: dict, expected_result: np.ndarray) -> None:
+def test_from_server_json_numpy(obj: dict, expected_result: np.ndarray) -> None:
     # Deserialize back to original object
     deserialized = from_server_json(obj)
 
     # Check if the original and deserialized arrays are equal
     np.testing.assert_allclose(deserialized, expected_result)
+
+
+@pytest.mark.parametrize(
+    ("obj", "expected_result"),
+    [
+        (
+            {
+                "_type": "dataframe",
+                "_value": {
+                    "index": [0, 1, 2, 3, 4],
+                    "columns": ["ColA", "ColB", "ColC"],
+                    "data": [[6, 98, 76], [91, 43, 6], [89, 46, 81], [48, 3, 19], [43, 31, 73]],
+                },
+            },
+            pd.DataFrame(np.array([[6, 98, 76], [91, 43, 6], [89, 46, 81], [48, 3, 19], [43, 31, 73]]), columns=["ColA", "ColB", "ColC"]),
+        )
+    ],
+)
+def test_from_server_json(obj: dict, expected_result: pd.DataFrame) -> None:
+    # Deserialize back to original object
+    deserialized = from_server_json(obj)
+
+    # Check if the original and deserialized arrays are equal
+    pd.testing.assert_frame_equal(deserialized, expected_result)
