@@ -31,6 +31,7 @@ dev = [
     "matplotlib",
     "plot-serializer",
     "networkx",
+    "types-networkx",
 ]
 
 [build-system]
