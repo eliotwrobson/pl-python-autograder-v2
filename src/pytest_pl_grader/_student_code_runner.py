@@ -7,13 +7,15 @@ import os
 import sys
 import traceback
 import types
+from collections.abc import Callable
 from collections.abc import Mapping
 from collections.abc import Sequence
 from contextlib import redirect_stderr
 from contextlib import redirect_stdout
 from copy import deepcopy
 from typing import Any
-from typing import Callable
+
+from pytest_pl_grader.json_utils import from_server_json
 
 # TODO make it so that other files in this package cannot import from this one
 # ask Gemini how to do it
@@ -136,6 +138,7 @@ async def student_code_runner(
     execution_error = None
     exception_traceback = None
     local_vars = deepcopy(starting_vars) if starting_vars else {}
+    local_vars["from_server_json"] = from_server_json  # Add the deserialization function to the local variables for setup code to use
 
     student_code_vars: dict[str, Any] = {}
     student_code_vars["__builtins__"] = get_builtins(builtin_whitelist)
@@ -266,7 +269,7 @@ async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWrit
                     names_for_user_list=names_for_user_list,
                 )
 
-                writer.write(json.dumps(start_response).encode())
+                writer.write((json.dumps(start_response) + os.linesep).encode())
 
             elif msg_type == "query_setup":
                 assert local_vars is not None
@@ -281,7 +284,7 @@ async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWrit
                 else:
                     setup_query_response = {"status": "not_found", "value_encoded": ""}
 
-                writer.write(json.dumps(setup_query_response).encode())
+                writer.write((json.dumps(setup_query_response) + os.linesep).encode())
 
             elif msg_type == "query":
                 assert student_code_vars is not None
@@ -295,7 +298,7 @@ async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWrit
                 else:
                     query_response = {"status": "not_found", "value": ""}
 
-                writer.write(json.dumps(query_response).encode())
+                writer.write((json.dumps(query_response) + os.linesep).encode())
 
             elif msg_type == "query_function":
                 assert student_code_vars is not None
@@ -308,12 +311,12 @@ async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWrit
 
                 function_response = await student_function_runner(student_code_vars, func_name, query_timeout, args, kwargs)
 
-                writer.write(json.dumps(function_response).encode())
+                writer.write((json.dumps(function_response) + os.linesep).encode())
 
             # TODO handle cases of different payloads
             # The first payload should be student code
             if line.lower() == "exit":
-                writer.write(b"Goodbye!")
+                writer.write(("Goodbye!" + os.linesep).encode())
                 await writer.drain()
                 break  # Exit the loop and terminate the server
 
@@ -323,11 +326,11 @@ async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWrit
             await writer.drain()  # Ensure the response is written to stdout
 
     except asyncio.CancelledError:
-        writer.write(json.dumps({"status": "failure", "message": "Server was cancelled."}).encode())
+        writer.write((json.dumps({"status": "failure", "message": "Server was cancelled."}) + os.linesep).encode())
     except asyncio.TimeoutError:
-        writer.write(json.dumps({"status": "failure", "message": "Student code timed out."}).encode())
+        writer.write((json.dumps({"status": "failure", "message": "Student code timed out."}) + os.linesep).encode())
     except Exception as e:
-        writer.write(json.dumps({"status": "failure", "message": f"An error occurred: {e}"}).encode())
+        writer.write((json.dumps({"status": "failure", "message": f"An error occurred: {e}"}) + os.linesep).encode())
     finally:
         # It's good practice to close transports and writers
         # print("Closing server connections...")

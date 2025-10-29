@@ -26,7 +26,6 @@ from .utils import serialize_object_unsafe
 DataFixture = dict[str, Any]
 
 SCRIPT_PATH = str(files("pytest_pl_grader").joinpath("_student_code_runner.py"))
-BUFFSIZE = 1024 * 1024  # 1 MB
 DEFAULT_TIMEOUT = 1.0
 
 logger = logging.getLogger(__name__)
@@ -131,6 +130,56 @@ class StudentFixture:
         if process_return_code is not None:
             raise RuntimeError(f"Student code server process terminated with code {process_return_code}.")
 
+    def read_from_socket(self) -> bytes:
+        """
+        Reads data from a socket until a termination character is found.
+
+        :param sock: The active socket object.
+        :param terminator: The byte string sequence that signals the end of the message.
+        :param max_len: Optional. The maximum number of bytes to read before stopping.
+        :return: The received data, including the terminator.
+        :raises TimeoutError: If the socket times out during the read operation.
+        :raises Exception: If the connection is closed before the terminator is found.
+        """
+        buffer = bytearray()
+
+        terminator = os.linesep.encode("utf-8")
+        max_len: int | None = None  # TODO add max length parameter?
+
+        assert self.student_socket is not None, "Student socket is not connected. Please start the student code server first."
+
+        # Define a small chunk size for reading
+        chunk_size = 4096
+
+        # TODO mabye set a hard iteration limit to avoid infinite loops?
+        while True:
+            # Check if the termination sequence is already in the buffer
+            if terminator in buffer:
+                # Return the buffer content up to and including the terminator
+                # We use buffer[:buffer.index(terminator) + len(terminator)]
+                # to only return the necessary data if more data was read
+                return bytes(buffer)
+
+            # Check for maximum length constraint
+            if max_len is not None and len(buffer) >= max_len:
+                # Raise an error or return buffer depending on desired behavior
+                raise Exception(f"Maximum read length of {max_len} exceeded.")
+
+            try:
+                # Read a chunk of data
+                chunk = self.student_socket.recv(chunk_size)
+            except TimeoutError as e:
+                # Re-raise the timeout error
+                raise TimeoutError("Socket read timed out.") from e
+
+            # Check if the connection was closed
+            if not chunk:
+                # Connection closed before terminator was found
+                raise Exception("Connection closed by peer before termination character was found.")
+
+            # Append the new chunk to the buffer
+            buffer.extend(chunk)
+
     def start_student_code_server(self, *, initialization_timeout: float = DEFAULT_TIMEOUT) -> ProcessStartResponse:
         if self.worker_username is not None:
             logger.debug(f"Starting student code server with worker username: {self.worker_username}")
@@ -195,7 +244,7 @@ class StudentFixture:
         self.student_socket.sendall(json.dumps(json_message).encode("utf-8") + os.linesep.encode("utf-8"))
 
         try:
-            data = self.student_socket.recv(BUFFSIZE).decode()  # Adjust the buffer size as needed
+            data = self.read_from_socket().decode()  # Adjust the buffer size as needed
             res: ProcessStartResponse = json.loads(data)
         except Exception as e:
             res = {
@@ -215,8 +264,8 @@ class StudentFixture:
         json_message: SetupQueryRequest = {"message_type": "query_setup", "var": var_to_query}
 
         assert self.student_socket is not None, "Student socket is not connected. Please start the student code server first."
-        self.student_socket.sendall(json.dumps(json_message).encode("utf-8") + os.linesep.encode("utf-8"))
-        data: SetupQueryResponse = json.loads(self.student_socket.recv(BUFFSIZE).decode())
+        self.student_socket.sendall((json.dumps(json_message) + os.linesep).encode("utf-8"))
+        data: SetupQueryResponse = json.loads(self.read_from_socket().decode())
 
         return data
 
@@ -238,8 +287,8 @@ class StudentFixture:
 
         assert self.student_socket is not None, "Student socket is not connected. Please start the student code server first."
         self.student_socket.settimeout(query_timeout)
-        self.student_socket.sendall(json.dumps(json_message).encode("utf-8") + os.linesep.encode("utf-8"))
-        data: StudentQueryResponse = json.loads(self.student_socket.recv(BUFFSIZE).decode())
+        self.student_socket.sendall((json.dumps(json_message) + os.linesep).encode("utf-8"))
+        data: StudentQueryResponse = json.loads(self.read_from_socket().decode())
 
         return data
 
@@ -269,8 +318,8 @@ class StudentFixture:
 
         assert self.student_socket is not None, "Student socket is not connected. Please start the student code server first."
         self.student_socket.settimeout(query_timeout)
-        self.student_socket.sendall(json.dumps(json_message).encode("utf-8") + os.linesep.encode("utf-8"))
-        data: StudentFunctionResponse = json.loads(self.student_socket.recv(BUFFSIZE).decode())
+        self.student_socket.sendall((json.dumps(json_message) + os.linesep).encode("utf-8"))
+        data: StudentFunctionResponse = json.loads(self.read_from_socket().decode())
 
         return data
 
