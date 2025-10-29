@@ -138,7 +138,7 @@ async def student_code_runner(
     execution_error = None
     exception_traceback = None
     local_vars = deepcopy(starting_vars) if starting_vars else {}
-    local_vars["from_server_json"] = from_server_json  # Add the deserialization function to the local variables for setup code to use
+    local_vars["__from_server_json"] = from_server_json  # Add the deserialization function to the local variables for setup code to use
 
     student_code_vars: dict[str, Any] = {}
     student_code_vars["__builtins__"] = get_builtins(builtin_whitelist)

@@ -3,6 +3,7 @@ import logging
 import os
 import sys
 from collections.abc import Iterable
+from copy import deepcopy
 from pathlib import Path
 from types import ModuleType
 from typing import Any
@@ -86,12 +87,13 @@ def sandbox(request: pytest.FixtureRequest, data_json: dict[str, Any] | None) ->
     builtin_whitelist = params_dict.get("builtin_whitelist")
 
     names_for_user_list = cast(list[NamesForUserInfo] | None, params_dict.get("names_for_user"))
+
     # TODO maybe make it possible to add custom generators for starting variables?
-    starting_vars = None
+    starting_vars: dict[str, Any] = {
+        "__data_params": deepcopy(params_dict) if data_json is not None else {},
+    }
 
     if names_for_user_list is not None:
-        starting_vars = {}
-
         for names_dict in names_for_user_list:
             name = names_dict["name"]
             value = params_dict.get(name, None)
@@ -99,10 +101,8 @@ def sandbox(request: pytest.FixtureRequest, data_json: dict[str, Any] | None) ->
             variable_type = type(value).__name__.strip()
             expected_variable_type = names_dict["type"].strip()
 
-            if variable_type != expected_variable_type:
-                logger.debug(f"Variable type mismatch for starting var {name}: expected {expected_variable_type}, got {variable_type}")
-            else:
-                logger.debug(f"Variable type matched for starting var {name}: {variable_type}")
+            if variable_type != expected_variable_type and value is not None:
+                logger.warning(f"Variable type mismatch for starting var {name}: expected {expected_variable_type}, got {variable_type}")
 
             starting_vars[name] = value
 

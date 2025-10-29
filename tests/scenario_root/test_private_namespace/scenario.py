@@ -14,7 +14,9 @@ def test_random(sandbox: StudentFixture) -> None:
     assert sandbox.query("b")["c"] == 50
     assert sandbox.query("d") == 11
 
-    np.testing.assert_array_equal(
+    sandbox.query("numpy_array")
+
+    np.testing.assert_allclose(
         sandbox.query("numpy_array"),
         np.array([[0.68381872, 0.96876697, 0.87395366], [0.68631014, 0.18857604, 0.03678025], [0.35185975, 0.51566197, 0.14740928]]),
     )
