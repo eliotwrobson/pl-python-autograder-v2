@@ -99,7 +99,7 @@ pl-grader = "pytest_pl_grader.plugin"
 # pl-pytest-autograder = "pl_pytest_autograder.cli:main"
 
 [tool.mypy]
-exclude = "tests/scenario_root/.*student_code.*\\.py"
+exclude = "tests/scenario_root/.*(student_code.*|setup_code)\\.py"
 
 [[tool.mypy.overrides]]
 module = ["sympy.*", "dill.*", "plot_serializer.*"]
