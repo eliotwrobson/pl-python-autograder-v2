@@ -130,16 +130,18 @@ class StudentFixture:
         if process_return_code is not None:
             raise RuntimeError(f"Student code server process terminated with code {process_return_code}.")
 
-    def read_from_socket(self) -> bytes:
+    def _send_json_object(
+        self, json_object: StudentQueryRequest | ProcessStartRequest | StudentFunctionRequest | SetupQueryRequest
+    ) -> None:
+        """
+        Sends a JSON object to the student code server.
+        """
+        assert self.student_socket is not None, "Student socket is not connected. Please start the student code server first."
+        self.student_socket.sendall((json.dumps(json_object) + os.linesep).encode("utf-8"))
+
+    def _read_from_socket(self) -> bytes:
         """
         Reads data from a socket until a termination character is found.
-
-        :param sock: The active socket object.
-        :param terminator: The byte string sequence that signals the end of the message.
-        :param max_len: Optional. The maximum number of bytes to read before stopping.
-        :return: The received data, including the terminator.
-        :raises TimeoutError: If the socket times out during the read operation.
-        :raises Exception: If the connection is closed before the terminator is found.
         """
         buffer = bytearray()
 
@@ -154,11 +156,10 @@ class StudentFixture:
         # TODO mabye set a hard iteration limit to avoid infinite loops?
         while True:
             # Check if the termination sequence is already in the buffer
-            if terminator in buffer:
+            if (idx := buffer.rfind(terminator)) != -1:
                 # Return the buffer content up to and including the terminator
-                # We use buffer[:buffer.index(terminator) + len(terminator)]
                 # to only return the necessary data if more data was read
-                return bytes(buffer)
+                return buffer[: idx + len(terminator)]
 
             # Check for maximum length constraint
             if max_len is not None and len(buffer) >= max_len:
@@ -241,10 +242,10 @@ class StudentFixture:
         self.student_socket.settimeout(initialization_timeout)
         self.student_socket.connect((host, int(port)))
 
-        self.student_socket.sendall(json.dumps(json_message).encode("utf-8") + os.linesep.encode("utf-8"))
+        self._send_json_object(json_message)
 
         try:
-            data = self.read_from_socket().decode()  # Adjust the buffer size as needed
+            data = self._read_from_socket().decode()  # Adjust the buffer size as needed
             res: ProcessStartResponse = json.loads(data)
         except Exception as e:
             res = {
@@ -264,8 +265,8 @@ class StudentFixture:
         json_message: SetupQueryRequest = {"message_type": "query_setup", "var": var_to_query}
 
         assert self.student_socket is not None, "Student socket is not connected. Please start the student code server first."
-        self.student_socket.sendall((json.dumps(json_message) + os.linesep).encode("utf-8"))
-        data: SetupQueryResponse = json.loads(self.read_from_socket().decode())
+        self._send_json_object(json_message)
+        data: SetupQueryResponse = json.loads(self._read_from_socket().decode())
 
         return data
 
@@ -287,8 +288,8 @@ class StudentFixture:
 
         assert self.student_socket is not None, "Student socket is not connected. Please start the student code server first."
         self.student_socket.settimeout(query_timeout)
-        self.student_socket.sendall((json.dumps(json_message) + os.linesep).encode("utf-8"))
-        data: StudentQueryResponse = json.loads(self.read_from_socket().decode())
+        self._send_json_object(json_message)
+        data: StudentQueryResponse = json.loads(self._read_from_socket().decode())
 
         return data
 
@@ -319,7 +320,7 @@ class StudentFixture:
         assert self.student_socket is not None, "Student socket is not connected. Please start the student code server first."
         self.student_socket.settimeout(query_timeout)
         self.student_socket.sendall((json.dumps(json_message) + os.linesep).encode("utf-8"))
-        data: StudentFunctionResponse = json.loads(self.read_from_socket().decode())
+        data: StudentFunctionResponse = json.loads(self._read_from_socket().decode())
 
         return data
 

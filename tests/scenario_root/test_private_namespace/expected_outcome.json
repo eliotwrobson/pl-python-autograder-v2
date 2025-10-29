@@ -1,6 +1,6 @@
 {
   "expected_data_object": {
-    "score": 0.3333333333333333,
+    "score": 0.25,
     "tests": [
       {
         "max_points": 1,
@@ -19,6 +19,15 @@
         "points": 0.0,
         "points_frac": 0.0,
         "test_id": "test_private_namespace.py::test_random[student_code_fail]"
+      },
+      {
+        "max_points": 1,
+        "message": "NameError: name '__data_params' is not defined",
+        "name": "test_private_namespace.py::test_random[student_code_fail_read_builtin]",
+        "outcome": "error",
+        "points": 0.0,
+        "points_frac": 0.0,
+        "test_id": "test_private_namespace.py::test_random[student_code_fail_read_builtin]"
       },
       {
         "max_points": 1,
