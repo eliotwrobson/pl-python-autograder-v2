@@ -2,15 +2,44 @@ import base64
 import builtins
 import os
 import pwd
+from enum import StrEnum
 from typing import Any
 from typing import Literal
 from typing import TypedDict
 
 import dill
 
-QueryStatusCode = Literal["success", "not_found"]
-FunctionStatusCode = Literal["success", "exception", "timeout", "not_found"]
-ProcessStatusCode = Literal["success", "exception", "timeout", "no_response"]
+
+class QueryStatusCode(StrEnum):
+    """
+    Status codes for a query operation.
+    """
+
+    SUCCESS = "success"
+    NOT_FOUND = "not_found"
+
+
+class FunctionStatusCode(StrEnum):
+    """
+    Status codes for a function execution.
+    """
+
+    SUCCESS = "success"
+    EXCEPTION = "exception"
+    TIMEOUT = "timeout"
+    NOT_FOUND = "not_found"
+
+
+class ProcessStatusCode(StrEnum):
+    """
+    Status codes for a process execution.
+    """
+
+    SUCCESS = "success"
+    EXCEPTION = "exception"
+    TIMEOUT = "timeout"
+    NO_RESPONSE = "no_response"
+
 
 # TODO use some inheritance on the query and response types
 

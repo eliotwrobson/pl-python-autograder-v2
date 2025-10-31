@@ -13,6 +13,7 @@ from .json_utils import from_json
 from .utils import NamesForUserInfo
 from .utils import ProcessStartRequest
 from .utils import ProcessStartResponse
+from .utils import ProcessStatusCode
 from .utils import SetupQueryRequest
 from .utils import SetupQueryResponse
 from .utils import StudentFunctionRequest
@@ -249,7 +250,7 @@ class StudentFixture:
             res: ProcessStartResponse = json.loads(data)
         except Exception as e:
             res = {
-                "status": "no_response",
+                "status": ProcessStatusCode.NO_RESPONSE,
                 "execution_error": type(e).__name__,
                 "execution_message": str(e),
                 "execution_traceback": "",

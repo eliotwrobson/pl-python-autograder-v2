@@ -20,9 +20,12 @@ from pytest_pl_grader.json_utils import from_server_json
 # TODO make it so that other files in this package cannot import from this one
 # ask Gemini how to do it
 from pytest_pl_grader.json_utils import to_json
+from pytest_pl_grader.utils import FunctionStatusCode
 from pytest_pl_grader.utils import NamesForUserInfo
 from pytest_pl_grader.utils import ProcessStartRequest
 from pytest_pl_grader.utils import ProcessStartResponse
+from pytest_pl_grader.utils import ProcessStatusCode
+from pytest_pl_grader.utils import QueryStatusCode
 from pytest_pl_grader.utils import SetupQueryRequest
 from pytest_pl_grader.utils import SetupQueryResponse
 from pytest_pl_grader.utils import StudentFunctionRequest
@@ -79,7 +82,7 @@ async def student_function_runner(
         exception_traceback = traceback.format_exc(limit=-1)
 
     function_response: StudentFunctionResponse = {
-        "status": "success" if execution_error is None else "exception",
+        "status": FunctionStatusCode.SUCCESS if execution_error is None else FunctionStatusCode.EXCEPTION,
         "value": to_json(result),
         "stdout": stdout_capture.getvalue(),
         "stderr": stderr_capture.getvalue(),
@@ -193,7 +196,7 @@ async def student_code_runner(
             exception_traceback = traceback.format_exc(limit=-1)
 
     result_dict: ProcessStartResponse = {
-        "status": "success" if execution_error is None else "exception",
+        "status": ProcessStatusCode.SUCCESS if execution_error is None else ProcessStatusCode.EXCEPTION,
         "stdout": stdout_capture.getvalue(),
         "stderr": stderr_capture.getvalue(),
         "execution_error": type(execution_error).__name__ if execution_error else None,
@@ -278,11 +281,11 @@ async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWrit
                 var_to_query = query_setup_json_message["var"]
                 if var_to_query in local_vars:
                     setup_query_response: SetupQueryResponse = {
-                        "status": "success",
+                        "status": QueryStatusCode.SUCCESS,
                         "value_encoded": serialize_object_unsafe(local_vars[var_to_query]),
                     }
                 else:
-                    setup_query_response = {"status": "not_found", "value_encoded": ""}
+                    setup_query_response = {"status": QueryStatusCode.NOT_FOUND, "value_encoded": ""}
 
                 writer.write((json.dumps(setup_query_response) + os.linesep).encode())
 
@@ -294,9 +297,12 @@ async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWrit
 
                 # Check if the variable exists in the student_code_vars
                 if var_to_query in student_code_vars:
-                    query_response: StudentQueryResponse = {"status": "success", "value": to_json(student_code_vars[var_to_query])}
+                    query_response: StudentQueryResponse = {
+                        "status": QueryStatusCode.SUCCESS,
+                        "value": to_json(student_code_vars[var_to_query]),
+                    }
                 else:
-                    query_response = {"status": "not_found", "value": ""}
+                    query_response = {"status": QueryStatusCode.NOT_FOUND, "value": ""}
 
                 writer.write((json.dumps(query_response) + os.linesep).encode())
 

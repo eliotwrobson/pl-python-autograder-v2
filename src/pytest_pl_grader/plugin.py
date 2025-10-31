@@ -20,6 +20,7 @@ from .fixture import FeedbackFixture
 from .fixture import StudentFiles
 from .fixture import StudentFixture
 from .utils import NamesForUserInfo
+from .utils import ProcessStatusCode
 
 logger = logging.getLogger(__name__)
 
@@ -128,7 +129,7 @@ def sandbox(request: pytest.FixtureRequest, data_json: dict[str, Any] | None) ->
         response = fixture.start_student_code_server(initialization_timeout=initialization_timeout)
         response_status = response["status"]
 
-        if response_status == "exception":
+        if response_status == ProcessStatusCode.EXCEPTION:
             exception_name = response.get("execution_error", "Unknown error")
             exception_message = response.get("execution_message", "")
             exception_traceback = response.get("execution_traceback", "")
@@ -143,15 +144,15 @@ def sandbox(request: pytest.FixtureRequest, data_json: dict[str, Any] | None) ->
                 pytrace=False,
             )
 
-        elif response_status == "timeout":
+        elif response_status == ProcessStatusCode.TIMEOUT:
             # Don't get the exception message since there usually isn't one for timeouts
             pytest.fail("Student code initialization timed out", pytrace=False)
 
-        elif response_status == "no_response":
+        elif response_status == ProcessStatusCode.NO_RESPONSE:
             # Don't get the exception message since there usually isn't one for timeouts
             pytest.fail(f"No response from initialization with timeout {initialization_timeout}", pytrace=False)
 
-        assert response_status == "success", f"Unexpected status from student code server: {response_status}"
+        assert response_status == ProcessStatusCode.SUCCESS, f"Unexpected status from student code server: {response_status}"
 
         yield fixture
     finally:
@@ -538,11 +539,11 @@ def print_autograder_summary(session: pytest.Session, test_results: list[dict[st
         # Fallback if the table is very narrow
         header_line = f"+{summary_title.center(table_width - 2)}+"
 
-    writer.line("\n")  # Add a newline before the custom header
+    writer.line(os.sep)  # Add a newline before the custom header
     writer.line(header_line, bold=True)
 
     # Print the generated table using the TerminalWriter
     for line in table_string.splitlines():
         writer.line(line)
 
-    writer.write(f"\nFinal Grade: {total_score}/{max_score}\n", bold=True)
+    writer.write(f"{os.sep}Final Grade: {total_score}/{max_score}{os.sep}", bold=True)
