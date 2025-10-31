@@ -152,7 +152,8 @@ def sandbox(request: pytest.FixtureRequest, data_json: dict[str, Any] | None) ->
             # Don't get the exception message since there usually isn't one for timeouts
             pytest.fail(f"No response from initialization with timeout {initialization_timeout}", pytrace=False)
 
-        assert response_status == ProcessStatusCode.SUCCESS, f"Unexpected status from student code server: {response_status}"
+        elif response_status != ProcessStatusCode.SUCCESS:
+            pytest.fail(f"Unexpected status from student code server: {response}", pytrace=False)
 
         yield fixture
     finally:
