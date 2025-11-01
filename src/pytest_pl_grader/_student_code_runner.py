@@ -358,8 +358,10 @@ async def main():
         except NotImplementedError:
             print("ProactorEventLoop not available, continuing with default loop.", file=sys.stderr)
 
+    line_limit = 10 * 1024 * 1024  # 10 MB line limit to handle large messages
+
     # Start the server, binding to the specified host and port
-    server = await asyncio.start_server(handle_client, HOST, 0)
+    server = await asyncio.start_server(handle_client, HOST, 0, limit=line_limit)
     addr = server.sockets[0].getsockname()
     print(f"{addr[0]}, {addr[1]}", flush=True)
 
