@@ -153,20 +153,10 @@ class StudentFixture:
 
         # Define a small chunk size for reading
         chunk_size = 4096
+        chunk: bytes = b""
 
-        # TODO mabye set a hard iteration limit to avoid infinite loops?
-        while True:
-            # Check if the termination sequence is already in the buffer
-            if (idx := buffer.rfind(terminator)) != -1:
-                # Return the buffer content up to and including the terminator
-                # to only return the necessary data if more data was read
-                return buffer[: idx + len(terminator)]
-
-            # Check for maximum length constraint
-            if max_len is not None and len(buffer) >= max_len:
-                # Raise an error or return buffer depending on desired behavior
-                raise Exception(f"Maximum read length of {max_len} exceeded.")
-
+        # TODO maybe set a hard iteration limit to avoid infinite loops?
+        while (idx := chunk.rfind(terminator)) == -1:
             try:
                 # Read a chunk of data
                 chunk = self.student_socket.recv(chunk_size)
@@ -181,6 +171,17 @@ class StudentFixture:
 
             # Append the new chunk to the buffer
             buffer.extend(chunk)
+
+            # Check for maximum length constraint
+            if max_len is not None and len(buffer) >= max_len:
+                # Raise an error or return buffer depending on desired behavior
+                raise Exception(f"Maximum read length of {max_len} exceeded.")
+
+        loc = len(buffer) - len(chunk) + idx + len(terminator)
+
+        # Return the buffer content up to and including the terminator
+        # to only return the necessary data if more data was read
+        return buffer[:loc]
 
     def start_student_code_server(self, *, initialization_timeout: float = DEFAULT_TIMEOUT) -> ProcessStartResponse:
         if self.worker_username is not None:
@@ -246,7 +247,7 @@ class StudentFixture:
         self._send_json_object(json_message)
 
         try:
-            data = self._read_from_socket().decode()  # Adjust the buffer size as needed
+            data = self._read_from_socket().decode()
             res: ProcessStartResponse = json.loads(data)
         except Exception as e:
             res = {
