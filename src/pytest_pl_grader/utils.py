@@ -203,6 +203,7 @@ def get_builtins(builtin_whitelist: list[str] | None) -> dict[str, Any]:
         "enumerate",
         "min",
         "max",
+        "map",
     )
 
     _safe_exceptions = (

@@ -24,6 +24,14 @@ from .utils import ProcessStatusCode
 
 logger = logging.getLogger(__name__)
 
+from enum import StrEnum
+
+
+class GradingOutputLevel(StrEnum):
+    ExceptionName = "none"
+    ExceptionMessage = "message"
+    FullTraceback = "traceback"
+
 
 def get_datadir(test_module: ModuleType) -> Path | None:
     """
@@ -130,19 +138,44 @@ def sandbox(request: pytest.FixtureRequest, data_json: dict[str, Any] | None) ->
         response_status = response["status"]
 
         if response_status == ProcessStatusCode.EXCEPTION:
+            output_level: GradingOutputLevel = GradingOutputLevel.FullTraceback
+
+            marker = request.node.get_closest_marker("output")
+            if marker and marker.kwargs and "level" in marker.kwargs:
+                try:
+                    # 2. Attempt to convert the marker value to the Enum member
+                    output_level = GradingOutputLevel(marker.kwargs["level"])
+
+                except ValueError as e:
+                    # 3. If conversion fails, the input value is invalid.
+                    # Pytest will treat this unhandled exception as a test failure.
+
+                    valid_levels = [level.value for level in GradingOutputLevel]
+
+                    raise ValueError(
+                        f"Invalid 'level' value '{marker.kwargs['level']}' in the 'output_level' marker. "
+                        f"Must be one of the following: {', '.join(valid_levels)}"
+                    ) from e
+
             exception_name = response.get("execution_error", "Unknown error")
+            fail_message = f"Student code execution failed with an exception: {exception_name}"
+
+            if output_level == GradingOutputLevel.ExceptionName:
+                pytest.fail(fail_message, pytrace=False)
+
             exception_message = response.get("execution_message", "")
+            fail_message += f"{os.linesep}Exception Message: {exception_message}"
+
+            if output_level == GradingOutputLevel.ExceptionMessage:
+                pytest.fail(fail_message, pytrace=False)
+
+            # TODO make this not an assert?
+            assert output_level == GradingOutputLevel.FullTraceback
+
             exception_traceback = response.get("execution_traceback", "")
+            fail_message += f"{os.linesep * 2}Traceback:{os.linesep}{exception_traceback}"
 
-            # TODO add an option to hide the traceback if desired
-            # TODO maybe format this better?
-
-            pytest.fail(
-                f"Student code execution failed with an exception:{os.linesep}"
-                f"{exception_name}: {exception_message}{os.linesep * 2}"
-                f"{exception_traceback}",
-                pytrace=False,
-            )
+            pytest.fail(fail_message, pytrace=False)
 
         elif response_status == ProcessStatusCode.TIMEOUT:
             # Don't get the exception message since there usually isn't one for timeouts
