@@ -19,18 +19,12 @@ from prettytable import PrettyTable
 from .fixture import FeedbackFixture
 from .fixture import StudentFiles
 from .fixture import StudentFixture
+from .utils import GradingOutputLevel
 from .utils import NamesForUserInfo
 from .utils import ProcessStatusCode
+from .utils import get_output_level_marker
 
 logger = logging.getLogger(__name__)
-
-from enum import StrEnum
-
-
-class GradingOutputLevel(StrEnum):
-    ExceptionName = "none"
-    ExceptionMessage = "message"
-    FullTraceback = "traceback"
 
 
 def get_datadir(test_module: ModuleType) -> Path | None:
@@ -138,25 +132,9 @@ def sandbox(request: pytest.FixtureRequest, data_json: dict[str, Any] | None) ->
         response_status = response["status"]
 
         if response_status == ProcessStatusCode.EXCEPTION:
-            output_level: GradingOutputLevel = GradingOutputLevel.FullTraceback
+            output_level: GradingOutputLevel = get_output_level_marker(request.node.get_closest_marker("output"))
 
-            marker = request.node.get_closest_marker("output")
-            if marker and marker.kwargs and "level" in marker.kwargs:
-                try:
-                    # 2. Attempt to convert the marker value to the Enum member
-                    output_level = GradingOutputLevel(marker.kwargs["level"])
-
-                except ValueError as e:
-                    # 3. If conversion fails, the input value is invalid.
-                    # Pytest will treat this unhandled exception as a test failure.
-
-                    valid_levels = [level.value for level in GradingOutputLevel]
-
-                    raise ValueError(
-                        f"Invalid 'level' value '{marker.kwargs['level']}' in the 'output_level' marker. "
-                        f"Must be one of the following: {', '.join(valid_levels)}"
-                    ) from e
-
+            print(f"Grading output level set to: {output_level}")
             exception_name = response.get("execution_error", "Unknown error")
             fail_message = f"Student code execution failed with an exception: {exception_name}"
 
@@ -418,11 +396,15 @@ class ResultCollectorPlugin:
 
             # If the test failed, we can add the exception message to the feedback
             if report.outcome == "failed" and call.excinfo is not None:
-                # TODO show more sophisticated error messages for different exceptions
-                exception_message = str(call.excinfo.value)
-                # exception_message = exception_message.split(os.linesep)[0]
+                output_level: GradingOutputLevel = get_output_level_marker(item.get_closest_marker("output"))
 
-                feedback_obj.add_message(exception_message)
+                # TODO based on level, only show certain parts of the exception
+                if output_level != GradingOutputLevel.ExceptionName:
+                    # TODO show more sophisticated error messages for different exceptions
+                    exception_message = str(call.excinfo.value)
+                    # exception_message = exception_message.split(os.linesep)[0]
+
+                    feedback_obj.add_message(exception_message)
 
             res_obj = feedback_obj.to_dict()
             res_obj["name"] = grading_data.get("name", nodeid)

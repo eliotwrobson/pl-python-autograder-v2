@@ -8,6 +8,13 @@ from typing import Literal
 from typing import TypedDict
 
 import dill
+import pytest
+
+
+class GradingOutputLevel(StrEnum):
+    ExceptionName = "none"
+    ExceptionMessage = "message"
+    FullTraceback = "traceback"
 
 
 class QueryStatusCode(StrEnum):
@@ -290,3 +297,23 @@ def drop_privileges(user_name: str) -> None:
     # 2. Set the real and effective UID
     os.setuid(target_uid)
     os.seteuid(target_uid)
+
+
+def get_output_level_marker(marker: pytest.Mark | None) -> GradingOutputLevel:
+    if marker and marker.kwargs and "level" in marker.kwargs:
+        try:
+            # 2. Attempt to convert the marker value to the Enum member
+            return GradingOutputLevel(marker.kwargs["level"])
+
+        except ValueError as e:
+            # 3. If conversion fails, the input value is invalid.
+            # Pytest will treat this unhandled exception as a test failure.
+
+            valid_levels = [level.value for level in GradingOutputLevel]
+
+            raise ValueError(
+                f"Invalid 'level' value '{marker.kwargs['level']}' in the 'output_level' marker. "
+                f"Must be one of the following: {', '.join(valid_levels)}"
+            ) from e
+
+    return GradingOutputLevel.FullTraceback
