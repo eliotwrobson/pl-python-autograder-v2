@@ -150,8 +150,8 @@ def sandbox(request: pytest.FixtureRequest, data_json: dict[str, Any] | None) ->
             # TODO make this not an assert?
             assert output_level == GradingOutputLevel.FullTraceback
 
-            exception_traceback = response.get("execution_traceback", "")
-            fail_message += f"{os.linesep * 2}Traceback:{os.linesep}{exception_traceback}"
+            if exception_traceback := response.get("execution_traceback", ""):
+                fail_message += f"{os.linesep * 2}{exception_traceback}"
 
             pytest.fail(fail_message, pytrace=False)
 

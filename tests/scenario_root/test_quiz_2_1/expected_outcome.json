@@ -22,7 +22,7 @@
       },
       {
         "max_points": 6,
-        "message": "Student code execution failed with an exception:\nRuntimeError",
+        "message": "Student code execution failed with an exception: RuntimeError",
         "name": "Test analyze_vibration function",
         "outcome": "error",
         "points_frac": 0.0,
@@ -31,7 +31,7 @@
       },
       {
         "max_points": 6,
-        "message": "Student code execution failed with an exception:\nRuntimeError",
+        "message": "Student code execution failed with an exception: RuntimeError",
         "name": "Test analyze_vibration function",
         "outcome": "error",
         "points_frac": 0.0,
