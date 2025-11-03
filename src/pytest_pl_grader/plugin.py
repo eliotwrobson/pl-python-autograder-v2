@@ -134,7 +134,7 @@ def sandbox(request: pytest.FixtureRequest, data_json: dict[str, Any] | None) ->
         if response_status == ProcessStatusCode.EXCEPTION:
             output_level: GradingOutputLevel = get_output_level_marker(request.node.get_closest_marker("output"))
 
-            print(f"Grading output level set to: {output_level}")
+            logger.debug(f"Grading output level set to: {output_level}")
             exception_name = response.get("execution_error", "Unknown error")
             fail_message = f"Student code execution failed with an exception: {exception_name}"
 
@@ -398,13 +398,25 @@ class ResultCollectorPlugin:
             if report.outcome == "failed" and call.excinfo is not None:
                 output_level: GradingOutputLevel = get_output_level_marker(item.get_closest_marker("output"))
 
-                # TODO based on level, only show certain parts of the exception
-                if output_level != GradingOutputLevel.ExceptionName:
-                    # TODO show more sophisticated error messages for different exceptions
-                    exception_message = str(call.excinfo.value)
-                    # exception_message = exception_message.split(os.linesep)[0]
+                logger.debug(f"Grading output level set to: {output_level}")
 
-                    feedback_obj.add_message(exception_message)
+                if output_level == GradingOutputLevel.ExceptionName:
+                    exception_name = call.excinfo.type.__name__
+                    fail_message = f"Student code grading failed with an exception: {exception_name}"
+                    feedback_obj.add_message(fail_message)
+
+                elif output_level == GradingOutputLevel.ExceptionMessage:
+                    exception_name = call.excinfo.type.__name__
+                    # TODO make this work with multiline messages somehow?
+                    exception_message = str(call.excinfo.value).split(os.linesep)[0]
+                    fail_message = (
+                        f"Student code grading failed with an exception: {exception_name}{os.linesep}Exception Message: {exception_message}"
+                    )
+                    feedback_obj.add_message(fail_message)
+
+                # If showing more than the exception name, show the message + full traceback
+                else:
+                    feedback_obj.add_message(str(call.excinfo.getrepr(style="no")))
 
             res_obj = feedback_obj.to_dict()
             res_obj["name"] = grading_data.get("name", nodeid)
@@ -556,11 +568,11 @@ def print_autograder_summary(session: pytest.Session, test_results: list[dict[st
         # Fallback if the table is very narrow
         header_line = f"+{summary_title.center(table_width - 2)}+"
 
-    writer.line(os.sep)  # Add a newline before the custom header
+    writer.line(os.linesep)  # Add a newline before the custom header
     writer.line(header_line, bold=True)
 
     # Print the generated table using the TerminalWriter
     for line in table_string.splitlines():
         writer.line(line)
 
-    writer.write(f"{os.sep}Final Grade: {total_score}/{max_score}{os.sep}", bold=True)
+    writer.write(f"{os.linesep}Final Grade: {total_score}/{max_score}{os.linesep}", bold=True)
