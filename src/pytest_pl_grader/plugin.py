@@ -129,6 +129,7 @@ def sandbox(request: pytest.FixtureRequest, data_json: dict[str, Any] | None) ->
 
     try:
         # TODO make sure to read student output and include in the exception message
+        # TODO also get this configuration by reading from the marker
         response = fixture.start_student_code_server(initialization_timeout=initialization_timeout)
         response_status = response["status"]
 

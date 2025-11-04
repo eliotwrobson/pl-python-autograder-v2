@@ -222,18 +222,18 @@ class StudentFixture:
             setup_code = self.setup_code_file.read_text(encoding="utf-8")
 
         # TODO make this a shared type
-        json_message: ProcessStartRequest = {
-            "message_type": "start",
-            "student_code": student_code,
-            "student_file_name": str(self.student_code_file),
-            "setup_code": setup_code,
-            "initialization_timeout": initialization_timeout,
-            "import_whitelist": self.import_whitelist,
-            "import_blacklist": self.import_blacklist,
-            "starting_vars": self.starting_vars,
-            "builtin_whitelist": self.builtin_whitelist,
-            "names_for_user_list": self.names_for_user_list,
-        }
+        json_message = ProcessStartRequest(
+            message_type="start",
+            student_code=student_code,
+            student_file_name=str(self.student_code_file),
+            setup_code=setup_code,
+            initialization_timeout=initialization_timeout,
+            import_whitelist=self.import_whitelist,
+            import_blacklist=self.import_blacklist,
+            starting_vars=self.starting_vars,
+            builtin_whitelist=self.builtin_whitelist,
+            names_for_user_list=self.names_for_user_list,
+        )
 
         assert self.process.stdout is not None, "Process stdout is None. Ensure the process is started correctly."
 
@@ -286,7 +286,7 @@ class StudentFixture:
     def query_raw(self, var_to_query: str, *, query_timeout: float = DEFAULT_TIMEOUT) -> StudentQueryResponse:
         self._assert_process_running()
 
-        json_message: StudentQueryRequest = {"message_type": "query", "var": var_to_query, "query_timeout": query_timeout}
+        json_message = StudentQueryRequest(message_type="query", var=var_to_query, query_timeout=query_timeout)
 
         assert self.student_socket is not None, "Student socket is not connected. Please start the student code server first."
         self.student_socket.settimeout(query_timeout)
@@ -311,13 +311,13 @@ class StudentFixture:
         TODO add query timeout keyword only argument
         """
 
-        json_message: StudentFunctionRequest = {
-            "message_type": "query_function",
-            "function_name": function_name,
-            "args_encoded": serialize_object_unsafe(args),
-            "kwargs_encoded": serialize_object_unsafe(kwargs),
-            "query_timeout": query_timeout,
-        }
+        json_message = StudentFunctionRequest(
+            message_type="query_function",
+            function_name=function_name,
+            args_encoded=serialize_object_unsafe(args),
+            kwargs_encoded=serialize_object_unsafe(kwargs),
+            query_timeout=query_timeout,
+        )
 
         assert self.student_socket is not None, "Student socket is not connected. Please start the student code server first."
         self.student_socket.settimeout(query_timeout)
