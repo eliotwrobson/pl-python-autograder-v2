@@ -316,4 +316,4 @@ def get_output_level_marker(marker: pytest.Mark | None) -> GradingOutputLevel:
                 f"Must be one of the following: {', '.join(valid_levels)}"
             ) from e
 
-    return GradingOutputLevel.FullTraceback
+    return GradingOutputLevel.ExceptionMessage
