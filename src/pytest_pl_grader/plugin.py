@@ -304,7 +304,9 @@ class ResultCollectorPlugin:
         """
         Register our custom marker to avoid warnings.
         """
-        config.addinivalue_line("markers", "grading_data(name, points, include_stdout_feedback=False): Mark a test with custom data that can be injected.")
+        config.addinivalue_line(
+            "markers", "grading_data(name, points, include_stdout_feedback=True): Mark a test with custom data that can be injected."
+        )
 
     @pytest.hookimpl(hookwrapper=True)
     def pytest_runtest_makereport(self, item: pytest.Item, call: pytest.CallInfo) -> Iterable[None]:
@@ -431,8 +433,8 @@ class ResultCollectorPlugin:
                 else:
                     feedback_obj.add_message(str(call.excinfo.getrepr(style="no")))
 
-            # Check if stdout feedback should be included
-            include_stdout_feedback = grading_data.get("include_stdout_feedback", False)
+            # Check if stdout feedback should be included (default True)
+            include_stdout_feedback = grading_data.get("include_stdout_feedback", True)
             if include_stdout_feedback and nodeid in self.student_fixtures:
                 student_fixture = self.student_fixtures[nodeid]
                 accumulated_stdout = student_fixture.get_accumulated_stdout()
