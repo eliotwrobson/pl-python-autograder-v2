@@ -435,7 +435,7 @@ class ResultCollectorPlugin:
             include_stdout_feedback = grading_data.get("include_stdout_feedback", True)
             if include_stdout_feedback and nodeid in self.student_stdout_data:
                 accumulated_stdout = self.student_stdout_data[nodeid]
-                feedback_obj.add_message(f"Student code output:\n{accumulated_stdout}")
+                feedback_obj.add_message(f"Student code output:{os.linesep}{accumulated_stdout}")
 
             res_obj = feedback_obj.to_dict()
             res_obj["name"] = grading_data.get("name", nodeid)
