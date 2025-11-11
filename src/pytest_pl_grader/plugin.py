@@ -7,6 +7,7 @@ from copy import deepcopy
 from pathlib import Path
 from types import ModuleType
 from typing import Any
+from typing import NamedTuple
 from typing import cast
 
 import _pytest
@@ -25,6 +26,14 @@ from .utils import ProcessStatusCode
 from .utils import get_output_level_marker
 
 logger = logging.getLogger(__name__)
+
+
+class TestResult(NamedTuple):
+    """Container for test execution results."""
+
+    report: _pytest.reports.TestReport
+    call: pytest.CallInfo
+    stdout: str
 
 
 def get_datadir(test_module: ModuleType) -> Path | None:
@@ -289,16 +298,14 @@ def pytest_configure(config: Config) -> None:
 
 
 class ResultCollectorPlugin:
-    collected_results: dict[str, tuple[_pytest.reports.TestReport, pytest.CallInfo]]
+    collected_results: dict[str, TestResult]
     student_feedback_data: dict[str, FeedbackFixture]
     grading_data: dict[str, Any]
-    student_stdout_data: dict[str, str]
 
     def __init__(self) -> None:
         self.collected_results = {}
         self.student_feedback_data = {}
         self.grading_data = {}
-        self.student_stdout_data = {}
 
     def pytest_configure(self, config: Config) -> None:
         """
@@ -322,19 +329,21 @@ class ResultCollectorPlugin:
 
         # Make a report for the setup phase, replace with the call phase if it happens later
         if report.when == "setup":
-            self.collected_results[report.nodeid] = (report, call)
+            self.collected_results[report.nodeid] = TestResult(report=report, call=call, stdout="")
             # Add a default outcome if not already set
 
         elif report.when == "call":
-            self.collected_results[report.nodeid] = (report, call)
-            # Store the accumulated stdout if available for later feedback inclusion
+            # Get accumulated stdout from the student fixture if available
+            accumulated_stdout = ""
             funcargs = getattr(item, "funcargs", None)
             if funcargs and "sandbox" in funcargs:
                 student_fixture = funcargs.get("sandbox")
                 if student_fixture and hasattr(student_fixture, "get_accumulated_stdout"):
-                    accumulated_stdout = student_fixture.get_accumulated_stdout()
-                    if accumulated_stdout.strip():  # Only store if there's actual content
-                        self.student_stdout_data[report.nodeid] = accumulated_stdout
+                    stdout_content = student_fixture.get_accumulated_stdout()
+                    if stdout_content.strip():  # Only store if there's actual content
+                        accumulated_stdout = stdout_content
+
+            self.collected_results[report.nodeid] = TestResult(report=report, call=call, stdout=accumulated_stdout)
             # You could store more details here if needed
             # item.config.my_test_results[report.nodeid] = {
             #     "outcome": report.outcome,
@@ -398,7 +407,9 @@ class ResultCollectorPlugin:
             if nodeid not in self.collected_results:
                 continue  # Skip if no results collected for this test
 
-            report, call = self.collected_results[nodeid]
+            test_result = self.collected_results[nodeid]
+            report = test_result.report
+            call = test_result.call
             outcome = report.outcome
 
             if nodeid in self.student_feedback_data:
@@ -433,9 +444,8 @@ class ResultCollectorPlugin:
 
             # Check if stdout feedback should be included (default True)
             include_stdout_feedback = grading_data.get("include_stdout_feedback", True)
-            if include_stdout_feedback and nodeid in self.student_stdout_data:
-                accumulated_stdout = self.student_stdout_data[nodeid]
-                feedback_obj.add_message(f"Student code output:{os.linesep}{accumulated_stdout}")
+            if include_stdout_feedback and test_result.stdout:
+                feedback_obj.add_message(f"Student code output:{os.linesep}{test_result.stdout}")
 
             res_obj = feedback_obj.to_dict()
             res_obj["name"] = grading_data.get("name", nodeid)
