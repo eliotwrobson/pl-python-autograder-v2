@@ -292,17 +292,19 @@ class ResultCollectorPlugin:
     collected_results: dict[str, tuple[_pytest.reports.TestReport, pytest.CallInfo]]
     student_feedback_data: dict[str, FeedbackFixture]
     grading_data: dict[str, Any]
+    student_fixtures: dict[str, StudentFixture]
 
     def __init__(self) -> None:
         self.collected_results = {}
         self.student_feedback_data = {}
         self.grading_data = {}
+        self.student_fixtures = {}
 
     def pytest_configure(self, config: Config) -> None:
         """
         Register our custom marker to avoid warnings.
         """
-        config.addinivalue_line("markers", "grading_data(name, points): Mark a test with custom data that can be injected.")
+        config.addinivalue_line("markers", "grading_data(name, points, include_stdout_feedback=False): Mark a test with custom data that can be injected.")
 
     @pytest.hookimpl(hookwrapper=True)
     def pytest_runtest_makereport(self, item: pytest.Item, call: pytest.CallInfo) -> Iterable[None]:
@@ -323,6 +325,16 @@ class ResultCollectorPlugin:
 
         elif report.when == "call":
             self.collected_results[report.nodeid] = (report, call)
+            # Store the student fixture if available for later stdout feedback
+            try:
+                # Use getattr with a fallback to avoid the typing issue
+                funcargs = getattr(item, "funcargs", None)
+                if funcargs and "sandbox" in funcargs:
+                    student_fixture = funcargs["sandbox"]
+                    if isinstance(student_fixture, StudentFixture):
+                        self.student_fixtures[report.nodeid] = student_fixture
+            except (AttributeError, KeyError):
+                pass  # Fixture not available, which is fine
             # You could store more details here if needed
             # item.config.my_test_results[report.nodeid] = {
             #     "outcome": report.outcome,
@@ -330,9 +342,8 @@ class ResultCollectorPlugin:
             # }
 
         fixture = None
-        if hasattr(item, "funcargs"):
-            student_code_fixture = item.funcargs.get("sandbox")
-            feedback_fixture = item.funcargs.get("feedback")
+        # This code section appears to be unused legacy code
+        # The actual fixture storage is now handled in the "call" phase above
 
         if fixture is not None and not isinstance(fixture, StudentFixture):
             pass
@@ -420,6 +431,14 @@ class ResultCollectorPlugin:
                 else:
                     feedback_obj.add_message(str(call.excinfo.getrepr(style="no")))
 
+            # Check if stdout feedback should be included
+            include_stdout_feedback = grading_data.get("include_stdout_feedback", False)
+            if include_stdout_feedback and nodeid in self.student_fixtures:
+                student_fixture = self.student_fixtures[nodeid]
+                accumulated_stdout = student_fixture.get_accumulated_stdout()
+                if accumulated_stdout.strip():  # Only add if there's actual content
+                    feedback_obj.add_message(f"Student code output:\n{accumulated_stdout}")
+
             res_obj = feedback_obj.to_dict()
             res_obj["name"] = grading_data.get("name", nodeid)
             res_obj["max_points"] = grading_data.get("points", 1)
@@ -493,7 +512,11 @@ def print_autograder_summary(session: pytest.Session, test_results: list[dict[st
         return
 
     # Get the terminal reporter and its writer
-    reporter: _pytest.terminal.TerminalReporter = session.config.pluginmanager.getplugin("terminalreporter")
+    reporter_plugin = session.config.pluginmanager.getplugin("terminalreporter")
+    if reporter_plugin is None:
+        print("Terminal reporter plugin not found. Cannot print autograder summary.")
+        return
+    reporter: _pytest.terminal.TerminalReporter = cast(_pytest.terminal.TerminalReporter, reporter_plugin)
     writer = reporter._tw  # Access the internal TerminalWriter instance
 
     if not test_results:

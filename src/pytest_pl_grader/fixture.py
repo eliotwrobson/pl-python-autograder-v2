@@ -93,6 +93,7 @@ class StudentFixture:
     builtin_whitelist: list[str] | None
     names_for_user_list: list[NamesForUserInfo] | None
     worker_username: str | None
+    _accumulated_stdout: str
 
     def __init__(
         self,
@@ -119,6 +120,7 @@ class StudentFixture:
         # Initialize the process and socket to None
         self.process = None
         self.student_socket = None
+        self._accumulated_stdout = ""
 
     def _assert_process_running(self) -> None:
         """
@@ -324,6 +326,10 @@ class StudentFixture:
         self.student_socket.sendall((json.dumps(json_message) + os.linesep).encode("utf-8"))
         data: StudentFunctionResponse = json.loads(self._read_from_socket().decode())
 
+        # Accumulate stdout from function calls for potential feedback inclusion
+        if data.get("stdout"):
+            self._accumulated_stdout += data["stdout"]
+
         return data
 
     def query_function(self, function_name: str, *args, query_timeout: float = DEFAULT_TIMEOUT, **kwargs) -> Any:
@@ -343,6 +349,18 @@ class StudentFixture:
                 raise NameError(f"Query for function '{function_name}' failed: {response['exception_message']}")
 
         return from_json(response["value"])
+
+    def get_accumulated_stdout(self) -> str:
+        """
+        Returns the accumulated stdout from all function calls made through this fixture.
+        """
+        return self._accumulated_stdout
+
+    def clear_accumulated_stdout(self) -> None:
+        """
+        Clears the accumulated stdout. Useful for resetting between test cases.
+        """
+        self._accumulated_stdout = ""
 
     # TODO add functions that let instructors use the student fixture
     # use the stuff pete set up here: https://github.com/reteps/pytest-autograder-prototype

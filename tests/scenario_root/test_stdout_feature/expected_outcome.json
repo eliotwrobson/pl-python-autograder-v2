@@ -1,0 +1,23 @@
+{
+    "expected_data_object": {
+        "score": 1.0,
+        "tests": [
+            {
+                "test_id": "test_stdout_feature.py::test_with_stdout_feedback[student_code]",
+                "message": "Function returned the correct value!\nStudent code output:\nHello from student code!\nThis is a second line of output",
+                "max_points": 2,
+                "points_frac": 1.0,
+                "points": 2.0,
+                "outcome": "passed"
+            },
+            {
+                "test_id": "test_stdout_feature.py::test_without_stdout_feedback[student_code]",
+                "message": "Function returned the correct value!",
+                "max_points": 2,
+                "points_frac": 1.0,
+                "points": 2.0,
+                "outcome": "passed"
+            }
+        ]
+    }
+}
