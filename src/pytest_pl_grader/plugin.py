@@ -7,6 +7,7 @@ from copy import deepcopy
 from pathlib import Path
 from types import ModuleType
 from typing import Any
+from typing import NamedTuple
 from typing import cast
 
 import _pytest
@@ -25,6 +26,14 @@ from .utils import ProcessStatusCode
 from .utils import get_output_level_marker
 
 logger = logging.getLogger(__name__)
+
+
+class TestResult(NamedTuple):
+    """Container for test execution results."""
+
+    report: _pytest.reports.TestReport
+    call: pytest.CallInfo
+    stdout: str
 
 
 def get_datadir(test_module: ModuleType) -> Path | None:
@@ -289,7 +298,7 @@ def pytest_configure(config: Config) -> None:
 
 
 class ResultCollectorPlugin:
-    collected_results: dict[str, tuple[_pytest.reports.TestReport, pytest.CallInfo]]
+    collected_results: dict[str, TestResult]
     student_feedback_data: dict[str, FeedbackFixture]
     grading_data: dict[str, Any]
 
@@ -302,7 +311,9 @@ class ResultCollectorPlugin:
         """
         Register our custom marker to avoid warnings.
         """
-        config.addinivalue_line("markers", "grading_data(name, points): Mark a test with custom data that can be injected.")
+        config.addinivalue_line(
+            "markers", "grading_data(name, points, include_stdout_feedback=True): Mark a test with custom data that can be injected."
+        )
 
     @pytest.hookimpl(hookwrapper=True)
     def pytest_runtest_makereport(self, item: pytest.Item, call: pytest.CallInfo) -> Iterable[None]:
@@ -318,11 +329,21 @@ class ResultCollectorPlugin:
 
         # Make a report for the setup phase, replace with the call phase if it happens later
         if report.when == "setup":
-            self.collected_results[report.nodeid] = (report, call)
+            self.collected_results[report.nodeid] = TestResult(report=report, call=call, stdout="")
             # Add a default outcome if not already set
 
         elif report.when == "call":
-            self.collected_results[report.nodeid] = (report, call)
+            # Get accumulated stdout from the student fixture if available
+            accumulated_stdout = ""
+            funcargs = getattr(item, "funcargs", None)
+            if funcargs and "sandbox" in funcargs:
+                student_fixture = funcargs.get("sandbox")
+                if student_fixture and hasattr(student_fixture, "get_accumulated_stdout"):
+                    stdout_content = student_fixture.get_accumulated_stdout()
+                    if stdout_content.strip():  # Only store if there's actual content
+                        accumulated_stdout = stdout_content
+
+            self.collected_results[report.nodeid] = TestResult(report=report, call=call, stdout=accumulated_stdout)
             # You could store more details here if needed
             # item.config.my_test_results[report.nodeid] = {
             #     "outcome": report.outcome,
@@ -330,9 +351,8 @@ class ResultCollectorPlugin:
             # }
 
         fixture = None
-        if hasattr(item, "funcargs"):
-            student_code_fixture = item.funcargs.get("sandbox")
-            feedback_fixture = item.funcargs.get("feedback")
+        # This code section appears to be unused legacy code
+        # The actual fixture storage is now handled in the "call" phase above
 
         if fixture is not None and not isinstance(fixture, StudentFixture):
             pass
@@ -387,7 +407,9 @@ class ResultCollectorPlugin:
             if nodeid not in self.collected_results:
                 continue  # Skip if no results collected for this test
 
-            report, call = self.collected_results[nodeid]
+            test_result = self.collected_results[nodeid]
+            report = test_result.report
+            call = test_result.call
             outcome = report.outcome
 
             if nodeid in self.student_feedback_data:
@@ -419,6 +441,11 @@ class ResultCollectorPlugin:
                 # If showing more than the exception name, show the message + full traceback
                 else:
                     feedback_obj.add_message(str(call.excinfo.getrepr(style="no")))
+
+            # Check if stdout feedback should be included (default True)
+            include_stdout_feedback = grading_data.get("include_stdout_feedback", True)
+            if include_stdout_feedback and test_result.stdout:
+                feedback_obj.add_message(f"Student code output:{os.linesep}{test_result.stdout}")
 
             res_obj = feedback_obj.to_dict()
             res_obj["name"] = grading_data.get("name", nodeid)
@@ -493,7 +520,11 @@ def print_autograder_summary(session: pytest.Session, test_results: list[dict[st
         return
 
     # Get the terminal reporter and its writer
-    reporter: _pytest.terminal.TerminalReporter = session.config.pluginmanager.getplugin("terminalreporter")
+    reporter_plugin = session.config.pluginmanager.getplugin("terminalreporter")
+    if reporter_plugin is None:
+        print("Terminal reporter plugin not found. Cannot print autograder summary.")
+        return
+    reporter: _pytest.terminal.TerminalReporter = cast(_pytest.terminal.TerminalReporter, reporter_plugin)
     writer = reporter._tw  # Access the internal TerminalWriter instance
 
     if not test_results:
