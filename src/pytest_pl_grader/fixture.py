@@ -251,6 +251,9 @@ class StudentFixture:
         try:
             data = self._read_from_socket().decode()
             res: ProcessStartResponse = json.loads(data)
+            # Accumulate stdout from initialization phase
+            if res.get("stdout"):
+                self._accumulated_stdout += res["stdout"]
         except Exception as e:
             res = {
                 "status": ProcessStatusCode.NO_RESPONSE,

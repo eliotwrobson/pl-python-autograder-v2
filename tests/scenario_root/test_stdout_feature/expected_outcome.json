@@ -1,10 +1,26 @@
 {
   "expected_data_object": {
-    "score": 1.0,
+    "score": 0.875,
     "tests": [
+      {
+        "test_id": "test_stdout_feature.py::test_with_stdout_feedback[student_code_with_global_prints]",
+        "message": "Function returned the correct value!\nStudent code output:\nGlobal print: Loading student code...\nGlobal print: Setting up variables...\nGlobal print: Student code loaded successfully!\nFunction print: Hello from student code!\nFunction print: This is a second line of output",
+        "max_points": 2,
+        "points_frac": 1.0,
+        "points": 2.0,
+        "outcome": "passed"
+      },
       {
         "test_id": "test_stdout_feature.py::test_with_stdout_feedback[student_code]",
         "message": "Function returned the correct value!\nStudent code output:\nHello from student code!\nThis is a second line of output",
+        "max_points": 2,
+        "points_frac": 1.0,
+        "points": 2.0,
+        "outcome": "passed"
+      },
+      {
+        "test_id": "test_stdout_feature.py::test_with_default_stdout_feedback[student_code_with_global_prints]",
+        "message": "Function returned the correct value!\nStudent code output:\nGlobal print: Loading student code...\nGlobal print: Setting up variables...\nGlobal print: Student code loaded successfully!\nFunction print: Hello from student code!\nFunction print: This is a second line of output",
         "max_points": 2,
         "points_frac": 1.0,
         "points": 2.0,
@@ -19,12 +35,36 @@
         "outcome": "passed"
       },
       {
+        "test_id": "test_stdout_feature.py::test_without_stdout_feedback[student_code_with_global_prints]",
+        "message": "Function returned the correct value!",
+        "max_points": 2,
+        "points_frac": 1.0,
+        "points": 2.0,
+        "outcome": "passed"
+      },
+      {
         "test_id": "test_stdout_feature.py::test_without_stdout_feedback[student_code]",
         "message": "Function returned the correct value!",
         "max_points": 2,
         "points_frac": 1.0,
         "points": 2.0,
         "outcome": "passed"
+      },
+      {
+        "test_id": "test_stdout_feature.py::test_global_scope_stdout[student_code_with_global_prints]",
+        "message": "Functions returned correct values!\nStudent code output:\nGlobal print: Loading student code...\nGlobal print: Setting up variables...\nGlobal print: Student code loaded successfully!\nFunction print: Hello from student code!\nFunction print: This is a second line of output",
+        "max_points": 2,
+        "points_frac": 1.0,
+        "points": 2.0,
+        "outcome": "passed"
+      },
+      {
+        "test_id": "test_stdout_feature.py::test_global_scope_stdout[student_code]",
+        "message": "Student code grading failed with an exception: RuntimeError\nException Message: Function 'get_global_message' raised an exception KeyError: 'get_global_message'",
+        "max_points": 2,
+        "points_frac": 0.0,
+        "points": 0.0,
+        "outcome": "failed"
       }
     ]
   }
