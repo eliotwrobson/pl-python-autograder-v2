@@ -292,13 +292,13 @@ class ResultCollectorPlugin:
     collected_results: dict[str, tuple[_pytest.reports.TestReport, pytest.CallInfo]]
     student_feedback_data: dict[str, FeedbackFixture]
     grading_data: dict[str, Any]
-    student_fixtures: dict[str, StudentFixture]
+    student_stdout_data: dict[str, str]
 
     def __init__(self) -> None:
         self.collected_results = {}
         self.student_feedback_data = {}
         self.grading_data = {}
-        self.student_fixtures = {}
+        self.student_stdout_data = {}
 
     def pytest_configure(self, config: Config) -> None:
         """
@@ -327,16 +327,14 @@ class ResultCollectorPlugin:
 
         elif report.when == "call":
             self.collected_results[report.nodeid] = (report, call)
-            # Store the student fixture if available for later stdout feedback
-            try:
-                # Use getattr with a fallback to avoid the typing issue
-                funcargs = getattr(item, "funcargs", None)
-                if funcargs and "sandbox" in funcargs:
-                    student_fixture = funcargs["sandbox"]
-                    if isinstance(student_fixture, StudentFixture):
-                        self.student_fixtures[report.nodeid] = student_fixture
-            except (AttributeError, KeyError):
-                pass  # Fixture not available, which is fine
+            # Store the accumulated stdout if available for later feedback inclusion
+            funcargs = getattr(item, "funcargs", None)
+            if funcargs and "sandbox" in funcargs:
+                student_fixture = funcargs.get("sandbox")
+                if student_fixture and hasattr(student_fixture, "get_accumulated_stdout"):
+                    accumulated_stdout = student_fixture.get_accumulated_stdout()
+                    if accumulated_stdout.strip():  # Only store if there's actual content
+                        self.student_stdout_data[report.nodeid] = accumulated_stdout
             # You could store more details here if needed
             # item.config.my_test_results[report.nodeid] = {
             #     "outcome": report.outcome,
@@ -435,11 +433,9 @@ class ResultCollectorPlugin:
 
             # Check if stdout feedback should be included (default True)
             include_stdout_feedback = grading_data.get("include_stdout_feedback", True)
-            if include_stdout_feedback and nodeid in self.student_fixtures:
-                student_fixture = self.student_fixtures[nodeid]
-                accumulated_stdout = student_fixture.get_accumulated_stdout()
-                if accumulated_stdout.strip():  # Only add if there's actual content
-                    feedback_obj.add_message(f"Student code output:\n{accumulated_stdout}")
+            if include_stdout_feedback and nodeid in self.student_stdout_data:
+                accumulated_stdout = self.student_stdout_data[nodeid]
+                feedback_obj.add_message(f"Student code output:\n{accumulated_stdout}")
 
             res_obj = feedback_obj.to_dict()
             res_obj["name"] = grading_data.get("name", nodeid)
