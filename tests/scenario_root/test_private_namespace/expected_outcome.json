@@ -4,7 +4,7 @@
     "tests": [
       {
         "max_points": 1,
-        "message": "NameError: name 'other_secret_value' is not defined",
+        "message": "Student code grading failed with an exception: Failed\nException Message: Student code execution failed with an exception: NameError",
         "name": "test_private_namespace.py::test_random[student_code_fail_other]",
         "outcome": "error",
         "points": 0.0,
@@ -13,7 +13,7 @@
       },
       {
         "max_points": 1,
-        "message": "NameError: name 'super_secret_value' is not defined",
+        "message": "Student code grading failed with an exception: Failed\nException Message: Student code execution failed with an exception: NameError",
         "name": "test_private_namespace.py::test_random[student_code_fail]",
         "outcome": "error",
         "points": 0.0,
@@ -22,7 +22,7 @@
       },
       {
         "max_points": 1,
-        "message": "NameError: name '__data_params' is not defined",
+        "message": "Student code grading failed with an exception: Failed\nException Message: Student code execution failed with an exception: NameError",
         "name": "test_private_namespace.py::test_random[student_code_fail_read_builtin]",
         "outcome": "error",
         "points": 0.0,
