@@ -1,0 +1,46 @@
+{
+  "params": {
+    "multiplier": 3,
+    "base_value": 42,
+    "greeting_message": "Hello from data.json!",
+    "counter_increment": 1,
+    "test_array": [1, 2, 3, 4, 5],
+    "names_for_user": [
+      {
+        "name": "MULTIPLIER",
+        "type": "int",
+        "description": "Multiplier value from data.json"
+      },
+      {
+        "name": "BASE_VALUE",
+        "type": "int",
+        "description": "Base value from data.json"
+      },
+      {
+        "name": "SETUP_CONSTANT",
+        "type": "str",
+        "description": "Setup completion message"
+      },
+      {
+        "name": "GREETING_MESSAGE",
+        "type": "str",
+        "description": "Greeting message from data.json"
+      },
+      {
+        "name": "TEST_ARRAY",
+        "type": "list",
+        "description": "Test array from data.json"
+      },
+      {
+        "name": "get_setup_value",
+        "type": "function",
+        "description": "Function to get setup value"
+      },
+      {
+        "name": "multiply_by_setup_value",
+        "type": "function",
+        "description": "Function to multiply using setup value"
+      }
+    ]
+  }
+}
