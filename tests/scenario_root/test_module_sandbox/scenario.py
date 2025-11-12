@@ -30,19 +30,21 @@ def test_module_shared_counter_3(module_sandbox: StudentFixture) -> None:
 
 
 @pytest.mark.grading_data(name="test_basic_functionality", points=1)
-def test_basic_functionality(module_sandbox: StudentFixture) -> None:
-    """Test basic functionality to ensure the module sandbox works like regular sandbox."""
-    # Test basic variable access
+def test_basic_functionality(module_sandbox: StudentFixture, data_json: DataFixture) -> None:
+    """Test basic functionality using data.json parameters."""
+    # Test basic variable access - should be BASE_VALUE from data.json
     result = module_sandbox.query("test_variable")
-    assert result == 42, f"Expected 42, got {result}"
+    expected_value = data_json["params"]["base_value"]
+    assert result == expected_value, f"Expected {expected_value}, got {result}"
 
-    # Test function call with setup_code MULTIPLIER (3)
+    # Test function call with data.json multiplier
     result = module_sandbox.query_function("test_function", 10)
-    assert result == 30, f"Expected 30 (10 * 3), got {result}"
+    expected_result = 10 * data_json["params"]["multiplier"]
+    assert result == expected_result, f"Expected {expected_result} (10 * {data_json['params']['multiplier']}), got {result}"
 
 
 @pytest.mark.grading_data(name="test_function_with_output", points=1)
-def test_function_with_output(module_sandbox: StudentFixture) -> None:
+def test_function_with_output(module_sandbox: StudentFixture, data_json: DataFixture) -> None:
     """Test that stdout is properly captured from module sandbox."""
     # Call function that produces output
     module_sandbox.query_function("test_function_with_print")
@@ -52,28 +54,43 @@ def test_function_with_output(module_sandbox: StudentFixture) -> None:
     assert "Hello from test function!" in stdout_content, f"Expected stdout containing 'Hello from test function!', got: {stdout_content}"
     assert "Setup complete!" in stdout_content, f"Expected stdout containing setup message, got: {stdout_content}"
 
+    # Check for the data.json message in stdout
+    expected_message = data_json["params"]["greeting_message"]
+    assert expected_message in stdout_content, f"Expected stdout containing '{expected_message}', got: {stdout_content}"
+
 
 @pytest.mark.grading_data(name="test_data_json_integration", points=1)
 def test_data_json_integration(module_sandbox: StudentFixture, data_json: DataFixture) -> None:
-    """Test that data.json values are accessible."""
-    # Test student functions that return hardcoded values (simulating data.json access)
+    """Test that data.json values are properly accessible through setup_code."""
+    # Test student functions that return data.json values
     result = module_sandbox.query_function("get_data_value")
-    assert result == 42, f"Expected student function to return 42, got {result}"
+    expected_value = data_json["params"]["base_value"]
+    assert result == expected_value, f"Expected student function to return {expected_value}, got {result}"
 
     result = module_sandbox.query_function("get_message_from_data")
-    assert result == "Hello from data.json!", f"Expected student function to return message, got {result}"
-
-    # Test accessing data.json value through the framework (if available)
-    if data_json is not None:
-        assert data_json["params"]["value"] == 42, f"Expected data.json value to be 42, got {data_json['params']['value']}"
-        assert data_json["params"]["message"] == "Hello from data.json!", (
-            f"Expected data.json message, got {data_json['params']['message']}"
-        )
+    expected_message = data_json["params"]["greeting_message"]
+    assert result == expected_message, f"Expected student function to return '{expected_message}', got {result}"
 
 
 @pytest.mark.grading_data(name="test_setup_code_integration", points=1)
 def test_setup_code_integration(module_sandbox: StudentFixture) -> None:
-    """Test that setup_code.py integration works (simulated)."""
-    # Test function that simulates using setup_code function
+    """Test that setup_code.py functions are accessible."""
+    # Test function that uses setup_code function
     result = module_sandbox.query_function("use_setup_function")
     assert result == "Setup value from setup_code.py", f"Expected setup function result, got {result}"
+
+
+@pytest.mark.grading_data(name="test_array_processing", points=1)
+def test_array_processing(module_sandbox: StudentFixture, data_json: DataFixture) -> None:
+    """Test processing of array data from data.json."""
+    result = module_sandbox.query_function("test_array_processing")
+    expected_sum = sum(data_json["params"]["test_array"])
+    assert result == expected_sum, f"Expected sum of {data_json['params']['test_array']} = {expected_sum}, got {result}"
+
+
+@pytest.mark.grading_data(name="test_setup_function_usage", points=1)
+def test_setup_function_usage(module_sandbox: StudentFixture, data_json: DataFixture) -> None:
+    """Test using functions defined in setup_code.py."""
+    result = module_sandbox.query_function("multiply_using_setup", 5)
+    expected_result = 5 * data_json["params"]["multiplier"]
+    assert result == expected_result, f"Expected {expected_result} (5 * {data_json['params']['multiplier']}), got {result}"

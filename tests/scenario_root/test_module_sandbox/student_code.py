@@ -1,16 +1,16 @@
 # Student code for testing module-scoped sandbox
 
-# Access value from data.json (will be available via the sandbox)
-test_variable = 42
+# Access value from setup_code which gets it from data.json
+test_variable = BASE_VALUE
 
 # Module-level counter to test shared state between tests
 _counter = 0
 
 
 def test_function(x):
-    """A simple test function using a fixed multiplier."""
-    # Use a fixed multiplier since setup_code variables aren't directly accessible
-    return x * 3
+    """A simple test function using the data.json multiplier."""
+    # Use the MULTIPLIER from setup_code.py (which gets it from data.json)
+    return x * MULTIPLIER
 
 
 def increment_counter():
@@ -21,23 +21,36 @@ def increment_counter():
 
 
 def test_function_with_print():
-    """A function that produces stdout output."""
-    print("Hello from test function! Setup complete!")
+    """A function that produces stdout output using setup_code values."""
+    print(f"Hello from test function! {SETUP_CONSTANT}")
+    print(f"Message: {GREETING_MESSAGE}")
     return "done"
 
 
 def get_data_value():
-    """Function to access the data.json value parameter."""
-    # This will access the value from data.json through the test framework
-    return 42  # The value from data.json
+    """Function to access the data.json base_value parameter."""
+    return BASE_VALUE
 
 
 def get_message_from_data():
     """Function to access the message from data.json."""
-    # This will access the message from data.json through the test framework
-    return "Hello from data.json!"  # The message from data.json
+    return GREETING_MESSAGE
 
 
 def use_setup_function():
-    """Function that simulates using a setup function."""
-    return "Setup value from setup_code.py"
+    """Function that uses a function from setup_code.py."""
+    return get_setup_value()
+
+
+def test_array_processing():
+    """Function that processes the test array from data.json."""
+    # Calculate sum manually since sum() builtin might not be available
+    total = 0
+    for item in TEST_ARRAY:
+        total += item
+    return total
+
+
+def multiply_using_setup(x):
+    """Function that uses the setup function to multiply."""
+    return multiply_by_setup_value(x)
