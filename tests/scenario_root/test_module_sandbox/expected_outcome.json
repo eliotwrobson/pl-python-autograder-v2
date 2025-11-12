@@ -3,38 +3,66 @@
     "score": 1.0,
     "tests": [
       {
+        "max_points": 1,
+        "message_old": "",
+        "name": "test_module_shared_counter_1",
+        "points_frac": 1.0,
+        "points": 1.0,
         "test_id": "test_module_sandbox.py::test_module_shared_counter_1",
-        "max_points": 1,
-        "points_frac": 1.0,
-        "points": 1.0,
         "outcome": "passed"
       },
       {
+        "max_points": 1,
+        "message_old": "",
+        "name": "test_module_shared_counter_2",
+        "points_frac": 1.0,
+        "points": 1.0,
         "test_id": "test_module_sandbox.py::test_module_shared_counter_2",
-        "max_points": 1,
-        "points_frac": 1.0,
-        "points": 1.0,
         "outcome": "passed"
       },
       {
+        "max_points": 1,
+        "message_old": "",
+        "name": "test_module_shared_counter_3",
+        "points_frac": 1.0,
+        "points": 1.0,
         "test_id": "test_module_sandbox.py::test_module_shared_counter_3",
-        "max_points": 1,
-        "points_frac": 1.0,
-        "points": 1.0,
         "outcome": "passed"
       },
       {
+        "max_points": 1,
+        "message_old": "",
+        "name": "test_basic_functionality",
+        "points_frac": 1.0,
+        "points": 1.0,
         "test_id": "test_module_sandbox.py::test_basic_functionality",
-        "max_points": 1,
-        "points_frac": 1.0,
-        "points": 1.0,
         "outcome": "passed"
       },
       {
-        "test_id": "test_module_sandbox.py::test_function_with_output",
         "max_points": 1,
+        "message_old": "",
+        "name": "test_function_with_output",
         "points_frac": 1.0,
         "points": 1.0,
+        "test_id": "test_module_sandbox.py::test_function_with_output",
+        "outcome": "passed"
+      },
+      {
+        "max_points": 1,
+        "message_old": "",
+        "name": "test_data_json_integration",
+        "points_frac": 1.0,
+        "points": 1.0,
+        "test_id": "test_module_sandbox.py::test_data_json_integration",
+        "outcome": "passed"
+      },
+      {
+        "max_points": 1,
+        "message_old": "",
+        "name": "test_setup_code_integration",
+        "points_frac": 1.0,
+        "points": 1.0,
+        "test_id": "test_module_sandbox.py::test_setup_code_integration",
         "outcome": "passed"
       }
     ]

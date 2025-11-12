@@ -1,0 +1,6 @@
+{
+  "params": {
+    "value": 42,
+    "message": "Hello from data.json!"
+  }
+}
