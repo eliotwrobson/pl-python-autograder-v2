@@ -209,8 +209,13 @@ def module_sandbox(request: pytest.FixtureRequest, data_json: dict[str, Any] | N
     Each different student code instance gets its own sandbox, but tests within the same module
     using the same student code instance share the sandbox for better performance.
 
-    Note: This fixture automatically finds the first student code file in the test directory,
-    so it doesn't support parameterization like the regular sandbox fixture.
+    Important: This fixture only supports scenarios with a single student_code.py file.
+    If multiple student code files are detected (e.g., student_code_1.py, student_code_2.py),
+    it will raise an error. Use the regular 'sandbox' fixture for parameterized testing
+    across multiple student code variants.
+
+    Note: This fixture doesn't support parameterization like the regular sandbox fixture
+    because module-scoped fixtures are created once per module before parameterization occurs.
     """
     # Get the plugin instance to access the cache
     plugin = request.config.result_collector_plugin  # type: ignore[attr-defined]
@@ -232,9 +237,19 @@ def module_sandbox(request: pytest.FixtureRequest, data_json: dict[str, Any] | N
             data_dir = subdirectory  # Update data_dir to the subdirectory
 
     if not student_code_files:
+        pytest.fail(f"No student code files found matching pattern '{student_code_pattern}' in {data_dir} or {data_dir}/{module_file.stem}")
+
+    # Check for multiple student code files and raise an error
+    if len(student_code_files) > 1:
+        student_file_names = [f.name for f in student_code_files]
         pytest.fail(
-            f"No student code files found matching pattern '{student_code_pattern}' in {data_dir} or {data_dir}/{module_file.stem}"
-        )  # Use the first student code file found (for simplicity)
+            f"Multiple student code files found: {student_file_names}. "
+            f"The module_sandbox fixture does not support parameterization across multiple student files. "
+            f"Use the regular 'sandbox' fixture instead to test all student code variants, "
+            f"or reduce to a single student_code.py file for module-level caching."
+        )
+
+    # Use the first (and only) student code file found
     student_code_file = student_code_files[0]
 
     # Create cache key
