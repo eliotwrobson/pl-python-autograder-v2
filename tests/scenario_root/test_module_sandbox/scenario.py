@@ -1,9 +1,11 @@
 # Test scenario for module-scoped sandbox fixture
 import pytest
 
+from pytest_pl_grader.fixture import StudentFixture
+
 
 @pytest.mark.grading_data(name="test_module_shared_counter_1", points=1)
-def test_module_shared_counter_1(module_sandbox):
+def test_module_shared_counter_1(module_sandbox: StudentFixture) -> None:
     """Test that increments a counter and checks its value."""
     # Call increment function and check result
     result = module_sandbox.query_function("increment_counter")
@@ -11,7 +13,7 @@ def test_module_shared_counter_1(module_sandbox):
 
 
 @pytest.mark.grading_data(name="test_module_shared_counter_2", points=1)
-def test_module_shared_counter_2(module_sandbox):
+def test_module_shared_counter_2(module_sandbox: StudentFixture) -> None:
     """Test that counter persists between tests (demonstrating shared module scope)."""
     # Call increment function again - should be 2 if module scope is shared
     result = module_sandbox.query_function("increment_counter")
@@ -19,7 +21,7 @@ def test_module_shared_counter_2(module_sandbox):
 
 
 @pytest.mark.grading_data(name="test_module_shared_counter_3", points=1)
-def test_module_shared_counter_3(module_sandbox):
+def test_module_shared_counter_3(module_sandbox: StudentFixture) -> None:
     """Test that counter continues to increment (further demonstrating shared state)."""
     # Call increment function one more time
     result = module_sandbox.query_function("increment_counter")
@@ -27,7 +29,7 @@ def test_module_shared_counter_3(module_sandbox):
 
 
 @pytest.mark.grading_data(name="test_basic_functionality", points=1)
-def test_basic_functionality(module_sandbox):
+def test_basic_functionality(module_sandbox: StudentFixture) -> None:
     """Test basic functionality to ensure the module sandbox works like regular sandbox."""
     # Test basic variable access
     result = module_sandbox.query("test_variable")
@@ -39,7 +41,7 @@ def test_basic_functionality(module_sandbox):
 
 
 @pytest.mark.grading_data(name="test_function_with_output", points=1)
-def test_function_with_output(module_sandbox):
+def test_function_with_output(module_sandbox: StudentFixture) -> None:
     """Test that stdout is properly captured from module sandbox."""
     # Call function that produces output
     module_sandbox.query_function("test_function_with_print")

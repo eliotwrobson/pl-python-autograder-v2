@@ -72,9 +72,16 @@ def data_json(request: pytest.FixtureRequest) -> dict[str, Any] | None:
     #     raise ValueError(f"Data file '{data_file.name}' not found in '{datadir}'.")
 
 
-# TODO maybe change to the module scope??
-@pytest.fixture
-def sandbox(request: pytest.FixtureRequest, data_json: dict[str, Any] | None) -> Iterable[StudentFixture]:
+def _initialize_sandbox_fixture(
+    request: pytest.FixtureRequest,
+    data_json: dict[str, Any] | None,
+    file_names: StudentFiles,
+) -> tuple[StudentFixture, int]:
+    """
+    Common initialization logic for both sandbox and module_sandbox fixtures.
+    Handles parameter parsing, timeout configuration, and StudentFixture creation.
+    Returns the fixture and the initialization timeout.
+    """
     # Default timeout TODO make this a command line option?
     initialization_timeout = 1
 
@@ -85,13 +92,9 @@ def sandbox(request: pytest.FixtureRequest, data_json: dict[str, Any] | None) ->
 
     import_whitelist = params_dict.get("import_whitelist")
     import_blacklist = params_dict.get("import_blacklist")
-
-    # TODO make sure this contains only valid builtins
     builtin_whitelist = params_dict.get("builtin_whitelist")
-
     names_for_user_list = cast(list[NamesForUserInfo] | None, params_dict.get("names_for_user"))
 
-    # TODO maybe make it possible to add custom generators for starting variables?
     starting_vars: dict[str, Any] = {
         "__data_params": deepcopy(params_dict) if data_json is not None else {},
     }
@@ -111,14 +114,11 @@ def sandbox(request: pytest.FixtureRequest, data_json: dict[str, Any] | None) ->
 
     # Check for the custom mark
     marker = request.node.get_closest_marker("sandbox_timeout")
-    if marker:
-        # Markers can have positional arguments (args) or keyword arguments (kwargs)
-        # We'll assume the timeout is the first positional argument
-        if marker.args:
-            initialization_timeout = marker.args[0]
+    if marker and marker.args:
+        initialization_timeout = marker.args[0]
 
     fixture = StudentFixture(
-        file_names=request.param,
+        file_names=file_names,
         import_whitelist=import_whitelist,
         import_blacklist=import_blacklist,
         starting_vars=starting_vars,
@@ -127,47 +127,64 @@ def sandbox(request: pytest.FixtureRequest, data_json: dict[str, Any] | None) ->
         worker_username=request.config.getoption("--worker-username"),
     )
 
+    return fixture, initialization_timeout
+
+
+def _handle_sandbox_startup_errors(
+    request: pytest.FixtureRequest,
+    response: Any,  # ProcessStartResponse
+    initialization_timeout: int,
+) -> None:
+    """
+    Common error handling logic for sandbox fixture startup failures.
+    Handles exceptions, timeouts, and other error conditions.
+    """
+    response_status = response["status"]
+
+    if response_status == ProcessStatusCode.EXCEPTION:
+        output_level: GradingOutputLevel = get_output_level_marker(request.node.get_closest_marker("output"))
+
+        logger.debug(f"Grading output level set to: {output_level}")
+        exception_name = response.get("execution_error", "Unknown error")
+        fail_message = f"Student code execution failed with an exception: {exception_name}"
+
+        if output_level == GradingOutputLevel.ExceptionName:
+            pytest.fail(fail_message, pytrace=False)
+
+        exception_message = response.get("execution_message", "")
+        fail_message += f"{os.linesep}Exception Message: {exception_message}"
+
+        if output_level == GradingOutputLevel.ExceptionMessage:
+            pytest.fail(fail_message, pytrace=False)
+
+        assert output_level == GradingOutputLevel.FullTraceback
+
+        if exception_traceback := response.get("execution_traceback", ""):
+            fail_message += f"{os.linesep * 2}{exception_traceback}"
+
+        pytest.fail(fail_message, pytrace=False)
+
+    elif response_status == ProcessStatusCode.TIMEOUT:
+        pytest.fail("Student code initialization timed out", pytrace=False)
+
+    elif response_status == ProcessStatusCode.NO_RESPONSE:
+        pytest.fail(f"No response from initialization with timeout {initialization_timeout}", pytrace=False)
+
+    elif response_status != ProcessStatusCode.SUCCESS:
+        logger.warning(f"Unexpected status in response from student code server: {response}")
+        pytest.fail(f"Unexpected status from student code server: {response_status}", pytrace=False)
+
+
+# TODO maybe change to the module scope??
+@pytest.fixture
+def sandbox(request: pytest.FixtureRequest, data_json: dict[str, Any] | None) -> Iterable[StudentFixture]:
+    fixture, initialization_timeout = _initialize_sandbox_fixture(request, data_json, request.param)
+
     try:
         # TODO make sure to read student output and include in the exception message
         # TODO also get this configuration by reading from the marker
         response = fixture.start_student_code_server(initialization_timeout=initialization_timeout)
-        response_status = response["status"]
-
-        if response_status == ProcessStatusCode.EXCEPTION:
-            output_level: GradingOutputLevel = get_output_level_marker(request.node.get_closest_marker("output"))
-
-            logger.debug(f"Grading output level set to: {output_level}")
-            exception_name = response.get("execution_error", "Unknown error")
-            fail_message = f"Student code execution failed with an exception: {exception_name}"
-
-            if output_level == GradingOutputLevel.ExceptionName:
-                pytest.fail(fail_message, pytrace=False)
-
-            exception_message = response.get("execution_message", "")
-            fail_message += f"{os.linesep}Exception Message: {exception_message}"
-
-            if output_level == GradingOutputLevel.ExceptionMessage:
-                pytest.fail(fail_message, pytrace=False)
-
-            # TODO make this not an assert?
-            assert output_level == GradingOutputLevel.FullTraceback
-
-            if exception_traceback := response.get("execution_traceback", ""):
-                fail_message += f"{os.linesep * 2}{exception_traceback}"
-
-            pytest.fail(fail_message, pytrace=False)
-
-        elif response_status == ProcessStatusCode.TIMEOUT:
-            # Don't get the exception message since there usually isn't one for timeouts
-            pytest.fail("Student code initialization timed out", pytrace=False)
-
-        elif response_status == ProcessStatusCode.NO_RESPONSE:
-            # Don't get the exception message since there usually isn't one for timeouts
-            pytest.fail(f"No response from initialization with timeout {initialization_timeout}", pytrace=False)
-
-        elif response_status != ProcessStatusCode.SUCCESS:
-            logger.warning(f"Unexpected status in response from student code server: {response}")
-            pytest.fail(f"Unexpected status from student code server: {response_status}", pytrace=False)
+        _handle_sandbox_startup_errors(request, response, initialization_timeout)
 
         yield fixture
     finally:
@@ -224,87 +241,12 @@ def module_sandbox(request: pytest.FixtureRequest, data_json: dict[str, Any] | N
 
     student_files = StudentFiles(leading_file, trailing_file, student_code_file, setup_code_file)
 
-    # Same initialization logic as the regular sandbox fixture
-    initialization_timeout = 1
-
-    if data_json is None:
-        params_dict = {}
-    else:
-        params_dict = data_json.get("params", {})
-
-    import_whitelist = params_dict.get("import_whitelist")
-    import_blacklist = params_dict.get("import_blacklist")
-    builtin_whitelist = params_dict.get("builtin_whitelist")
-    names_for_user_list = cast(list[NamesForUserInfo] | None, params_dict.get("names_for_user"))
-
-    starting_vars: dict[str, Any] = {
-        "__data_params": deepcopy(params_dict) if data_json is not None else {},
-    }
-
-    if names_for_user_list is not None:
-        for names_dict in names_for_user_list:
-            name = names_dict["name"]
-            value = params_dict.get(name, None)
-
-            variable_type = type(value).__name__.strip()
-            expected_variable_type = names_dict["type"].strip()
-
-            if variable_type != expected_variable_type and value is not None:
-                logger.warning(f"Variable type mismatch for starting var {name}: expected {expected_variable_type}, got {variable_type}")
-
-            starting_vars[name] = value
-
-    # Check for timeout marker
-    marker = request.node.get_closest_marker("sandbox_timeout")
-    if marker and marker.args:
-        initialization_timeout = marker.args[0]
-
-    fixture = StudentFixture(
-        file_names=student_files,
-        import_whitelist=import_whitelist,
-        import_blacklist=import_blacklist,
-        starting_vars=starting_vars,
-        builtin_whitelist=builtin_whitelist,
-        names_for_user_list=names_for_user_list,
-        worker_username=request.config.getoption("--worker-username"),
-    )
+    # Use shared initialization logic
+    fixture, initialization_timeout = _initialize_sandbox_fixture(request, data_json, student_files)
 
     try:
         response = fixture.start_student_code_server(initialization_timeout=initialization_timeout)
-        response_status = response["status"]
-
-        if response_status == ProcessStatusCode.EXCEPTION:
-            output_level: GradingOutputLevel = get_output_level_marker(request.node.get_closest_marker("output"))
-
-            logger.debug(f"Grading output level set to: {output_level}")
-            exception_name = response.get("execution_error", "Unknown error")
-            fail_message = f"Student code execution failed with an exception: {exception_name}"
-
-            if output_level == GradingOutputLevel.ExceptionName:
-                pytest.fail(fail_message, pytrace=False)
-
-            exception_message = response.get("execution_message", "")
-            fail_message += f"{os.linesep}Exception Message: {exception_message}"
-
-            if output_level == GradingOutputLevel.ExceptionMessage:
-                pytest.fail(fail_message, pytrace=False)
-
-            assert output_level == GradingOutputLevel.FullTraceback
-
-            if exception_traceback := response.get("execution_traceback", ""):
-                fail_message += f"{os.linesep * 2}{exception_traceback}"
-
-            pytest.fail(fail_message, pytrace=False)
-
-        elif response_status == ProcessStatusCode.TIMEOUT:
-            pytest.fail("Student code initialization timed out", pytrace=False)
-
-        elif response_status == ProcessStatusCode.NO_RESPONSE:
-            pytest.fail(f"No response from initialization with timeout {initialization_timeout}", pytrace=False)
-
-        elif response_status != ProcessStatusCode.SUCCESS:
-            logger.warning(f"Unexpected status in response from student code server: {response}")
-            pytest.fail(f"Unexpected status from student code server: {response_status}", pytrace=False)
+        _handle_sandbox_startup_errors(request, response, initialization_timeout)
 
         # Cache the fixture for reuse within this module
         plugin.module_sandbox_cache[cache_key] = fixture
