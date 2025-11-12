@@ -1,0 +1,42 @@
+{
+  "expected_data_object": {
+    "score": 1.0,
+    "tests": [
+      {
+        "test_id": "test_module_sandbox.py::test_module_shared_counter_1",
+        "max_points": 1,
+        "points_frac": 1.0,
+        "points": 1.0,
+        "outcome": "passed"
+      },
+      {
+        "test_id": "test_module_sandbox.py::test_module_shared_counter_2",
+        "max_points": 1,
+        "points_frac": 1.0,
+        "points": 1.0,
+        "outcome": "passed"
+      },
+      {
+        "test_id": "test_module_sandbox.py::test_module_shared_counter_3",
+        "max_points": 1,
+        "points_frac": 1.0,
+        "points": 1.0,
+        "outcome": "passed"
+      },
+      {
+        "test_id": "test_module_sandbox.py::test_basic_functionality",
+        "max_points": 1,
+        "points_frac": 1.0,
+        "points": 1.0,
+        "outcome": "passed"
+      },
+      {
+        "test_id": "test_module_sandbox.py::test_function_with_output",
+        "max_points": 1,
+        "points_frac": 1.0,
+        "points": 1.0,
+        "outcome": "passed"
+      }
+    ]
+  }
+}
