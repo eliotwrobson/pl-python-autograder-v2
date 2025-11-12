@@ -13,7 +13,7 @@
       },
       {
         "name": "BASE_VALUE",
-        "type": "int", 
+        "type": "int",
         "description": "Base value from data.json"
       },
       {

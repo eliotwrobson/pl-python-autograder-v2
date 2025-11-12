@@ -4,7 +4,6 @@
     "tests": [
       {
         "max_points": 1,
-        "message_old": "",
         "name": "test_module_shared_counter_1",
         "points_frac": 1.0,
         "points": 1.0,
@@ -13,8 +12,7 @@
       },
       {
         "max_points": 1,
-        "message_old": "",
-        "name": "test_module_shared_counter_2", 
+        "name": "test_module_shared_counter_2",
         "points_frac": 1.0,
         "points": 1.0,
         "test_id": "test_module_sandbox.py::test_module_shared_counter_2",
@@ -22,7 +20,6 @@
       },
       {
         "max_points": 1,
-        "message_old": "",
         "name": "test_module_shared_counter_3",
         "points_frac": 1.0,
         "points": 1.0,
@@ -31,7 +28,6 @@
       },
       {
         "max_points": 1,
-        "message_old": "",
         "name": "test_basic_functionality",
         "points_frac": 1.0,
         "points": 1.0,
@@ -40,7 +36,6 @@
       },
       {
         "max_points": 1,
-        "message_old": "",
         "name": "test_function_with_output",
         "points_frac": 1.0,
         "points": 1.0,
@@ -49,7 +44,6 @@
       },
       {
         "max_points": 1,
-        "message_old": "",
         "name": "test_data_json_integration",
         "points_frac": 1.0,
         "points": 1.0,
@@ -58,7 +52,6 @@
       },
       {
         "max_points": 1,
-        "message_old": "",
         "name": "test_setup_code_integration",
         "points_frac": 1.0,
         "points": 1.0,
@@ -67,7 +60,6 @@
       },
       {
         "max_points": 1,
-        "message_old": "",
         "name": "test_array_processing",
         "points_frac": 1.0,
         "points": 1.0,
@@ -76,7 +68,6 @@
       },
       {
         "max_points": 1,
-        "message_old": "",
         "name": "test_setup_function_usage",
         "points_frac": 1.0,
         "points": 1.0,
