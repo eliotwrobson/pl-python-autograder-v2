@@ -22,6 +22,7 @@ from .fixture import StudentFiles
 from .fixture import StudentFixture
 from .utils import GradingOutputLevel
 from .utils import NamesForUserInfo
+from .utils import ProcessStartResponse
 from .utils import ProcessStatusCode
 from .utils import get_output_level_marker
 
@@ -101,6 +102,8 @@ def _initialize_sandbox_fixture(
 
     import_whitelist = params_dict.get("import_whitelist")
     import_blacklist = params_dict.get("import_blacklist")
+
+    # TODO make sure this contains only valid builtins
     builtin_whitelist = params_dict.get("builtin_whitelist")
     names_for_user_list = cast(list[NamesForUserInfo] | None, params_dict.get("names_for_user"))
 
@@ -141,7 +144,7 @@ def _initialize_sandbox_fixture(
 
 def _handle_sandbox_startup_errors(
     request: pytest.FixtureRequest,
-    response: Any,  # ProcessStartResponse
+    response: ProcessStartResponse,
     initialization_timeout: int,
 ) -> None:
     """
@@ -184,7 +187,6 @@ def _handle_sandbox_startup_errors(
         pytest.fail(f"Unexpected status from student code server: {response_status}", pytrace=False)
 
 
-# TODO maybe change to the module scope??
 @pytest.fixture
 def sandbox(request: pytest.FixtureRequest, data_json: dict[str, Any] | None) -> Iterable[StudentFixture]:
     fixture, initialization_timeout = _initialize_sandbox_fixture(request, data_json, request.param)
