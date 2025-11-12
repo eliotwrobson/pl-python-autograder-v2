@@ -229,13 +229,6 @@ def module_sandbox(request: pytest.FixtureRequest, data_json: dict[str, Any] | N
     student_code_pattern = "student_code*.py"
     student_code_files = list(data_dir.glob(student_code_pattern))
 
-    # If not found in the same directory, look for a subdirectory with the module name
-    if not student_code_files:
-        subdirectory = data_dir / module_file.stem  # e.g., test_module_sandbox
-        if subdirectory.is_dir():
-            student_code_files = list(subdirectory.glob(student_code_pattern))
-            data_dir = subdirectory  # Update data_dir to the subdirectory
-
     if not student_code_files:
         pytest.fail(f"No student code files found matching pattern '{student_code_pattern}' in {data_dir} or {data_dir}/{module_file.stem}")
 
