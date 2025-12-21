@@ -59,6 +59,11 @@ def test_autograder_scenario_with_pytester(pytester: pytest.Pytester, scenario_d
     2. Runs pytest within that isolated environment.
     3. Asserts on the pytest outcome (passed, failed, etc.) and captured stdout/stderr.
     """
+    # Skip privilege_drop test on Windows since it requires Unix-specific functionality
+    import sys
+    if sys.platform == "win32" and scenario_dir.name == "test_privilege_drop":
+        pytest.skip("Privilege dropping tests only run on Unix systems")
+    
     print(f"\n--- Running scenario: {scenario_dir.name} with pytester ---")
 
     # Ensure the common file to copy exists
