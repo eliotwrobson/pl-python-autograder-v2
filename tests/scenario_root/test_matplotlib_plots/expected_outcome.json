@@ -1,0 +1,61 @@
+{
+  "expected_data_object": {
+    "score": 1.0,
+    "tests": [
+      {
+        "max_points": 2,
+        "message": "",
+        "name": "line_plot_basic",
+        "points_frac": 1.0,
+        "points": 2.0,
+        "test_id": "test_matplotlib_plots.py::test_line_plot_basic[student_code]",
+        "outcome": "passed"
+      },
+      {
+        "max_points": 2,
+        "message": "",
+        "name": "line_plot_matplotcheck",
+        "points_frac": 1.0,
+        "points": 2.0,
+        "test_id": "test_matplotlib_plots.py::test_line_plot_with_matplotcheck[student_code]",
+        "outcome": "passed"
+      },
+      {
+        "max_points": 2,
+        "message": "",
+        "name": "scatter_plot",
+        "points_frac": 1.0,
+        "points": 2.0,
+        "test_id": "test_matplotlib_plots.py::test_scatter_plot[student_code]",
+        "outcome": "passed"
+      },
+      {
+        "max_points": 2,
+        "message": "",
+        "name": "bar_chart",
+        "points_frac": 1.0,
+        "points": 2.0,
+        "test_id": "test_matplotlib_plots.py::test_bar_chart[student_code]",
+        "outcome": "passed"
+      },
+      {
+        "max_points": 2,
+        "message": "",
+        "name": "multi_subplot",
+        "points_frac": 1.0,
+        "points": 2.0,
+        "test_id": "test_matplotlib_plots.py::test_multi_subplot[student_code]",
+        "outcome": "passed"
+      },
+      {
+        "max_points": 2,
+        "message": "",
+        "name": "line_data_accuracy",
+        "points_frac": 1.0,
+        "points": 2.0,
+        "test_id": "test_matplotlib_plots.py::test_line_plot_data_accuracy[student_code]",
+        "outcome": "passed"
+      }
+    ]
+  }
+}
