@@ -138,7 +138,7 @@ async def student_code_runner(
 ) -> tuple[dict[str, Any], dict[str, Any], ProcessStartResponse]:
     stdout_capture = io.StringIO()
     stderr_capture = io.StringIO()
-    execution_error = None
+    execution_error: Exception | None = None
     exception_traceback = None
     local_vars = deepcopy(starting_vars) if starting_vars else {}
     local_vars["__from_server_json"] = from_server_json  # Add the deserialization function to the local variables for setup code to use
