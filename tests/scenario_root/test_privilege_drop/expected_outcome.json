@@ -1,0 +1,34 @@
+{
+  "expected_data_object": {
+    "score": 0.0,
+    "tests": [
+      {
+        "max_points": 1,
+        "message": "",
+        "name": "test_user_id",
+        "points_frac": 0.0,
+        "points": 0.0,
+        "test_id": "test_privilege_drop.py::test_subprocess_runs_as_different_user[student_code]",
+        "outcome": "skipped"
+      },
+      {
+        "max_points": 1,
+        "message": "",
+        "name": "test_effective_user_matches_real_user",
+        "points_frac": 0.0,
+        "points": 0.0,
+        "test_id": "test_privilege_drop.py::test_subprocess_effective_user_matches_real_user[student_code]",
+        "outcome": "skipped"
+      },
+      {
+        "max_points": 1,
+        "message": "",
+        "name": "test_group_id",
+        "points_frac": 0.0,
+        "points": 0.0,
+        "test_id": "test_privilege_drop.py::test_subprocess_group_ids_match[student_code]",
+        "outcome": "skipped"
+      }
+    ]
+  }
+}

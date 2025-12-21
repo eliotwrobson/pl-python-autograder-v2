@@ -573,9 +573,14 @@ class ResultCollectorPlugin:
             elif res_obj["points_frac"] is None:
                 if outcome == "failed":
                     res_obj["points_frac"] = 0.0
+                elif outcome == "skipped":
+                    # Skipped tests don't contribute to the score
+                    # but also don't count as failures
+                    res_obj["points_frac"] = 0.0
+                    res_obj["outcome"] = "skipped"
                 else:
                     # TODO fill in logic for other outcomes
-                    # e.g., "skipped", "xpassed", etc.
+                    # e.g., "xpassed", "xfailed", etc.
                     # For now, we raise an error for unexpected outcomes
                     raise ValueError(f"Unexpected outcome '{outcome}' for test '{nodeid}'.")
 
