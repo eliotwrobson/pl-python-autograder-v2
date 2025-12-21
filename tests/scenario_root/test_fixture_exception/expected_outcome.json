@@ -1,0 +1,16 @@
+{
+  "expected_data_object": {
+    "score": 0.0,
+    "tests": [
+      {
+        "max_points": 1,
+        "message": "Student code execution failed with an exception: TypeError",
+        "name": "Test with fixture exception",
+        "points_frac": 0.0,
+        "points": 0.0,
+        "test_id": "test_fixture_exception.py::test_with_fixture_exception[student_code]",
+        "outcome": "error"
+      }
+    ]
+  }
+}

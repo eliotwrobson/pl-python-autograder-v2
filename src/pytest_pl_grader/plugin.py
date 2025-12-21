@@ -527,15 +527,23 @@ class ResultCollectorPlugin:
                 # Create an empty feedback object if none was created during the test
                 feedback_obj = FeedbackFixture(test_id=nodeid)
 
-            # If the test failed, we can add the exception message to the feedback
+            # If the test failed (in any phase), add the exception message to the feedback
             if report.outcome == "failed" and call.excinfo is not None:
                 output_level: GradingOutputLevel = get_output_level_marker(item.get_closest_marker("output"))
 
                 logger.debug(f"Grading output level set to: {output_level}")
 
+                # Customize the message based on the failure phase
+                if report.when == "setup":
+                    phase_message = "Student code execution failed with an exception"
+                elif report.when == "teardown":
+                    phase_message = "Student code teardown failed with an exception"
+                else:
+                    phase_message = "Student code grading failed with an exception"
+
                 if output_level == GradingOutputLevel.ExceptionName:
                     exception_name = call.excinfo.type.__name__
-                    fail_message = f"Student code grading failed with an exception: {exception_name}"
+                    fail_message = f"{phase_message}: {exception_name}"
                     feedback_obj.add_message(fail_message)
 
                 elif output_level == GradingOutputLevel.ExceptionMessage:
@@ -543,7 +551,7 @@ class ResultCollectorPlugin:
                     # TODO make this work with multiline messages somehow?
                     exception_message = str(call.excinfo.value).split(os.linesep)[0]
                     fail_message = (
-                        f"Student code grading failed with an exception: {exception_name}{os.linesep}Exception Message: {exception_message}"
+                        f"{phase_message}: {exception_name}{os.linesep}Exception Message: {exception_message}"
                     )
                     feedback_obj.add_message(fail_message)
 

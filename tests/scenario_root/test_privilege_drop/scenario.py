@@ -1,4 +1,3 @@
-import os
 import sys
 
 import pytest
@@ -18,7 +17,7 @@ def test_worker_username_stored_in_fixture(sandbox: StudentFixture) -> None:
     """
     # The fixture should have worker_username attribute
     assert hasattr(sandbox, "worker_username"), "Fixture missing worker_username attribute"
-    
+
     # If no username was provided, it should be None
     # If a username was provided via CLI, it will be stored here
     # This test just validates the plumbing works
