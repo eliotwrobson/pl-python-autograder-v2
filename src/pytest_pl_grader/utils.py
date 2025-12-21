@@ -1,7 +1,7 @@
 import base64
 import builtins
 import os
-import pwd
+import sys
 from enum import StrEnum
 from typing import Any
 from typing import Literal
@@ -281,6 +281,12 @@ def get_builtins(builtin_whitelist: list[str] | None) -> dict[str, Any]:
 
 def drop_privileges(user_name: str) -> None:
     """Sets the process user and group to the specified non-root user."""
+    if sys.platform == "win32":
+        raise NotImplementedError("Dropping privileges is not supported on Windows.")
+
+    # pwd module is only available on Unix systems
+    import pwd
+
     try:
         # Get the UID and GID for the target user (e.g., 'nobody')
         pwnam = pwd.getpwnam(user_name)

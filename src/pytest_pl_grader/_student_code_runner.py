@@ -162,6 +162,10 @@ async def student_code_runner(
                     timeout=timeout,
                 )
 
+    except asyncio.TimeoutError:
+        execution_error = asyncio.TimeoutError("Setup code execution timed out")
+        # TODO need to create a different message for setup code errors. This should result
+        # in a different error message reported from the test case.
     except Exception as e:
         execution_error = e
         # TODO need to create a different message for setup code errors. This should result
@@ -187,6 +191,8 @@ async def student_code_runner(
                     timeout=timeout,
                 )
 
+        except asyncio.TimeoutError:
+            execution_error = asyncio.TimeoutError("Student code execution timed out")
         except Exception as e:
             execution_error = e
             # TODO this traceback only shows the last line with the exception.
@@ -195,8 +201,16 @@ async def student_code_runner(
             # we should show the full self-contained traceback including the function call.
             exception_traceback = traceback.format_exc(limit=-1)
 
+    # Determine the status based on the type of error
+    if execution_error is None:
+        status = ProcessStatusCode.SUCCESS
+    elif isinstance(execution_error, asyncio.TimeoutError):
+        status = ProcessStatusCode.TIMEOUT
+    else:
+        status = ProcessStatusCode.EXCEPTION
+
     result_dict: ProcessStartResponse = {
-        "status": ProcessStatusCode.SUCCESS if execution_error is None else ProcessStatusCode.EXCEPTION,
+        "status": status,
         "stdout": stdout_capture.getvalue(),
         "stderr": stderr_capture.getvalue(),
         "execution_error": type(execution_error).__name__ if execution_error else None,

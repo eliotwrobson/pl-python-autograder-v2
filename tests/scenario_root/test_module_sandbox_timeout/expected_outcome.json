@@ -1,0 +1,16 @@
+{
+  "expected_data_object": {
+    "score": 0.0,
+    "tests": [
+      {
+        "max_points": 2,
+        "message": "Student code initialization timed out",
+        "name": "module_initialization_timeout",
+        "points_frac": 0.0,
+        "points": 0.0,
+        "test_id": "test_module_sandbox_timeout.py::test_module_sandbox_with_timeout",
+        "outcome": "error"
+      }
+    ]
+  }
+}

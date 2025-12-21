@@ -195,12 +195,18 @@ class StudentFixture:
             if self.worker_username is not None:
                 drop_privileges(self.worker_username)
 
+        # Only use preexec_fn on Unix platforms (not Windows)
+        if sys.platform == "win32":
+            preexec_fn_arg = None
+        else:
+            preexec_fn_arg = try_drop_privileges
+
         self.process = subprocess.Popen(
             args=(sys.executable, SCRIPT_PATH),
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
-            preexec_fn=try_drop_privileges,
+            preexec_fn=preexec_fn_arg,
         )
 
         # Assert process is running after popen call
