@@ -1,5 +1,5 @@
 # Module-level initialization timeout (used as default)
-INITIALIZATION_TIMEOUT = 0.5
+initialization_timeout = 0.5
 
 import pytest
 
@@ -8,7 +8,7 @@ from pytest_pl_grader.fixture import StudentFixture
 
 @pytest.mark.grading_data(name="uses_module_timeout", points=2)
 def test_with_module_timeout(sandbox: StudentFixture) -> None:
-    """Test that uses module-level INITIALIZATION_TIMEOUT (0.5s) - should pass."""
+    """Test that uses module-level initialization_timeout (0.5s) - should pass."""
     # Student code sleeps 0.15s, module timeout is 0.5s, so this should succeed
     assert sandbox.query("x") == 5
 

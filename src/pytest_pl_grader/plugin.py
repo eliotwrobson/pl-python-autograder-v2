@@ -125,9 +125,9 @@ def _initialize_sandbox_fixture(
             starting_vars[name] = value
 
     # Check for module-level timeout variable (works for module-scoped fixtures)
-    # This allows setting: INITIALIZATION_TIMEOUT = 0.5 at module level
-    if hasattr(request, "module") and hasattr(request.module, "INITIALIZATION_TIMEOUT"):
-        initialization_timeout = request.module.INITIALIZATION_TIMEOUT
+    # This allows setting: initialization_timeout = 0.5 at module level
+    if hasattr(request, "module") and hasattr(request.module, "initialization_timeout"):
+        initialization_timeout = request.module.initialization_timeout
 
     # Check for the custom mark (overrides module-level setting)
     marker = request.node.get_closest_marker("sandbox_timeout")

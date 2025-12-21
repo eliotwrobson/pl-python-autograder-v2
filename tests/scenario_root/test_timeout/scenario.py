@@ -1,5 +1,5 @@
 # Module-level initialization timeout (used as default when no marker is present)
-INITIALIZATION_TIMEOUT = 0.5
+initialization_timeout = 0.5
 
 import pytest
 
@@ -15,8 +15,17 @@ def test_query(sandbox: StudentFixture) -> None:
 
 @pytest.mark.grading_data(name="module_level_timeout", points=2)
 def test_query_with_module_timeout(sandbox: StudentFixture) -> None:
-    """Test that uses module-level INITIALIZATION_TIMEOUT (0.5s) instead of marker."""
+    """Test that uses module-level initialization_timeout (0.5s) instead of marker."""
     # Student code sleeps 0.1s, module timeout is 0.5s, so this should pass
+    assert sandbox.query("x") == 5
+
+
+@pytest.mark.grading_data(name="marker_overrides_module", points=2)
+@pytest.mark.sandbox_timeout(0.08)
+def test_marker_overrides_module_timeout(sandbox: StudentFixture) -> None:
+    """Test that marker timeout (0.08s) overrides module-level timeout (0.5s)."""
+    # Student code sleeps 0.1s, marker timeout is 0.08s (overrides 0.5s module)
+    # This should timeout, proving the marker (0.08s) is used instead of module default (0.5s)
     assert sandbox.query("x") == 5
 
 
