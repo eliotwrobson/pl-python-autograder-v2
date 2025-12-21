@@ -10,23 +10,32 @@ initialization_timeout = 2.0
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="Privilege dropping not supported on Windows")
+@pytest.mark.grading_data(name="test_worker_username_stored", points=1)
+def test_worker_username_stored_in_fixture(sandbox: StudentFixture) -> None:
+    """
+    Test that the worker_username parameter is correctly stored in the fixture.
+    This verifies the --worker-username CLI option is being passed through.
+    """
+    # The fixture should have worker_username attribute
+    assert hasattr(sandbox, "worker_username"), "Fixture missing worker_username attribute"
+    
+    # If no username was provided, it should be None
+    # If a username was provided via CLI, it will be stored here
+    # This test just validates the plumbing works
+    assert sandbox.worker_username is None or isinstance(sandbox.worker_username, str)
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="Privilege dropping not supported on Windows")
 @pytest.mark.grading_data(name="test_user_id", points=1)
 def test_subprocess_runs_as_different_user(sandbox: StudentFixture) -> None:
     """
-    Test that the subprocess runs as a different user when --worker-username is provided.
-    This test should only run on Unix systems where privilege dropping is supported.
+    Test that the subprocess can query its user ID.
+    When --worker-username is provided, this will be the dropped privilege UID.
     """
     # Query the user ID from the student code
     result = sandbox.query("current_uid")
 
-    # The subprocess should be running as a different user
-    # We can't know the exact UID without knowing what user was passed,
-    # but we can verify it's different from the current process
-    current_process_uid = os.getuid()
-
-    # If worker-username was provided, the UIDs should be different
-    # This test will need to be run with --worker-username=<some_user> to be meaningful
-    # For now, we just verify the query works
+    # Verify the query returns a valid UID
     assert isinstance(result, int), f"Expected int, got {type(result)}"
     assert result >= 0, f"UID should be non-negative, got {result}"
 

@@ -5,6 +5,15 @@
       {
         "max_points": 1,
         "message": "",
+        "name": "test_worker_username_stored",
+        "points_frac": 1.0,
+        "points": 1.0,
+        "test_id": "test_privilege_drop.py::test_worker_username_stored_in_fixture[student_code]",
+        "outcome": "passed"
+      },
+      {
+        "max_points": 1,
+        "message": "",
         "name": "test_user_id",
         "points_frac": 1.0,
         "points": 1.0,
