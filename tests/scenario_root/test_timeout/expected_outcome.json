@@ -1,6 +1,6 @@
 {
   "expected_data_object": {
-    "score": 0.366666667,
+    "score": 0.525,
     "tests": [
       {
         "max_points": 2,
@@ -10,6 +10,15 @@
         "points": 0.0,
         "test_id": "test_timeout.py::test_query[student_code]",
         "outcome": "error"
+      },
+      {
+        "max_points": 2,
+        "message": "",
+        "name": "module_level_timeout",
+        "points_frac": 1.0,
+        "points": 2.0,
+        "test_id": "test_timeout.py::test_query_with_module_timeout[student_code]",
+        "outcome": "passed"
       },
       {
         "max_points": 2,

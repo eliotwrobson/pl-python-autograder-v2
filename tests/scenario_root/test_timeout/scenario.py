@@ -1,3 +1,6 @@
+# Module-level initialization timeout (used as default when no marker is present)
+INITIALIZATION_TIMEOUT = 0.5
+
 import pytest
 
 from pytest_pl_grader.fixture import FeedbackFixture
@@ -7,6 +10,13 @@ from pytest_pl_grader.fixture import StudentFixture
 @pytest.mark.grading_data(name="initialization_timeout", points=2)
 @pytest.mark.sandbox_timeout(0.05)
 def test_query(sandbox: StudentFixture) -> None:
+    assert sandbox.query("x") == 5
+
+
+@pytest.mark.grading_data(name="module_level_timeout", points=2)
+def test_query_with_module_timeout(sandbox: StudentFixture) -> None:
+    """Test that uses module-level INITIALIZATION_TIMEOUT (0.5s) instead of marker."""
+    # Student code sleeps 0.1s, module timeout is 0.5s, so this should pass
     assert sandbox.query("x") == 5
 
 
