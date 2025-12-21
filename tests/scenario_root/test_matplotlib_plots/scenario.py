@@ -1,10 +1,10 @@
 import matplotlib
 
 matplotlib.use("Agg")  # Use non-GUI backend
-import matplotlib.pyplot as plt
 import numpy as np
 import pytest
-from matplotcheck.base import PlotTester
+from matplotcheck.base import PlotTester  # type: ignore[import-untyped]
+from matplotlib.figure import Figure
 
 from pytest_pl_grader.fixture import StudentFixture
 
@@ -46,7 +46,7 @@ def test_scatter_plot(sandbox: StudentFixture) -> None:
     """Test scatter plot creation."""
     plot = sandbox.query_function("create_scatter_plot")
 
-    assert isinstance(plot, plt.Figure)
+    assert isinstance(plot, Figure)
     assert len(plot.axes) == 1
 
     ax = plot.axes[0]
@@ -72,12 +72,11 @@ def test_bar_chart(sandbox: StudentFixture) -> None:
     """Test bar chart creation."""
     plot = sandbox.query_function("create_bar_chart")
 
-    assert isinstance(plot, plt.Figure)
+    assert isinstance(plot, Figure)
     ax = plot.axes[0]
-    pt = PlotTester(ax)
 
     # Check for bar patches
-    bars = [patch for patch in ax.patches]
+    bars = list(ax.patches)
     assert len(bars) == 4
 
     # Check labels
@@ -96,7 +95,7 @@ def test_multi_subplot(sandbox: StudentFixture) -> None:
     """Test figure with multiple subplots."""
     plot = sandbox.query_function("create_multi_subplot")
 
-    assert isinstance(plot, plt.Figure)
+    assert isinstance(plot, Figure)
 
     # Should have exactly 2 subplots
     assert len(plot.axes) == 2
