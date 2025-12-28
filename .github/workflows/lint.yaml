@@ -14,18 +14,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          # Fetch full history for dynamic versioning to work correctly
           fetch-depth: 0
       - name: Install uv
         uses: astral-sh/setup-uv@v5
       - name: Check lockfile
         run: |
-          echo "=== Checking lockfile status ==="
-          echo "Current project name in lockfile:"
-          grep "^name = " uv.lock | head -1
+          echo "=== Debug Info ==="
+          echo "Git describe: $(git describe --tags --always)"
+          echo "Git log (last 3):"
+          git log --oneline -3
           echo ""
-          echo "Running: uv lock --check"
-          uv lock --check || (echo "Check failed, running uv lock for details..." && uv lock && exit 1)
+          echo "=== Lockfile check ==="
+          uv lock --check
       - name: Lint with ruff
         continue-on-error: true
         run: |
