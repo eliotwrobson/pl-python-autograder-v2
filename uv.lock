@@ -1288,7 +1288,7 @@ wheels = [
 
 [[package]]
 name = "pytest-prairielearn-grader"
-version = "0.1.15.post17.dev0+5f67f32"
+version = "0.1.15.post20.dev0+a992ef9"
 source = { editable = "." }
 dependencies = [
     { name = "dill" },
