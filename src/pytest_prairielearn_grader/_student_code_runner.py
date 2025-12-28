@@ -15,26 +15,26 @@ from contextlib import redirect_stdout
 from copy import deepcopy
 from typing import Any
 
-from pytest_pl_grader.json_utils import from_server_json
+from pytest_prairielearn_grader.json_utils import from_server_json
 
 # TODO make it so that other files in this package cannot import from this one
 # ask Gemini how to do it
-from pytest_pl_grader.json_utils import to_json
-from pytest_pl_grader.utils import FunctionStatusCode
-from pytest_pl_grader.utils import NamesForUserInfo
-from pytest_pl_grader.utils import ProcessStartRequest
-from pytest_pl_grader.utils import ProcessStartResponse
-from pytest_pl_grader.utils import ProcessStatusCode
-from pytest_pl_grader.utils import QueryStatusCode
-from pytest_pl_grader.utils import SetupQueryRequest
-from pytest_pl_grader.utils import SetupQueryResponse
-from pytest_pl_grader.utils import StudentFunctionRequest
-from pytest_pl_grader.utils import StudentFunctionResponse
-from pytest_pl_grader.utils import StudentQueryRequest
-from pytest_pl_grader.utils import StudentQueryResponse
-from pytest_pl_grader.utils import deserialize_object_unsafe
-from pytest_pl_grader.utils import get_builtins
-from pytest_pl_grader.utils import serialize_object_unsafe
+from pytest_prairielearn_grader.json_utils import to_json
+from pytest_prairielearn_grader.utils import FunctionStatusCode
+from pytest_prairielearn_grader.utils import NamesForUserInfo
+from pytest_prairielearn_grader.utils import ProcessStartRequest
+from pytest_prairielearn_grader.utils import ProcessStartResponse
+from pytest_prairielearn_grader.utils import ProcessStatusCode
+from pytest_prairielearn_grader.utils import QueryStatusCode
+from pytest_prairielearn_grader.utils import SetupQueryRequest
+from pytest_prairielearn_grader.utils import SetupQueryResponse
+from pytest_prairielearn_grader.utils import StudentFunctionRequest
+from pytest_prairielearn_grader.utils import StudentFunctionResponse
+from pytest_prairielearn_grader.utils import StudentQueryRequest
+from pytest_prairielearn_grader.utils import StudentQueryResponse
+from pytest_prairielearn_grader.utils import deserialize_object_unsafe
+from pytest_prairielearn_grader.utils import get_builtins
+from pytest_prairielearn_grader.utils import serialize_object_unsafe
 
 ImportFunction = Callable[[str, Mapping[str, object] | None, Mapping[str, object] | None, Sequence[str], int], types.ModuleType]
 

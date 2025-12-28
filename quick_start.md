@@ -10,10 +10,10 @@ https://github.com/PrairieLearn/PrairieLearn/pull/12603
 
 ## Editor setup
 
-Be sure to install the `pytest` and `pytest-pl-grader` packages in your Python environment. You can do this using pip:
+Be sure to install the `pytest` and `pytest-prairielearn-grader` packages in your Python environment. You can do this using pip:
 
 ```
-pip install pytest pytest-pl-grader
+pip install pytest pytest-prairielearn-grader
 ```
 
 This will ensure you can use pylance and GitHub copilot to help write test cases.
@@ -73,7 +73,7 @@ In this example, only `A`, `b`, and `n` are included in the `names_for_user` ent
 import numpy as np
 import numpy.linalg as la
 import pytest
-from pytest_pl_grader.fixture import StudentFixture
+from pytest_prairielearn_grader.fixture import StudentFixture
 
 
 @pytest.mark.grading_data(name="x", points=1)
@@ -89,7 +89,7 @@ In this example, the name of the test case shown to the student on the frontend 
 `sandbox` fixture is used to query the student code environment for the variables
 defined in the `setup_code.py` file, and by the student code.
 
-There are three fixtures defined by the `pytest_pl_grader` package:
+There are three fixtures defined by the `pytest_prairielearn_grader` package:
 
 1. `StudentFixture`: This fixture provides a sandboxed environment for the student code to run in. It allows the test to query the student code for variables and functions defined in the `setup_code.py` file. To use this fixture, simply include a parameter in your test function called `sandbox`.
 
@@ -97,7 +97,7 @@ There are three fixtures defined by the `pytest_pl_grader` package:
 
 3. `DataFixture`: This fixture provides access to supplemental data included in the test case by PL in the `data.json` file. To use this fixture, include a parameter in your test function called `data_json`.
 
-To look at the code for each fixture, see the [file defining these fixtures](https://github.com/eliotwrobson/pl-python-autograder-v2/blob/main/src/pytest_pl_grader/fixture.py).
+To look at the code for each fixture, see the [file defining these fixtures](https://github.com/eliotwrobson/pl-python-autograder-v2/blob/main/src/pytest_prairielearn_grader/fixture.py).
 
 ## Querying student code
 

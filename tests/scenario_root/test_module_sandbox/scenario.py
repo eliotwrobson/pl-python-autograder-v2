@@ -1,8 +1,8 @@
 # Test scenario for module-scoped sandbox fixture
 import pytest
 
-from pytest_pl_grader.fixture import DataFixture
-from pytest_pl_grader.fixture import StudentFixture
+from pytest_prairielearn_grader.fixture import DataFixture
+from pytest_prairielearn_grader.fixture import StudentFixture
 
 
 @pytest.mark.grading_data(name="test_module_shared_counter_1", points=1)

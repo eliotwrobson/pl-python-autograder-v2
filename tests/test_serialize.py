@@ -5,11 +5,11 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from pytest_pl_grader.json_utils import from_json
-from pytest_pl_grader.json_utils import from_server_json
-from pytest_pl_grader.json_utils import to_json
-from pytest_pl_grader.utils import deserialize_object_unsafe
-from pytest_pl_grader.utils import serialize_object_unsafe
+from pytest_prairielearn_grader.json_utils import from_json
+from pytest_prairielearn_grader.json_utils import from_server_json
+from pytest_prairielearn_grader.json_utils import to_json
+from pytest_prairielearn_grader.utils import deserialize_object_unsafe
+from pytest_prairielearn_grader.utils import serialize_object_unsafe
 
 
 def test_serialize_numpy_array() -> None:

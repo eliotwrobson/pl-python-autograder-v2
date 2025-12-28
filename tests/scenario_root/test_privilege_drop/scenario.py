@@ -2,7 +2,7 @@ import sys
 
 import pytest
 
-from pytest_pl_grader.fixture import StudentFixture
+from pytest_prairielearn_grader.fixture import StudentFixture
 
 # Module level timeout
 initialization_timeout = 2.0

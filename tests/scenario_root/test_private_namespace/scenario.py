@@ -1,6 +1,6 @@
 import numpy as np
 
-from pytest_pl_grader.fixture import StudentFixture
+from pytest_prairielearn_grader.fixture import StudentFixture
 
 
 def test_random(sandbox: StudentFixture) -> None:

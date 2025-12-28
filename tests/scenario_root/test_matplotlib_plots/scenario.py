@@ -6,7 +6,7 @@ import pytest
 from matplotcheck.base import PlotTester  # type: ignore[import-untyped]
 from matplotlib.figure import Figure
 
-from pytest_pl_grader.fixture import StudentFixture
+from pytest_prairielearn_grader.fixture import StudentFixture
 
 
 @pytest.mark.grading_data(name="line_plot_basic", points=2)
