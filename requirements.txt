@@ -1,0 +1,5 @@
+# Docker requirements file
+# List your dependencies here (excluding pytest-prairielearn-grader)
+# Example:
+# numpy>=2.0
+# pandas>=2.0
