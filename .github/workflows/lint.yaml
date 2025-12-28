@@ -24,7 +24,7 @@ jobs:
         run: |
           cp uv.lock uv.lock.original
           uv lock
-          echo "=== Lockfile Diff ===" 
+          echo "=== Lockfile Diff ==="
           diff -u uv.lock.original uv.lock || true
       - name: Check lockfile
         run: uv lock --check
