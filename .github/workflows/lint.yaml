@@ -21,13 +21,7 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v5
       - name: Check lockfile
-        run: |
-          echo "=== Debug Info ==="
-          echo "Python version: $(python --version)"
-          echo "Git describe: $(git describe --tags --always)"
-          echo ""
-          echo "=== Lockfile check ==="
-          uv lock --check
+        run: uv lock --check
       - name: Lint with ruff
         continue-on-error: true
         run: |
