@@ -20,14 +20,6 @@ jobs:
           python-version: "3.13"
       - name: Install uv
         uses: astral-sh/setup-uv@v5
-        with:
-          version: "0.5.x"
-      - name: Show lockfile diff
-        run: |
-          cp uv.lock uv.lock.original
-          uv lock
-          echo "=== Lockfile Diff ==="
-          diff -u uv.lock.original uv.lock || true
       - name: Check lockfile
         run: uv lock --check
       - name: Lint with ruff
