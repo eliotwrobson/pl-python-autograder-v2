@@ -44,8 +44,6 @@ source = "uv-dynamic-versioning"
 
 [tool.uv-dynamic-versioning]
 fallback-version = "0.0.0"
-# Use enable-git-versioning = false in CI to avoid lockfile inconsistencies
-# due to different git states between local and CI environments
 
 [tool.ruff]
 line-length = 140
