@@ -17,7 +17,7 @@ jobs:
           fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.12.3"
+          python-version: "3.13"
       - name: Install uv
         uses: astral-sh/setup-uv@v5
       - name: Check lockfile
@@ -29,7 +29,14 @@ jobs:
           git log --oneline -3
           echo ""
           echo "=== Lockfile check ==="
-          uv lock --check
+          uv lock
+          if ! git diff --quiet uv.lock; then
+            echo "❌ Lockfile is out of sync with Python ${{ matrix.python-version }}"
+            echo "Please regenerate uv.lock locally and commit it:"
+            echo "  uv lock"
+            exit 1
+          fi
+          echo "✓ Lockfile is up to date"
       - name: Lint with ruff
         continue-on-error: true
         run: |
