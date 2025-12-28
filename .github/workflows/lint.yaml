@@ -16,7 +16,13 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v5
       - name: Check lockfile
-        run: uv lock --check
+        run: |
+          echo "=== Checking lockfile status ==="
+          echo "Current project name in lockfile:"
+          grep "^name = " uv.lock | head -1
+          echo ""
+          echo "Running: uv lock --check"
+          uv lock --check || (echo "Check failed, running uv lock for details..." && uv lock && exit 1)
       - name: Lint with ruff
         continue-on-error: true
         run: |
