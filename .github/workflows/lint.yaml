@@ -25,18 +25,9 @@ jobs:
           echo "=== Debug Info ==="
           echo "Python version: $(python --version)"
           echo "Git describe: $(git describe --tags --always)"
-          echo "Git log (last 3):"
-          git log --oneline -3
           echo ""
           echo "=== Lockfile check ==="
-          uv lock
-          if ! git diff --quiet uv.lock; then
-            echo "❌ Lockfile is out of sync with Python ${{ matrix.python-version }}"
-            echo "Please regenerate uv.lock locally and commit it:"
-            echo "  uv lock"
-            exit 1
-          fi
-          echo "✓ Lockfile is up to date"
+          uv lock --check
       - name: Lint with ruff
         continue-on-error: true
         run: |
