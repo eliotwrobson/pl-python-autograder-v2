@@ -19,9 +19,6 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v5
       - name: Check lockfile
-        env:
-          # Disable git versioning for deterministic lockfile checks on CI
-          UV_DYNAMIC_VERSIONING_ENABLE_GIT_VERSIONING: "false"
         run: uv lock --check
       - name: Test with pytest
         run: uv run pytest tests -p no:prairielearn-grader
