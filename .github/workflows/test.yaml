@@ -21,4 +21,4 @@ jobs:
       - name: Check lockfile
         run: uv lock --check
       - name: Test with pytest
-        run: uv run pytest tests -p no:pl-grader
+        run: uv run pytest tests -p no:prairielearn-grader
