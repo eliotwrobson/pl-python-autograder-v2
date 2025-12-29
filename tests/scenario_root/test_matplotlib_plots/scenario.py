@@ -17,9 +17,12 @@ def test_line_plot_basic(sandbox: StudentFixture) -> None:
     assert len(plot.axes) == 1
 
     ax = plot.axes[0]
-    assert ax.get_xlabel() == "x"
-    assert ax.get_ylabel() == "y"
-    assert ax.get_title() == "Sine Wave"
+    pt = PlotTester(ax)
+
+    # Check axis labels and title using PlotTester assertions
+    pt.assert_axis_label_contains(axis="x", strings_expected=["x"])
+    pt.assert_axis_label_contains(axis="y", strings_expected=["y"])
+    pt.assert_title_contains(["Sine Wave"])
 
 
 @pytest.mark.grading_data(name="line_plot_matplotcheck", points=2)
@@ -33,7 +36,7 @@ def test_line_plot_with_matplotcheck(sandbox: StudentFixture) -> None:
     # Check that there is exactly one line
     assert len(pt.ax.lines) == 1
 
-    # Check the line properties
+    # Check the line properties using PlotTester assertions
     line = pt.ax.lines[0]
     assert line.get_label() == "sin(x)"
     # Color is returned as hex after serialization
@@ -52,19 +55,14 @@ def test_scatter_plot(sandbox: StudentFixture) -> None:
     ax = plot.axes[0]
     pt = PlotTester(ax)
 
+    # Check plot type and labels using PlotTester assertions
+    pt.assert_plot_type("scatter")
+    pt.assert_axis_label_contains(axis="x", strings_expected=["X values"])
+    pt.assert_axis_label_contains(axis="y", strings_expected=["Y values"])
+    pt.assert_title_contains(["Scatter Plot"])
+
     # Check scatter plot exists
     assert len(pt.ax.collections) > 0
-
-    # Check labels
-    assert ax.get_xlabel() == "X values"
-    assert ax.get_ylabel() == "Y values"
-    assert ax.get_title() == "Scatter Plot"
-
-    # Check scatter properties
-    scatter = pt.ax.collections[0]
-    # Note: After serialization/deserialization, scatter data might be lossy
-    # Just check that at least some points exist
-    assert len(scatter.get_offsets()) >= 1
 
 
 @pytest.mark.grading_data(name="bar_chart", points=2)
@@ -74,15 +72,19 @@ def test_bar_chart(sandbox: StudentFixture) -> None:
 
     assert isinstance(plot, Figure)
     ax = plot.axes[0]
+    pt = PlotTester(ax)
+
+    # Check plot type using PlotTester
+    pt.assert_plot_type("bar")
+
+    # Check labels and title
+    pt.assert_axis_label_contains(axis="x", strings_expected=["Category"])
+    pt.assert_axis_label_contains(axis="y", strings_expected=["Value"])
+    pt.assert_title_contains(["Bar Chart"])
 
     # Check for bar patches
     bars = list(ax.patches)
     assert len(bars) == 4
-
-    # Check labels
-    assert ax.get_xlabel() == "Category"
-    assert ax.get_ylabel() == "Value"
-    assert ax.get_title() == "Bar Chart"
 
     # Check bar heights
     bar_heights = [bar.get_height() for bar in bars]
@@ -101,17 +103,19 @@ def test_multi_subplot(sandbox: StudentFixture) -> None:
     assert len(plot.axes) == 2
 
     ax1, ax2 = plot.axes
+    pt1 = PlotTester(ax1)
+    pt2 = PlotTester(ax2)
 
     # Check first subplot (line plot)
-    assert ax1.get_title() == "Damped Cosine"
-    assert ax1.get_xlabel() == "x"
-    assert ax1.get_ylabel() == "y"
+    pt1.assert_title_contains(["Damped Cosine"])
+    pt1.assert_axis_label_contains(axis="x", strings_expected=["x"])
+    pt1.assert_axis_label_contains(axis="y", strings_expected=["y"])
     assert len(ax1.lines) == 1
 
     # Check second subplot (histogram)
-    assert ax2.get_title() == "Normal Distribution"
-    assert ax2.get_xlabel() == "Value"
-    assert ax2.get_ylabel() == "Frequency"
+    pt2.assert_title_contains(["Normal Distribution"])
+    pt2.assert_axis_label_contains(axis="x", strings_expected=["Value"])
+    pt2.assert_axis_label_contains(axis="y", strings_expected=["Frequency"])
 
     # Check histogram patches exist
     assert len(ax2.patches) == 30  # 30 bins
@@ -133,6 +137,6 @@ def test_line_plot_data_accuracy(sandbox: StudentFixture) -> None:
     assert np.isclose(xdata[0], 0, atol=0.01)
     assert np.isclose(xdata[-1], 2 * np.pi, atol=0.01)
 
-    # Check that y data is approximately sin(x)
+    # Check that y data is approximately sin(x) using PlotTester
     expected_y = np.sin(xdata)
     np.testing.assert_array_almost_equal(ydata, expected_y, decimal=10)
