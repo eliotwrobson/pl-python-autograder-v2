@@ -61,9 +61,10 @@ def test_autograder_scenario_with_pytester(pytester: pytest.Pytester, scenario_d
     """
     # Skip privilege_drop test on Windows since it requires Unix-specific functionality
     import sys
+
     if sys.platform == "win32" and scenario_dir.name == "test_privilege_drop":
         pytest.skip("Privilege dropping tests only run on Unix systems")
-    
+
     print(f"\n--- Running scenario: {scenario_dir.name} with pytester ---")
 
     # Ensure the common file to copy exists
@@ -112,6 +113,14 @@ def test_autograder_scenario_with_pytester(pytester: pytest.Pytester, scenario_d
     expected_data_obj = expected_outcome_dict["expected_data_object"]
 
     assert math.isclose(expected_data_obj["score"], results_obj["score"])
+
+    # Check for the output field if it exists in expected outcome
+    if "output" in expected_data_obj:
+        assert "output" in results_obj, "Expected 'output' field in results but it was not present"
+        expected_output = expected_data_obj["output"]
+        actual_output = results_obj["output"]
+        # Check if expected output is a substring of actual output (to allow for flexibility)
+        assert expected_output in actual_output, f"Expected output '{expected_output}' not found in actual output '{actual_output}'"
 
     outcome_dict: defaultdict[str, int] = defaultdict(int)
 

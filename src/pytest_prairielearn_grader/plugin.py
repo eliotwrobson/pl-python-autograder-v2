@@ -227,7 +227,33 @@ def module_sandbox(request: pytest.FixtureRequest, data_json: dict[str, Any] | N
     module_name = request.module.__name__
 
     # Get the student code file from parameterization (if multiple files) or find the single file
-    student_files: StudentFiles = request.param
+    if hasattr(request, "param"):
+        # Parameterized case - multiple student files
+        student_files: StudentFiles = request.param
+    else:
+        # Non-parameterized case - single student file, need to find it manually
+        data_dir = get_datadir(request.module)
+        if data_dir is None or not data_dir.is_dir():
+            pytest.fail("Data directory not found for module sandbox")
+
+        student_code_pattern = getattr(request.module, "student_code_pattern", "student_code*.py")
+        student_code_files_list = list(data_dir.glob(student_code_pattern))
+
+        if not student_code_files_list:
+            pytest.fail(f"No student code files found matching pattern '{student_code_pattern}'")
+
+        if len(student_code_files_list) > 1:
+            pytest.fail(
+                f"Multiple student code files found: {[f.name for f in student_code_files_list]}. "
+                f"This should have been parameterized. Please check pytest_generate_tests."
+            )
+
+        # Set up file paths
+        leading_file = data_dir / "leading_code.py"
+        trailing_file = data_dir / "trailing_code.py"
+        setup_code_file = data_dir / "setup_code.py"
+        student_files = StudentFiles(leading_file, trailing_file, student_code_files_list[0], setup_code_file)
+
     student_code_file = student_files.student_code_file
 
     # Create cache key
@@ -235,6 +261,11 @@ def module_sandbox(request: pytest.FixtureRequest, data_json: dict[str, Any] | N
 
     # Check if we already have a cached sandbox for this module/student code combination
     if cache_key not in plugin.module_sandbox_cache:
+        # Check if we already recorded an initialization error for this module/file
+        if cache_key in plugin.module_init_errors:
+            # Re-raise the stored error for this test
+            pytest.fail(plugin.module_init_errors[cache_key], pytrace=False)
+
         # Create new sandbox and cache it
         fixture, initialization_timeout = _initialize_sandbox_fixture(request, data_json, student_files)
 
@@ -244,9 +275,13 @@ def module_sandbox(request: pytest.FixtureRequest, data_json: dict[str, Any] | N
 
             # Cache the fixture for reuse within this module
             plugin.module_sandbox_cache[cache_key] = fixture
-        except Exception:
-            # If initialization fails, cleanup and re-raise
+        except BaseException as e:
+            # If initialization fails, store the error message and cleanup
+            # Note: We catch BaseException because pytest.fail() raises Failed which inherits from BaseException, not Exception
+            error_message = f"Module sandbox initialization failed for {student_code_file.name}: {e!s}"
+            plugin.module_init_errors[cache_key] = error_message
             fixture._cleanup()
+            # Re-raise for this test
             raise
 
     # Return the cached sandbox (shared across all tests for this student file)
@@ -374,12 +409,14 @@ class ResultCollectorPlugin:
     student_feedback_data: dict[str, FeedbackFixture]
     grading_data: dict[str, Any]
     module_sandbox_cache: dict[tuple[str, str], StudentFixture]
+    module_init_errors: dict[tuple[str, str], str]  # Stores initialization errors by (module_name, file_path)
 
     def __init__(self) -> None:
         self.collected_results = {}
         self.student_feedback_data = {}
         self.grading_data = {}
         self.module_sandbox_cache = {}
+        self.module_init_errors = {}
 
     def pytest_configure(self, config: Config) -> None:
         """
@@ -545,6 +582,13 @@ class ResultCollectorPlugin:
             else:
                 res_obj["outcome"] = outcome
 
+            # Check if this test failed due to a module initialization error
+            # If so, clear the message since it will be shown in the top-level output
+            for (module_name, file_path), error_msg in self.module_init_errors.items():
+                if nodeid.startswith(module_name.split(".")[-1]):
+                    # This test is from a module with an init error, clear the repetitive message
+                    res_obj["message"] = ""
+
             if outcome == "passed":
                 if not feedback_obj.final_score_override:
                     res_obj["points_frac"] = 1.0
@@ -576,10 +620,15 @@ class ResultCollectorPlugin:
 
         res_dict = {
             "score": total_score / total_possible_score if total_possible_score > 0 else 0,
-            # TODO figure out something useful to put here (maybe single source of compilation failure??)
-            # "output": "Overall feedback for the autograder session.",
             "tests": final_results,
         }
+
+        # Add top-level output message if there were any module initialization errors
+        if self.module_init_errors:
+            error_messages = []
+            for (module_name, file_path), error_msg in self.module_init_errors.items():
+                error_messages.append(error_msg)
+            res_dict["output"] = "Module initialization errors:\n" + "\n".join(error_messages)
 
         print_autograder_summary(session, final_results)
 

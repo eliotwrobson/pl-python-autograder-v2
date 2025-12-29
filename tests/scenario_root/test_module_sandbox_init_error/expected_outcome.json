@@ -1,0 +1,35 @@
+{
+  "expected_data_object": {
+    "score": 0.0,
+    "output": "Module initialization errors:",
+    "tests": [
+      {
+        "max_points": 1,
+        "message": "",
+        "name": "Test 1",
+        "points_frac": 0.0,
+        "points": 0.0,
+        "test_id": "test_module_sandbox_init_error.py::test_one[student_code]",
+        "outcome": "error"
+      },
+      {
+        "max_points": 1,
+        "message": "",
+        "name": "Test 2",
+        "points_frac": 0.0,
+        "points": 0.0,
+        "test_id": "test_module_sandbox_init_error.py::test_two[student_code]",
+        "outcome": "error"
+      },
+      {
+        "max_points": 1,
+        "message": "",
+        "name": "Test 3",
+        "points_frac": 0.0,
+        "points": 0.0,
+        "test_id": "test_module_sandbox_init_error.py::test_three[student_code]",
+        "outcome": "error"
+      }
+    ]
+  }
+}
