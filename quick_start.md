@@ -215,15 +215,22 @@ def test_with_partial_credit(sandbox: StudentFixture, feedback: FeedbackFixture)
 
 ### Timeout Configuration
 
-Control execution time limits to prevent infinite loops or slow student code:
+Control execution time limits for sandbox initialization and function calls to prevent infinite loops or slow student code.
+
+**Important**: Timeouts apply to:
+
+- **Sandbox initialization** (loading and executing student code at startup)
+- **Function calls** via `sandbox.query_function()`
+
+Variable queries via `sandbox.query()` do not have timeouts since they're simple lookups.
 
 #### Module-level Default Timeout
 
-Set a default timeout for all tests in a file:
+Set a default timeout for sandbox initialization in all tests in a file:
 
 ```python
 # At the top of test_student.py (before imports)
-sandbox_timeout = 2.0  # 2 second default
+sandbox_timeout = 2.0  # 2 second timeout for initialization
 
 import pytest
 from pytest_prairielearn_grader.fixture import StudentFixture
@@ -231,33 +238,39 @@ from pytest_prairielearn_grader.fixture import StudentFixture
 
 @pytest.mark.grading_data(name="Test 1", points=1)
 def test_with_default_timeout(sandbox: StudentFixture) -> None:
-    # Uses 2 second timeout from module-level setting
-    result = sandbox.query("x")
+    # The sandbox was initialized with 2 second timeout
+    # Now we can safely query variables and call functions
+    result = sandbox.query_function("compute_result")
     assert result == 5
 ```
 
 #### Per-test Timeout Override
 
-Override the default with the `@pytest.mark.sandbox_timeout` marker:
+Override the default initialization timeout with the `@pytest.mark.sandbox_timeout` marker:
 
 ```python
 @pytest.mark.grading_data(name="Fast Test", points=1)
-@pytest.mark.sandbox_timeout(0.5)  # 0.5 second timeout
+@pytest.mark.sandbox_timeout(0.5)  # 0.5 second initialization timeout
 def test_with_custom_timeout(sandbox: StudentFixture) -> None:
-    result = sandbox.query("x")
+    # This sandbox was initialized with 0.5 second timeout
+    result = sandbox.query_function("quick_computation")
     assert result == 5
 ```
 
 #### Per-function Timeout
 
-Set timeout for individual function calls:
+Set timeout for individual function calls using the `query_timeout` parameter:
 
 ```python
 @pytest.mark.grading_data(name="Function Test", points=2)
 def test_function_timeout(sandbox: StudentFixture) -> None:
-    # This function call has a 1 second timeout
+    # This specific function call has a 1 second timeout
     result = sandbox.query_function("compute", data, query_timeout=1.0)
     assert result == expected_value
+
+    # This function call uses the default timeout
+    result2 = sandbox.query_function("another_compute", data)
+    assert result2 == expected_value2
 ```
 
 ### Module-Scoped Sandbox
