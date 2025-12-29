@@ -6,6 +6,7 @@ defusedxml==0.7.1
 Faker==37.5.3
 folium==0.20.0
 ipython==8.37.0
+matplotcheck2==0.2.1
 matplotlib==3.10.8
 nbconvert==7.16.6
 nbformat==5.10.4

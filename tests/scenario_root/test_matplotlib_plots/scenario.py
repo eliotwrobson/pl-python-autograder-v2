@@ -3,7 +3,7 @@ import matplotlib
 matplotlib.use("Agg")  # Use non-GUI backend
 import numpy as np
 import pytest
-from matplotcheck.base import PlotTester  # type: ignore[import-untyped]
+from matplotcheck.base import PlotTester
 from matplotlib.figure import Figure
 
 from pytest_prairielearn_grader.fixture import StudentFixture

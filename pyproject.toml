@@ -30,7 +30,7 @@ dev = [
     "matplotlib-stubs",
     "matplotlib",
     "plot-serializer",
-    "matplotcheck2",
+    "matplotcheck2>=0.2.1",
     "networkx",
     "types-networkx",
 ]
