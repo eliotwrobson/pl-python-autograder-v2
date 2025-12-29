@@ -72,9 +72,10 @@ def data_json(request: pytest.FixtureRequest) -> dict[str, Any] | None:
         datadir = get_datadir(request.module)
         assert datadir is not None
         data_file = datadir / "data.json"
+        logger.debug(f"Loading data.json from {data_file}")
         return json.loads(data_file.read_text(encoding="utf-8"))
-    except Exception:
-        pass  # TODO add logging
+    except Exception as e:
+        logger.debug(f"No data.json found or failed to load: {e}")
 
     # If the data file is not found or cannot be read, return None
     return None
@@ -101,12 +102,16 @@ def _initialize_sandbox_fixture(
 
     if data_json is None:
         params_dict = {}
+        logger.debug("No data.json provided, using empty params")
     else:
         params_dict = data_json.get("params", {})
+        logger.debug(f"Loaded params from data.json: {list(params_dict.keys())}")
 
     import_whitelist = params_dict.get("import_whitelist")
     # Default blacklist for security - blocks dangerous system operations
     import_blacklist = params_dict.get("import_blacklist", DEFAULT_IMPORT_BLACKLIST)
+
+    logger.debug(f"Import restrictions - whitelist: {import_whitelist}, blacklist: {import_blacklist}")
 
     # TODO make sure this contains only valid builtins
     builtin_whitelist = params_dict.get("builtin_whitelist")
@@ -133,11 +138,13 @@ def _initialize_sandbox_fixture(
     # This allows setting: sandbox_timeout = 0.5 at module level
     if hasattr(request, "module") and hasattr(request.module, "sandbox_timeout"):
         initialization_timeout = request.module.sandbox_timeout
+        logger.debug(f"Using module-level timeout: {initialization_timeout}s")
 
     # Check for the custom mark (overrides module-level setting)
     marker = request.node.get_closest_marker("sandbox_timeout")
     if marker and marker.args:
         initialization_timeout = marker.args[0]
+        logger.debug(f"Using test-specific timeout override: {initialization_timeout}s")
 
     fixture = StudentFixture(
         file_names=file_names,
@@ -209,11 +216,14 @@ def _start_and_yield_sandbox(
     try:
         # TODO make sure to read student output and include in the exception message
         # TODO also get this configuration by reading from the marker
+        logger.debug(f"Starting sandbox for {request.node.nodeid} with timeout {initialization_timeout}s")
         response = fixture.start_student_code_server(initialization_timeout=initialization_timeout)
         _handle_sandbox_startup_errors(request, response, initialization_timeout)
+        logger.debug(f"Sandbox started successfully for {request.node.nodeid}")
 
         yield fixture
     finally:
+        logger.debug(f"Cleaning up sandbox for {request.node.nodeid}")
         fixture._cleanup()
 
 
@@ -223,6 +233,29 @@ def sandbox(request: pytest.FixtureRequest, data_json: dict[str, Any] | None) ->
     yield from _start_and_yield_sandbox(request, fixture, initialization_timeout)
 
 
+def _find_student_files(module: ModuleType) -> list[StudentFiles]:
+    """
+    Find all student code files for a module and return StudentFiles objects.
+    Returns empty list if no data directory or no matching files found.
+    """
+    data_dir = get_datadir(module)
+    if data_dir is None or not data_dir.is_dir():
+        return []
+
+    student_code_pattern = getattr(module, "student_code_pattern", "student_code*.py")
+    logger.debug(f"Looking for student code files in {data_dir} with pattern '{student_code_pattern}'")
+
+    # Set up file paths
+    leading_file = data_dir / "leading_code.py"
+    trailing_file = data_dir / "trailing_code.py"
+    setup_code_file = data_dir / "setup_code.py"
+
+    student_code_files = list(data_dir.glob(student_code_pattern))
+    logger.debug(f"Found {len(student_code_files)} student code file(s): {[f.name for f in student_code_files]}")
+
+    return [StudentFiles(leading_file, trailing_file, student_code_file, setup_code_file) for student_code_file in student_code_files]
+
+
 def _get_student_files_from_request(request: pytest.FixtureRequest) -> StudentFiles:
     """
     Get StudentFiles either from parameterization or by finding the single file manually.
@@ -230,30 +263,23 @@ def _get_student_files_from_request(request: pytest.FixtureRequest) -> StudentFi
     """
     if hasattr(request, "param"):
         # Parameterized case - multiple student files
+        logger.debug(f"Using parameterized student file: {request.param.student_code_file}")
         return request.param
     else:
         # Non-parameterized case - single student file, need to find it manually
-        data_dir = get_datadir(request.module)
-        if data_dir is None or not data_dir.is_dir():
-            pytest.fail("Data directory not found for module sandbox")
+        logger.debug("No parameterization found, looking for single student code file")
+        student_files_list = _find_student_files(request.module)
 
-        student_code_pattern = getattr(request.module, "student_code_pattern", "student_code*.py")
-        student_code_files_list = list(data_dir.glob(student_code_pattern))
+        if not student_files_list:
+            pytest.fail("No student code files found for module sandbox")
 
-        if not student_code_files_list:
-            pytest.fail(f"No student code files found matching pattern '{student_code_pattern}'")
-
-        if len(student_code_files_list) > 1:
+        if len(student_files_list) > 1:
             pytest.fail(
-                f"Multiple student code files found: {[f.name for f in student_code_files_list]}. "
+                f"Multiple student code files found: {[f.student_code_file.name for f in student_files_list]}. "
                 f"This should have been parameterized. Please check pytest_generate_tests."
             )
 
-        # Set up file paths
-        leading_file = data_dir / "leading_code.py"
-        trailing_file = data_dir / "trailing_code.py"
-        setup_code_file = data_dir / "setup_code.py"
-        return StudentFiles(leading_file, trailing_file, student_code_files_list[0], setup_code_file)
+        return student_files_list[0]
 
 
 @pytest.fixture
@@ -281,11 +307,14 @@ def module_sandbox(request: pytest.FixtureRequest, data_json: dict[str, Any] | N
 
     # Create cache key
     cache_key = (module_name, str(student_code_file))
+    logger.debug(f"Module sandbox cache key: {cache_key}")
 
     # Check if we already have a cached sandbox for this module/student code combination
     if cache_key not in plugin.module_sandbox_cache:
+        logger.debug(f"Cache miss for {cache_key}, creating new module sandbox")
         # Check if we already recorded an initialization error for this module/file
         if cache_key in plugin.module_init_errors:
+            logger.debug(f"Found cached initialization error for {cache_key}")
             # Re-raise the stored error for this test
             pytest.fail(plugin.module_init_errors[cache_key], pytrace=False)
 
@@ -298,14 +327,18 @@ def module_sandbox(request: pytest.FixtureRequest, data_json: dict[str, Any] | N
 
             # Cache the fixture for reuse within this module
             plugin.module_sandbox_cache[cache_key] = fixture
+            logger.debug(f"Cached module sandbox for {cache_key}")
         except BaseException as e:
             # If initialization fails, store the error message and cleanup
             # Note: We catch BaseException because pytest.fail() raises Failed which inherits from BaseException, not Exception
             error_message = f"Module sandbox initialization failed for {student_code_file.name}: {e!s}"
+            logger.debug(f"Storing initialization error for {cache_key}: {error_message}")
             plugin.module_init_errors[cache_key] = error_message
             fixture._cleanup()
             # Re-raise for this test
             raise
+    else:
+        logger.debug(f"Cache hit for {cache_key}, reusing existing module sandbox")
 
     # Return the cached sandbox (shared across all tests for this student file)
     return plugin.module_sandbox_cache[cache_key]
@@ -317,37 +350,20 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
     Generate parameterized tests for sandbox and parameterized_module_sandbox fixtures.
     This is where the parameterization for multiple student code files happens.
     """
-
-    # Get the data directory next to the test file
-    data_dir = get_datadir(metafunc.module)
-
-    if data_dir is None:
-        raise ValueError
-
     # Check if we need to parametrize sandbox or module_sandbox
     if "sandbox" in metafunc.fixturenames or "module_sandbox" in metafunc.fixturenames:
-        if data_dir.is_dir():
-            student_code_pattern = metafunc.module.__dict__.get("student_code_pattern", "student_code*.py")
+        file_tups = _find_student_files(metafunc.module)
 
-            # Find student code files
-            leading_file = data_dir / "leading_code.py"
-            trailing_file = data_dir / "trailing_code.py"
-            setup_code_file = data_dir / "setup_code.py"
-
-            student_code_files = list(data_dir.glob(student_code_pattern))
-
-            file_tups = [
-                StudentFiles(leading_file, trailing_file, student_code_file, setup_code_file) for student_code_file in student_code_files
-            ]
+        if file_tups:
             file_stems = [file_tup.student_code_file.stem for file_tup in file_tups]
 
             # Parametrize the appropriate fixture
             if "sandbox" in metafunc.fixturenames:
+                logger.debug(f"Parameterizing sandbox fixture with {len(file_tups)} student code file(s)")
                 metafunc.parametrize("sandbox", file_tups, indirect=True, ids=file_stems)
             elif "module_sandbox" in metafunc.fixturenames:
+                logger.debug(f"Parameterizing module_sandbox fixture with {len(file_tups)} student code file(s)")
                 metafunc.parametrize("module_sandbox", file_tups, indirect=True, ids=file_stems)
-        else:
-            pass
 
 
 def pytest_addoption(parser: pytest.Parser) -> None:
@@ -517,12 +533,15 @@ class ResultCollectorPlugin:
         Also cleans up any cached module sandboxes.
         """
         # Clean up all cached module sandboxes before processing results
+        logger.debug(f"Cleaning up {len(self.module_sandbox_cache)} cached module sandbox(es)")
         for cache_key, fixture in list(self.module_sandbox_cache.items()):
             try:
+                logger.debug(f"Cleaning up module sandbox for {cache_key}")
                 fixture._cleanup()
             except Exception as e:
                 logger.warning(f"Error cleaning up module sandbox for {cache_key}: {e}")
         self.module_sandbox_cache.clear()
+        logger.debug("Module sandbox cleanup complete")
 
         yield  # Let other sessionfinish hooks run
 

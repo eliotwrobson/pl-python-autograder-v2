@@ -42,7 +42,7 @@ echo "[run] starting autograder"
 
 # run the autograder as a limited user called ag
 # Use --worker-username to drop privileges to the 'ag' user in the student code sandbox
-uv run pytest -p prairielearn-grader --color=no --worker-username ag "$MERGE_DIR"
+uv run pytest -p prairielearn-grader --color=no --log-cli-level=DEBUG --worker-username ag "$MERGE_DIR"
 
 # TODO change the default output name
 mv "$MERGE_DIR/autograder_results.json" "$OUT_DIR/results.json"
