@@ -28,6 +28,10 @@ from .utils import get_output_level_marker
 
 logger = logging.getLogger(__name__)
 
+# Default configuration constants
+DEFAULT_SANDBOX_TIMEOUT = 1
+DEFAULT_IMPORT_BLACKLIST = ["os", "sys", "subprocess", "pathlib", "shutil"]
+
 
 class TestResult(NamedTuple):
     """Container for test execution results."""
@@ -93,7 +97,7 @@ def _initialize_sandbox_fixture(
     Returns the fixture and the initialization timeout.
     """
     # Default timeout TODO make this a command line option?
-    initialization_timeout = 1
+    initialization_timeout = DEFAULT_SANDBOX_TIMEOUT
 
     if data_json is None:
         params_dict = {}
@@ -102,8 +106,7 @@ def _initialize_sandbox_fixture(
 
     import_whitelist = params_dict.get("import_whitelist")
     # Default blacklist for security - blocks dangerous system operations
-    default_import_blacklist = ["os", "sys", "subprocess", "pathlib", "shutil"]
-    import_blacklist = params_dict.get("import_blacklist", default_import_blacklist)
+    import_blacklist = params_dict.get("import_blacklist", DEFAULT_IMPORT_BLACKLIST)
 
     # TODO make sure this contains only valid builtins
     builtin_whitelist = params_dict.get("builtin_whitelist")
@@ -194,10 +197,15 @@ def _handle_sandbox_startup_errors(
         pytest.fail(f"Unexpected status from student code server: {response_status}", pytrace=False)
 
 
-@pytest.fixture
-def sandbox(request: pytest.FixtureRequest, data_json: dict[str, Any] | None) -> Iterable[StudentFixture]:
-    fixture, initialization_timeout = _initialize_sandbox_fixture(request, data_json, request.param)
-
+def _start_and_yield_sandbox(
+    request: pytest.FixtureRequest,
+    fixture: StudentFixture,
+    initialization_timeout: int,
+) -> Iterable[StudentFixture]:
+    """
+    Common logic to start a sandbox server and yield the fixture.
+    Handles cleanup in the finally block.
+    """
     try:
         # TODO make sure to read student output and include in the exception message
         # TODO also get this configuration by reading from the marker
@@ -210,28 +218,19 @@ def sandbox(request: pytest.FixtureRequest, data_json: dict[str, Any] | None) ->
 
 
 @pytest.fixture
-def module_sandbox(request: pytest.FixtureRequest, data_json: dict[str, Any] | None) -> Iterable[StudentFixture]:
+def sandbox(request: pytest.FixtureRequest, data_json: dict[str, Any] | None) -> Iterable[StudentFixture]:
+    fixture, initialization_timeout = _initialize_sandbox_fixture(request, data_json, request.param)
+    yield from _start_and_yield_sandbox(request, fixture, initialization_timeout)
+
+
+def _get_student_files_from_request(request: pytest.FixtureRequest) -> StudentFiles:
     """
-    Module-scoped sandbox fixture that shares the same student code server across all tests in a module.
-    This fixture automatically handles both single and multiple student code files:
-    - Single file: State persists across all tests in the module
-    - Multiple files: Each file gets its own cached sandbox with independent state
-
-    This fixture combines the benefits of:
-    - Module-level caching (sandbox created once per student file per module)
-    - Automatic parameterization across multiple student code files
-    - Proper test isolation per student code file
-
-    Use this when tests need to share state or when you want to test stateful behavior.
-    This fixture is more efficient for scenarios where setup is expensive.
+    Get StudentFiles either from parameterization or by finding the single file manually.
+    This handles both parameterized and non-parameterized cases consistently.
     """
-    plugin = request.config.result_collector_plugin  # type: ignore[attr-defined]
-    module_name = request.module.__name__
-
-    # Get the student code file from parameterization (if multiple files) or find the single file
     if hasattr(request, "param"):
         # Parameterized case - multiple student files
-        student_files: StudentFiles = request.param
+        return request.param
     else:
         # Non-parameterized case - single student file, need to find it manually
         data_dir = get_datadir(request.module)
@@ -254,8 +253,30 @@ def module_sandbox(request: pytest.FixtureRequest, data_json: dict[str, Any] | N
         leading_file = data_dir / "leading_code.py"
         trailing_file = data_dir / "trailing_code.py"
         setup_code_file = data_dir / "setup_code.py"
-        student_files = StudentFiles(leading_file, trailing_file, student_code_files_list[0], setup_code_file)
+        return StudentFiles(leading_file, trailing_file, student_code_files_list[0], setup_code_file)
 
+
+@pytest.fixture
+def module_sandbox(request: pytest.FixtureRequest, data_json: dict[str, Any] | None) -> Iterable[StudentFixture]:
+    """
+    Module-scoped sandbox fixture that shares the same student code server across all tests in a module.
+    This fixture automatically handles both single and multiple student code files:
+    - Single file: State persists across all tests in the module
+    - Multiple files: Each file gets its own cached sandbox with independent state
+
+    This fixture combines the benefits of:
+    - Module-level caching (sandbox created once per student file per module)
+    - Automatic parameterization across multiple student code files
+    - Proper test isolation per student code file
+
+    Use this when tests need to share state or when you want to test stateful behavior.
+    This fixture is more efficient for scenarios where setup is expensive.
+    """
+    plugin = request.config.result_collector_plugin  # type: ignore[attr-defined]
+    module_name = request.module.__name__
+
+    # Get the student code file from parameterization or find it manually
+    student_files = _get_student_files_from_request(request)
     student_code_file = student_files.student_code_file
 
     # Create cache key
