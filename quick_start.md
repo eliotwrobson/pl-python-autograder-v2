@@ -1,42 +1,47 @@
-# Quick start guide
+# Quick Start Guide
 
-This is a quick start guide for using the new Python autograder. This will be
-go over a simple example in PL to explain the basic usage and functionality. This
-will be using the grader image `eliotwrobson/grader-python-v2`. This grader image
-is powered by the autograder pytest extension code here.
+This is a quick start guide for using the new Python autograder for PrairieLearn. This guide
+covers the basic usage and functionality with examples. The grader uses the Docker image
+`eliotwrobson/grader-python-pytest:latest` which is powered by the `pytest-prairielearn-grader`
+pytest plugin.
 
-The following discussion is based on the converted example question here:
-https://github.com/PrairieLearn/PrairieLearn/pull/12603
+The following discussion is based on converted example questions in PrairieLearn.
+For a real example, see: https://github.com/PrairieLearn/PrairieLearn/pull/12603
 
-## Editor setup
+## Editor Setup
 
-Be sure to install the `pytest` and `pytest-prairielearn-grader` packages in your Python environment. You can do this using pip:
+Install the required packages in your Python environment for IDE support (e.g., VS Code with Pylance):
 
-```
+```bash
 pip install pytest pytest-prairielearn-grader
 ```
 
-This will ensure you can use pylance and GitHub copilot to help write test cases.
+This enables IDE features like autocomplete, type checking, and inline documentation when writing test cases.
 
-## File structure
+## File Structure
 
-The required file structure for a PL question using this grader image is below
+The required file structure for a PrairieLearn question using this grader is:
 
 ```
 - info.json
 - question.html
-- tests
-  ├── initial_code.py
-  ├── setup_code.py
-  └── test_student.py
+- tests/
+  ├── initial_code.py      (optional: starter code for students)
+  ├── setup_code.py        (optional: test setup and parameters)
+  └── test_student.py      (required: test cases)
 ```
 
-Importantly, the file editor element in question.html should have the file name set to
-`student_code.py`. The file name read by the autograder will be `student_code.py`. This
-can be changed by setting `student_code_pattern = "file_name.py"` at the global scope of
-the `test_student.py` file. This filename is hardcoded.
+**Important**: The file editor element in `question.html` should have `file-name="student_code.py"`.
+The autograder looks for `student_code.py` by default. You can customize this by setting
+`student_code_pattern = "your_filename.py"` at the global scope of `test_student.py`.
 
-## `setup_code.py`
+## Setup Code (`setup_code.py`)
+
+The `setup_code.py` file defines variables and functions that are available to the student
+code. Only variables listed in the `names_for_user` entry in `data.json` (via the
+`pl-external-grader-variables` element) are accessible to the student.
+
+Example `setup_code.py`:
 
 ```python
 import numpy as np
@@ -47,27 +52,30 @@ def not_allowed(*args, **kwargs):
     raise RuntimeError("Usage of this function is not allowed in this question.")
 
 
-# set up parameters
+# Set up parameters
 n = np.random.randint(4, 16)
 
-# generate a random full-rank matrix by generating a random eigenvector basis and nonzero eigenvalues
+# Generate a random full-rank matrix
 X = la.qr(np.random.random_sample((n, n)))[0]
 D = np.diag(np.random.random_sample(n) * 10 + 1)
 A = X.T @ D @ X
 
 b = np.random.random(n)
 
+# Block certain functions
 la.inv = not_allowed
 la.pinv = not_allowed
 ```
 
-Inside the setup code, you are allowed to define different variables for use by the student
-submission. Importantly, for a variable to be accessible in the student submission, the variable name must be included in the `names_for_user` entry in the params dictionary. This
-is using the same format that is set by the `pl-external-grader-variables` element.
+In this example, only `A`, `b`, and `n` (specified in `names_for_user`) are accessible in the
+student code. The function blocking demonstrates how to prevent students from using certain
+library functions.
 
-In this example, only `A`, `b`, and `n` are included in the `names_for_user` entry.
+## Test Cases (`test_student.py`)
 
-## `test_student.py`
+Test cases use pytest fixtures provided by the `pytest-prairielearn-grader` package.
+
+### Basic Example
 
 ```python
 import numpy as np
@@ -78,47 +86,318 @@ from pytest_prairielearn_grader.fixture import StudentFixture
 
 @pytest.mark.grading_data(name="x", points=1)
 def test_array_all_close(sandbox: StudentFixture) -> None:
+    """Test that student's solution x solves the linear system."""
     correct_x = la.solve(sandbox.query("A"), sandbox.query("b"))
     np.testing.assert_allclose(
         sandbox.query("x"), correct_x, err_msg="x is not correct"
     )
 ```
 
-In this example, the name of the test case shown to the student on the frontend is
-"x", worth 1 point. This is set with the `pytest.mark.grading_data` decorator. The
-`sandbox` fixture is used to query the student code environment for the variables
-defined in the `setup_code.py` file, and by the student code.
+### Test Markers
 
-There are three fixtures defined by the `pytest_prairielearn_grader` package:
+The `@pytest.mark.grading_data` decorator specifies test metadata:
 
-1. `StudentFixture`: This fixture provides a sandboxed environment for the student code to run in. It allows the test to query the student code for variables and functions defined in the `setup_code.py` file. To use this fixture, simply include a parameter in your test function called `sandbox`.
+- `name`: Test name displayed to students
+- `points`: Maximum points for the test
+- `include_stdout_feedback`: (Optional, default=`True`) Whether to include student code's stdout in feedback
 
-2. `FeedbackFixture`: This fixture provides a way to give feedback to the student on their code submissions, including hints and error messages. To use this fixture, include a parameter in your test function called `feedback`.
+Example with stdout control:
 
-3. `DataFixture`: This fixture provides access to supplemental data included in the test case by PL in the `data.json` file. To use this fixture, include a parameter in your test function called `data_json`.
+```python
+@pytest.mark.grading_data(name="Test Output", points=2, include_stdout_feedback=True)
+def test_with_output(sandbox: StudentFixture) -> None:
+    result = sandbox.query_function("process_data", data)
+    assert result == expected_value
+    # Student's print statements will appear in feedback
+```
 
-To look at the code for each fixture, see the [file defining these fixtures](https://github.com/eliotwrobson/pl-python-autograder-v2/blob/main/src/pytest_prairielearn_grader/fixture.py).
+### Available Fixtures
 
-## Querying student code
+Three fixtures are provided by the `pytest-prairielearn-grader` package:
 
-There are two basic functions on the sandbox that can be used to query the student code.
+1. **`sandbox: StudentFixture`**: Provides sandboxed access to student code. Use this to query variables
+   and call functions from the student's submission.
 
-1. `sandbox.query(variable_name)`: This function retrieves the value of a variable defined in the student code. If the variable does not exist, it will raise an error.
+2. **`module_sandbox: StudentFixture`**: Similar to `sandbox`, but maintains state across all tests in
+   a module. Useful when you want student code initialization to persist between tests (e.g., testing
+   stateful classes or persistent data structures).
 
-2. `sandbox.query_function(function_name, *args, **kwargs)`: This function calls a function defined in the student code with the given arguments and keyword arguments. It returns the result of the function call.
+3. **`feedback: FeedbackFixture`**: Manages partial credit and custom feedback messages for students.
 
-Note that symbols must be defined in the student code for these functions to work. Also,
-they must return a type that the autograder can json serialize (right now this includes `int`, `float`, `list`, `dict`, numpy arrays, and pandas dataframes).
+4. **`data_json: DataFixture`**: Provides access to parameters from PrairieLearn's `data.json` file
+   (generated via `pl-external-grader-variables` and other elements).
 
-### Testing flow
+For implementation details, see the [fixture source code](https://github.com/eliotwrobson/pl-python-autograder-v2/blob/main/src/pytest_prairielearn_grader/fixture.py).
 
-Tests in this package are designed to flow in a linear way, where partial credit can be
-given after certain asserts pass. Once an assert fails, the amount of partial credit awarded
-will be the last value given before the failure, and the failure message in the assert will
-be given as feedback. To set partial credit, simply call `feedback.set_score(<points>)`, where
-`<points>` is in the range [0, 1]. To set custom feedback, set `feedback.add_message(<message>)`.
+## Querying Student Code
 
-## More examples
+The `sandbox` fixture provides methods to interact with student code:
+
+### 1. Query Variables
+
+```python
+value = sandbox.query("variable_name")
+```
+
+Retrieves the value of a variable defined in the student code or `setup_code.py`.
+Raises an error if the variable doesn't exist.
+
+### 2. Query Functions
+
+```python
+result = sandbox.query_function("function_name", arg1, arg2, kwarg1=value1)
+```
+
+Calls a function defined in the student code with the given arguments.
+Returns a `StudentFunctionResponse` object with:
+
+- `status`: `SUCCESS`, `EXCEPTION`, `TIMEOUT`, or `NOT_FOUND`
+- `value`: The return value (if successful)
+- `stdout`/`stderr`: Captured output
+- `exception_name`, `exception_message`, `traceback`: Error details (if exception occurred)
+
+Example checking function response:
+
+```python
+response = sandbox.query_function("calculate", x, y)
+if response.status == "SUCCESS":
+    assert response.value == expected_result
+else:
+    pytest.fail(f"Function failed: {response.exception_message}")
+```
+
+### 3. Get Captured Output
+
+```python
+output = sandbox.get_stdout()
+```
+
+Retrieves stdout captured from student code execution.
+
+**Note**: Student code must define the queried symbols, and return values must be JSON-serializable.
+Supported types include: `int`, `float`, `str`, `list`, `dict`, `bool`, `None`, numpy arrays, pandas DataFrames,
+and matplotlib figures.
+
+## Partial Credit and Feedback
+
+Tests flow linearly, allowing partial credit after certain assertions pass. When an assertion
+fails, the student receives the last partial credit value set before the failure.
+
+```python
+@pytest.mark.grading_data(name="Multi-step Test", points=10)
+def test_with_partial_credit(sandbox: StudentFixture, feedback: FeedbackFixture) -> None:
+    # Check basic requirements (worth 30%)
+    result = sandbox.query("data_loaded")
+    assert result is not None, "Data must be loaded"
+    feedback.set_score(0.3)
+
+    # Check intermediate computation (worth 60%)
+    intermediate = sandbox.query("processed_data")
+    assert len(intermediate) > 0, "Data processing failed"
+    feedback.set_score(0.6)
+
+    # Check final result (worth 100%)
+    final = sandbox.query("final_result")
+    assert final == expected_value, "Final result incorrect"
+    feedback.set_score(1.0)
+
+    # Add custom feedback
+    feedback.add_message("Excellent work! All steps completed correctly.")
+```
+
+**Key Methods**:
+
+- `feedback.set_score(fraction)`: Set partial credit (0.0 to 1.0)
+- `feedback.set_score_final(fraction)`: Set final score (prevents further updates)
+- `feedback.add_message(msg)`: Add custom feedback message
+
+## Advanced Features
+
+### Timeout Configuration
+
+Control execution time limits to prevent infinite loops or slow student code:
+
+#### Module-level Default Timeout
+
+Set a default timeout for all tests in a file:
+
+```python
+# At the top of test_student.py (before imports)
+initialization_timeout = 2.0  # 2 second default
+
+import pytest
+from pytest_prairielearn_grader.fixture import StudentFixture
+
+
+@pytest.mark.grading_data(name="Test 1", points=1)
+def test_with_default_timeout(sandbox: StudentFixture) -> None:
+    # Uses 2 second timeout from module-level setting
+    result = sandbox.query("x")
+    assert result == 5
+```
+
+#### Per-test Timeout Override
+
+Override the default with the `@pytest.mark.sandbox_timeout` marker:
+
+```python
+@pytest.mark.grading_data(name="Fast Test", points=1)
+@pytest.mark.sandbox_timeout(0.5)  # 0.5 second timeout
+def test_with_custom_timeout(sandbox: StudentFixture) -> None:
+    result = sandbox.query("x")
+    assert result == 5
+```
+
+#### Per-function Timeout
+
+Set timeout for individual function calls:
+
+```python
+@pytest.mark.grading_data(name="Function Test", points=2)
+def test_function_timeout(sandbox: StudentFixture) -> None:
+    # This function call has a 1 second timeout
+    result = sandbox.query_function("compute", data, query_timeout=1.0)
+    assert result == expected_value
+```
+
+### Module-Scoped Sandbox
+
+Use `module_sandbox` instead of `sandbox` when you want student code state to persist
+across multiple tests:
+
+```python
+@pytest.mark.grading_data(name="Initialize", points=1)
+def test_initialization(module_sandbox: StudentFixture) -> None:
+    """First test initializes state."""
+    result = module_sandbox.query_function("initialize_counter")
+    assert result == 0
+
+
+@pytest.mark.grading_data(name="Increment 1", points=1)
+def test_increment_1(module_sandbox: StudentFixture) -> None:
+    """State persists - counter should be 1."""
+    result = module_sandbox.query_function("increment_counter")
+    assert result == 1
+
+
+@pytest.mark.grading_data(name="Increment 2", points=1)
+def test_increment_2(module_sandbox: StudentFixture) -> None:
+    """State still persists - counter should be 2."""
+    result = module_sandbox.query_function("increment_counter")
+    assert result == 2
+```
+
+**Use Cases for `module_sandbox`**:
+
+- Testing stateful classes or modules
+- Expensive initialization that should only run once
+- Testing persistent data structures (databases, file systems, etc.)
+- Simulating multi-step workflows
+
+**Important**: With `module_sandbox`, student code is loaded once and shared across all tests
+in the module. Use regular `sandbox` for independent test execution.
+
+### Capturing and Testing Output
+
+Control whether student code output appears in feedback:
+
+```python
+@pytest.mark.grading_data(name="With Output", points=2, include_stdout_feedback=True)
+def test_with_output(sandbox: StudentFixture) -> None:
+    """Student's print statements will appear in feedback."""
+    result = sandbox.query_function("process_data")
+    # Any print() calls in student code are captured and shown
+    assert result == expected
+
+
+@pytest.mark.grading_data(name="Without Output", points=2, include_stdout_feedback=False)
+def test_without_output(sandbox: StudentFixture) -> None:
+    """Student's print statements will NOT appear in feedback."""
+    result = sandbox.query_function("process_data")
+    assert result == expected
+
+
+@pytest.mark.grading_data(name="Manual Output Check", points=2)
+def test_output_manually(sandbox: StudentFixture) -> None:
+    """Manually inspect and test stdout."""
+    sandbox.query_function("print_greeting", "Alice")
+    output = sandbox.get_stdout()
+    assert "Hello, Alice!" in output, "Greeting message not found in output"
+```
+
+### Testing Matplotlib Plots
+
+The grader supports automatic serialization and deserialization of matplotlib figures:
+
+```python
+import matplotlib
+matplotlib.use("Agg")  # Non-GUI backend for server environments
+
+import pytest
+from matplotlib.figure import Figure
+from matplotcheck.base import PlotTester
+from pytest_prairielearn_grader.fixture import StudentFixture
+
+
+@pytest.mark.grading_data(name="Plot Test", points=5)
+def test_student_plot(sandbox: StudentFixture) -> None:
+    """Test that student creates a correct plot."""
+    # Student function returns a matplotlib figure
+    plot = sandbox.query_function("create_plot", data)
+
+    assert isinstance(plot, Figure)
+    assert len(plot.axes) == 1
+
+    # Use matplotcheck for detailed plot testing
+    ax = plot.axes[0]
+    pt = PlotTester(ax)
+
+    # Check plot properties
+    pt.assert_plot_type("line")
+    pt.assert_axis_label_contains(axis="x", strings_expected=["Time"])
+    pt.assert_axis_label_contains(axis="y", strings_expected=["Value"])
+    pt.assert_title_contains(["Data Visualization"])
+```
+
+The grader automatically serializes/deserializes:
+
+- Matplotlib figures
+- NumPy arrays
+- Pandas DataFrames
+- Standard Python types (int, float, str, list, dict, bool, None)
+
+## More Examples
 
 To see more examples of what is possible in these test files, look at the test cases in
 [this folder](https://github.com/eliotwrobson/pl-python-autograder-v2/tree/main/tests/scenario_root). Each test file is called `scenario.py`.
+
+## PrairieLearn Configuration
+
+In your PrairieLearn question's `info.json`, specify the grader:
+
+```json
+{
+  "title": "Your Question Title",
+  "topic": "Your Topic",
+  "tags": ["your-tags"],
+  "type": "v3",
+  "gradingMethod": "External",
+  "externalGradingOptions": {
+    "enabled": true,
+    "image": "eliotwrobson/grader-python-pytest:latest",
+    "timeout": 30
+  }
+}
+```
+
+## Tips and Best Practices
+
+1. **Use descriptive test names**: The `name` in `@pytest.mark.grading_data` is shown to students
+2. **Provide clear error messages**: Use informative assertion messages to guide students
+3. **Test incrementally**: Break complex problems into smaller tests with partial credit
+4. **Control output visibility**: Use `include_stdout_feedback=False` for tests where student output
+   would be confusing or reveal answers
+5. **Set appropriate timeouts**: Prevent infinite loops while allowing reasonable execution time
+6. **Use `module_sandbox` sparingly**: Only when you need persistent state across tests
+7. **Block prohibited functions**: Use the setup code to prevent students from using disallowed functions
+   (like in the `la.inv = not_allowed` example above)
