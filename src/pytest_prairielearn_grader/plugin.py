@@ -207,106 +207,71 @@ def sandbox(request: pytest.FixtureRequest, data_json: dict[str, Any] | None) ->
         fixture._cleanup()
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture
 def module_sandbox(request: pytest.FixtureRequest, data_json: dict[str, Any] | None) -> Iterable[StudentFixture]:
     """
     Module-scoped sandbox fixture that shares the same student code server across all tests in a module.
-    Each different student code instance gets its own sandbox, but tests within the same module
-    using the same student code instance share the sandbox for better performance.
+    This fixture automatically handles both single and multiple student code files:
+    - Single file: State persists across all tests in the module
+    - Multiple files: Each file gets its own cached sandbox with independent state
 
-    Important: This fixture only supports scenarios with a single student_code.py file.
-    If multiple student code files are detected (e.g., student_code_1.py, student_code_2.py),
-    it will raise an error. Use the regular 'sandbox' fixture for parameterized testing
-    across multiple student code variants.
+    This fixture combines the benefits of:
+    - Module-level caching (sandbox created once per student file per module)
+    - Automatic parameterization across multiple student code files
+    - Proper test isolation per student code file
 
-    Note: This fixture doesn't support parameterization like the regular sandbox fixture
-    because module-scoped fixtures are created once per module before parameterization occurs.
+    Use this when tests need to share state or when you want to test stateful behavior.
+    This fixture is more efficient for scenarios where setup is expensive.
     """
-    # Get the plugin instance to access the cache
     plugin = request.config.result_collector_plugin  # type: ignore[attr-defined]
-
-    # Get the test module directory to find student code
     module_name = request.module.__name__
-    module_file = Path(request.module.__file__)
-    data_dir = module_file.parent
 
-    # Find student code files - first try the same directory as the test module
-    student_code_pattern = "student_code*.py"
-    student_code_files = list(data_dir.glob(student_code_pattern))
-
-    # If not found in the same directory, look for a subdirectory with the module name
-    if not student_code_files:
-        subdirectory = data_dir / module_file.stem  # e.g., test_module_sandbox
-        if subdirectory.is_dir():
-            student_code_files = list(subdirectory.glob(student_code_pattern))
-            data_dir = subdirectory  # Update data_dir to the subdirectory
-
-    if not student_code_files:
-        pytest.fail(f"No student code files found matching pattern '{student_code_pattern}' in {data_dir} or {data_dir}/{module_file.stem}")
-
-    # Check for multiple student code files and raise an error
-    if len(student_code_files) > 1:
-        student_file_names = [f.name for f in student_code_files]
-        pytest.fail(
-            f"Multiple student code files found: {student_file_names}. "
-            f"The module_sandbox fixture does not support parameterization across multiple student files. "
-            f"Use the regular 'sandbox' fixture instead to test all student code variants, "
-            f"or reduce to a single student_code.py file for module-level caching."
-        )
-
-    # Use the first (and only) student code file found
-    student_code_file = student_code_files[0]
+    # Get the student code file from parameterization (if multiple files) or find the single file
+    student_files: StudentFiles = request.param
+    student_code_file = student_files.student_code_file
 
     # Create cache key
     cache_key = (module_name, str(student_code_file))
 
     # Check if we already have a cached sandbox for this module/student code combination
-    if cache_key in plugin.module_sandbox_cache:
-        yield plugin.module_sandbox_cache[cache_key]
-        return
+    if cache_key not in plugin.module_sandbox_cache:
+        # Create new sandbox and cache it
+        fixture, initialization_timeout = _initialize_sandbox_fixture(request, data_json, student_files)
 
-    # Set up file paths (similar to regular sandbox)
-    leading_file = data_dir / "leading_code.py"
-    trailing_file = data_dir / "trailing_code.py"
-    setup_code_file = data_dir / "setup_code.py"
+        try:
+            response = fixture.start_student_code_server(initialization_timeout=initialization_timeout)
+            _handle_sandbox_startup_errors(request, response, initialization_timeout)
 
-    student_files = StudentFiles(leading_file, trailing_file, student_code_file, setup_code_file)
+            # Cache the fixture for reuse within this module
+            plugin.module_sandbox_cache[cache_key] = fixture
+        except Exception:
+            # If initialization fails, cleanup and re-raise
+            fixture._cleanup()
+            raise
 
-    # Use shared initialization logic
-    fixture, initialization_timeout = _initialize_sandbox_fixture(request, data_json, student_files)
-
-    try:
-        response = fixture.start_student_code_server(initialization_timeout=initialization_timeout)
-        _handle_sandbox_startup_errors(request, response, initialization_timeout)
-
-        # Cache the fixture for reuse within this module
-        plugin.module_sandbox_cache[cache_key] = fixture
-
-        yield fixture
-    finally:
-        # Only cleanup when the module scope ends, not after each test
-        fixture._cleanup()
-        # Remove from cache when cleaned up
-        plugin.module_sandbox_cache.pop(cache_key, None)
+    # Return the cached sandbox (shared across all tests for this student file)
+    return plugin.module_sandbox_cache[cache_key]
+    # Note: We don't cleanup here - cleanup happens at module teardown via pytest_sessionfinish
 
 
 def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
     """
-    TODO this is where the parameterization inside the folder is happening
+    Generate parameterized tests for sandbox and parameterized_module_sandbox fixtures.
+    This is where the parameterization for multiple student code files happens.
     """
 
-    # # Let's assume you have a 'data' directory next to your test file
+    # Get the data directory next to the test file
     data_dir = get_datadir(metafunc.module)
 
     if data_dir is None:
         raise ValueError
 
-    if "sandbox" in metafunc.fixturenames:
+    # Check if we need to parametrize sandbox or module_sandbox
+    if "sandbox" in metafunc.fixturenames or "module_sandbox" in metafunc.fixturenames:
         if data_dir.is_dir():
             student_code_pattern = metafunc.module.__dict__.get("student_code_pattern", "student_code*.py")
 
-            # print("IN THE DATA DIR")
-            # Find a specific data file, e.g., 'test_data.txt'
+            # Find student code files
             leading_file = data_dir / "leading_code.py"
             trailing_file = data_dir / "trailing_code.py"
             setup_code_file = data_dir / "setup_code.py"
@@ -318,13 +283,13 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
             ]
             file_stems = [file_tup.student_code_file.stem for file_tup in file_tups]
 
-            metafunc.parametrize("sandbox", file_tups, indirect=True, ids=file_stems)
-            # else:
-            #    pass
-            # pytest.skip(f"Data file '{data_file.name}' not found in '{data_dir}'")
+            # Parametrize the appropriate fixture
+            if "sandbox" in metafunc.fixturenames:
+                metafunc.parametrize("sandbox", file_tups, indirect=True, ids=file_stems)
+            elif "module_sandbox" in metafunc.fixturenames:
+                metafunc.parametrize("module_sandbox", file_tups, indirect=True, ids=file_stems)
         else:
             pass
-            # pytest.skip(f"Data directory '{data_dir}' not found.")
 
 
 def pytest_addoption(parser: pytest.Parser) -> None:
@@ -489,7 +454,16 @@ class ResultCollectorPlugin:
     def pytest_sessionfinish(self, session: pytest.Session, exitstatus: int) -> Iterable[None]:
         """
         Hook wrapper to process test results after the session finishes.
+        Also cleans up any cached module sandboxes.
         """
+        # Clean up all cached module sandboxes before processing results
+        for cache_key, fixture in list(self.module_sandbox_cache.items()):
+            try:
+                fixture._cleanup()
+            except Exception as e:
+                logger.warning(f"Error cleaning up module sandbox for {cache_key}: {e}")
+        self.module_sandbox_cache.clear()
+
         yield  # Let other sessionfinish hooks run
 
         # print("\n--- Custom Test Results Summary (via Plugin Class) ---")
@@ -550,9 +524,7 @@ class ResultCollectorPlugin:
                     exception_name = call.excinfo.type.__name__
                     # TODO make this work with multiline messages somehow?
                     exception_message = str(call.excinfo.value).split(os.linesep)[0]
-                    fail_message = (
-                        f"{phase_message}: {exception_name}{os.linesep}Exception Message: {exception_message}"
-                    )
+                    fail_message = f"{phase_message}: {exception_name}{os.linesep}Exception Message: {exception_message}"
                     feedback_obj.add_message(fail_message)
 
                 # If showing more than the exception name, show the message + full traceback

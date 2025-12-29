@@ -1,4 +1,4 @@
-# Test scenario for module-scoped sandbox fixture
+# Test scenario for parameterized module-scoped sandbox fixture
 import pytest
 
 from pytest_prairielearn_grader.fixture import DataFixture
@@ -9,16 +9,18 @@ from pytest_prairielearn_grader.fixture import StudentFixture
 def test_module_shared_counter_1(module_sandbox: StudentFixture) -> None:
     """Test that increments a counter and checks its value."""
     # Call increment function and check result
+    # student_code.py starts at 0, student_code_variant.py starts at 100
     result = module_sandbox.query_function("increment_counter")
-    assert result == 1, f"Expected counter to be 1, got {result}"
+    # Should be 1 for student_code.py and 101 for student_code_variant.py
+    assert result in [1, 101], f"Expected counter to be 1 or 101, got {result}"
 
 
 @pytest.mark.grading_data(name="test_module_shared_counter_2", points=1)
 def test_module_shared_counter_2(module_sandbox: StudentFixture) -> None:
     """Test that counter persists between tests (demonstrating shared module scope)."""
-    # Call increment function again - should be 2 if module scope is shared
+    # Call increment function again - should be 2 or 102 if module scope is shared
     result = module_sandbox.query_function("increment_counter")
-    assert result == 2, f"Module scope not shared - expected counter to be 2, got {result}"
+    assert result in [2, 102], f"Module scope not shared - expected counter to be 2 or 102, got {result}"
 
 
 @pytest.mark.grading_data(name="test_module_shared_counter_3", points=1)
@@ -26,7 +28,7 @@ def test_module_shared_counter_3(module_sandbox: StudentFixture) -> None:
     """Test that counter continues to increment (further demonstrating shared state)."""
     # Call increment function one more time
     result = module_sandbox.query_function("increment_counter")
-    assert result == 3, f"Module scope not maintained - expected counter to be 3, got {result}"
+    assert result in [3, 103], f"Module scope not maintained - expected counter to be 3 or 103, got {result}"
 
 
 @pytest.mark.grading_data(name="test_basic_functionality", points=1)
