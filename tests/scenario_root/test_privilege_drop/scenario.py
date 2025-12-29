@@ -1,3 +1,4 @@
+import pwd
 import sys
 
 import pytest
@@ -9,34 +10,28 @@ initialization_timeout = 2.0
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="Privilege dropping not supported on Windows")
-@pytest.mark.grading_data(name="test_worker_username_stored", points=1)
-def test_worker_username_stored_in_fixture(sandbox: StudentFixture) -> None:
+@pytest.mark.grading_data(name="test_privilege_drop_to_worker_user", points=1)
+def test_subprocess_runs_as_worker_user(sandbox: StudentFixture) -> None:
     """
-    Test that the worker_username parameter is correctly stored in the fixture.
-    This verifies the --worker-username CLI option is being passed through.
+    Test that the subprocess runs as the correct user when --worker-username is provided.
+    This verifies that privilege dropping to the specified user actually occurred.
     """
-    # The fixture should have worker_username attribute
-    assert hasattr(sandbox, "worker_username"), "Fixture missing worker_username attribute"
+    # Query the user ID from the student code subprocess
+    subprocess_uid = sandbox.query("current_uid")
 
-    # If no username was provided, it should be None
-    # If a username was provided via CLI, it will be stored here
-    # This test just validates the plumbing works
-    assert sandbox.worker_username is None or isinstance(sandbox.worker_username, str)
+    assert isinstance(subprocess_uid, int), f"Expected int, got {type(subprocess_uid)}"
+    assert subprocess_uid >= 0, f"UID should be non-negative, got {subprocess_uid}"
 
+    # If a worker username was provided, verify the subprocess runs as that user
+    if sandbox.worker_username is not None:
+        try:
+            expected_uid = pwd.getpwnam(sandbox.worker_username).pw_uid
+        except KeyError:
+            pytest.skip(f"User '{sandbox.worker_username}' does not exist on system")
 
-@pytest.mark.skipif(sys.platform == "win32", reason="Privilege dropping not supported on Windows")
-@pytest.mark.grading_data(name="test_user_id", points=1)
-def test_subprocess_runs_as_different_user(sandbox: StudentFixture) -> None:
-    """
-    Test that the subprocess can query its user ID.
-    When --worker-username is provided, this will be the dropped privilege UID.
-    """
-    # Query the user ID from the student code
-    result = sandbox.query("current_uid")
-
-    # Verify the query returns a valid UID
-    assert isinstance(result, int), f"Expected int, got {type(result)}"
-    assert result >= 0, f"UID should be non-negative, got {result}"
+        assert subprocess_uid == expected_uid, (
+            f"Subprocess should run as user '{sandbox.worker_username}' (UID {expected_uid}), " f"but is running as UID {subprocess_uid}"
+        )
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="Privilege dropping not supported on Windows")

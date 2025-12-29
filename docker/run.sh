@@ -41,9 +41,8 @@ mv $MERGE_DIR/test_student/test_student.py $MERGE_DIR/test_student.py
 echo "[run] starting autograder"
 
 # run the autograder as a limited user called ag
-# TODO pass in the ag user id as a CLI option
-#su -c "python3 $MERGE_DIR/pl_main.py" ag
-uv run pytest -p pl-grader --color=no "$MERGE_DIR"
+# Use --worker-username to drop privileges to the 'ag' user in the student code sandbox
+uv run pytest -p prairielearn-grader --color=no --worker-username ag "$MERGE_DIR"
 
 # TODO change the default output name
 mv "$MERGE_DIR/autograder_results.json" "$OUT_DIR/results.json"

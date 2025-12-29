@@ -26,8 +26,8 @@ RUN uv venv --seed && uv pip install --no-cache-dir -r requirements.txt && \
     uv pip install --no-cache-dir pytest-prairielearn-grader==${PACKAGE_VERSION}
 
 # Anything that needs to be run post-install
-# TODO Not clear yet how to make the grader run subprocess as a less privileged user
-# RUN useradd ag
+# Create 'ag' user for privilege dropping in student code sandbox
+RUN adduser -D ag
 COPY --chmod=755 run.sh /run.sh
 
 # Add serverFilesCourse to Python path
