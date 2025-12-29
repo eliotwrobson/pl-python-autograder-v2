@@ -223,7 +223,7 @@ Set a default timeout for all tests in a file:
 
 ```python
 # At the top of test_student.py (before imports)
-initialization_timeout = 2.0  # 2 second default
+sandbox_timeout = 2.0  # 2 second default
 
 import pytest
 from pytest_prairielearn_grader.fixture import StudentFixture
