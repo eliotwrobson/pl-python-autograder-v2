@@ -11,7 +11,8 @@ WORKDIR /
 RUN apk update \
     && apk add --no-cache \
     util-linux \
-    sudo
+    sudo \
+    build-base
 
 # NOTE all the crap below is needed to make pygraphviz work, but we probably don't need to include this
 # in the new grader image? We can add back if necessary but not sure what the use cases are.
