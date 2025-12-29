@@ -1,5 +1,5 @@
-# https://docs.astral.sh/uv/guides/integration/docker/#available-images
-FROM ghcr.io/astral-sh/uv:alpine
+# https://docs.astral.sh/uv/guides/integration/docker/#python-slim-images
+FROM ghcr.io/astral-sh/uv:python3.12-bookworm
 #ARG CACHEBUST=2025-07-15-14-16-18
 
 # Needed to properly handle UTF-8
@@ -8,13 +8,11 @@ ENV LANG=en_US.UTF-8
 
 WORKDIR /
 
-RUN apk update \
-    && apk add --no-cache \
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
     util-linux \
     sudo \
-    build-base \
-    cmake \
-    python3-dev
+    && rm -rf /var/lib/apt/lists/*
 
 # NOTE all the crap below is needed to make pygraphviz work, but we probably don't need to include this
 # in the new grader image? We can add back if necessary but not sure what the use cases are.
@@ -24,8 +22,8 @@ RUN apk update \
 
 COPY requirements.txt /
 ARG PACKAGE_VERSION=latest
-RUN uv venv --seed && uv pip install --no-cache-dir -r requirements.txt && \
-    uv pip install --no-cache-dir pytest-prairielearn-grader==${PACKAGE_VERSION}
+RUN uv venv --seed && uv pip install --no-cache-dir -r requirements.txt --prefer-binary && \
+    uv pip install --no-cache-dir pytest-prairielearn-grader==${PACKAGE_VERSION} --prefer-binary
 
 # Anything that needs to be run post-install
 # TODO Not clear yet how to make the grader run subprocess as a less privileged user
