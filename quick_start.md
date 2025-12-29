@@ -213,6 +213,204 @@ def test_with_partial_credit(sandbox: StudentFixture, feedback: FeedbackFixture)
 
 ## Advanced Features
 
+### Security: Import and Builtin Restrictions
+
+Control which Python modules and builtin functions students can use in their code. This is crucial for:
+
+- **Security**: Preventing access to file system, network, or system operations
+- **Pedagogical constraints**: Requiring students to implement functionality from scratch
+- **Resource management**: Blocking operations that consume excessive resources
+
+#### Import Control
+
+Restrict which Python modules students can import using whitelists or blacklists.
+
+**Import Whitelist** (recommended): Only allow specific modules:
+
+```python
+# In server.py (PrairieLearn question)
+def generate(data):
+    data["params"]["import_whitelist"] = ["numpy", "math", "statistics"]
+    # Only numpy, math, and statistics can be imported
+    # Attempting to import any other module raises ImportError
+```
+
+**Import Blacklist**: Block specific modules while allowing all others:
+
+```python
+# In server.py
+def generate(data):
+    data["params"]["import_blacklist"] = ["os", "subprocess", "sys"]
+    # os, subprocess, and sys cannot be imported
+    # All other modules are allowed
+```
+
+**Example student code with import whitelist:**
+
+```python
+# data.json has "import_whitelist": ["numpy", "math"]
+
+import numpy as np  # ✓ Allowed
+import math  # ✓ Allowed
+from numpy import array  # ✓ Allowed
+
+import os  # ✗ ImportError: Module 'os' is not allowed to be imported
+import pandas  # ✗ ImportError: Module 'pandas' is not allowed to be imported
+```
+
+**Example with import inside function:**
+
+```python
+def my_function():
+    import os  # ✗ This will raise ImportError when the function is called
+    return os.getcwd()
+```
+
+**Important**: If a whitelist is specified, **only** those modules can be imported. If a blacklist is specified, those modules are blocked but all others are allowed. You cannot use both simultaneously.
+
+#### Builtin Function Control
+
+Python's builtin functions (like `open()`, `eval()`, `exec()`) are automatically restricted to a safe subset. The autograder provides **only safe builtins by default**, including:
+
+- Standard types: `int`, `float`, `str`, `bool`, `list`, `dict`, `tuple`, `set`, `frozenset`
+- Type checking: `isinstance`, `issubclass`, `type`
+- Iteration: `iter`, `next`, `enumerate`, `zip`, `range`, `reversed`, `sorted`, `filter`, `map`
+- Math: `abs`, `min`, `max`, `sum`, `round`, `pow`, `divmod`
+- Conversion: `chr`, `ord`, `bin`, `oct`, `hex`, `hash`
+- Common functions: `len`, `print`, `repr`, `getattr`, `hasattr`, `format`
+- Python exceptions (for proper error handling)
+
+**Dangerous builtins automatically blocked** include: `open`, `eval`, `exec`, `compile`, `__import__`, `input`, `exit`, `quit`, and others that could compromise security.
+
+**Builtin Whitelist**: Grant access to additional builtin functions:
+
+```python
+# In server.py
+def generate(data):
+    data["params"]["builtin_whitelist"] = ["dict", "sorted", "enumerate"]
+    # Students can now use dict(), sorted(), and enumerate() in addition to safe defaults
+    # This is useful when you want to allow specific advanced builtins
+```
+
+**Example with builtin whitelist:**
+
+```python
+# data.json has "builtin_whitelist": ["dict"]
+
+# Safe builtins work normally:
+my_list = [1, 2, 3]  # ✓ list is safe by default
+length = len(my_list)  # ✓ len is safe by default
+print(length)  # ✓ print is safe by default
+
+# Whitelisted builtins work:
+my_dict = dict(a=1, b=2)  # ✓ dict is in whitelist
+
+# Dangerous builtins are blocked:
+f = open("file.txt")  # ✗ NameError: 'open' is not defined
+result = eval("1+1")  # ✗ NameError: 'eval' is not defined
+```
+
+#### Combining Security Features
+
+You can combine import and builtin restrictions for comprehensive control:
+
+```python
+# In server.py
+def generate(data):
+    # Allow only numpy and math imports
+    data["params"]["import_whitelist"] = ["numpy", "math"]
+
+    # Allow dict builtin for student convenience
+    data["params"]["builtin_whitelist"] = ["dict"]
+
+    # Now students can:
+    # - Import numpy and math
+    # - Use dict() plus safe builtins
+    # - Cannot import other modules
+    # - Cannot use dangerous builtins like open(), eval()
+```
+
+#### PrairieLearn Server.py Configuration
+
+In your PrairieLearn question's `server.py`, add these parameters during the `generate()` step:
+
+```python
+import prairielearn as pl
+
+def generate(data):
+    # Set up question parameters
+    data["params"]["n"] = 5
+    data["params"]["A"] = pl.to_json(np.random.rand(5, 5))
+
+    # Configure security restrictions
+    data["params"]["import_whitelist"] = ["numpy", "numpy.linalg"]
+    data["params"]["builtin_whitelist"] = ["dict", "sorted"]
+
+    # Define variables accessible to student code
+    data["params"]["names_for_user"] = [
+        {"name": "n", "description": "Matrix dimension", "type": "integer"},
+        {"name": "A", "description": "Input matrix", "type": "numpy array"}
+    ]
+```
+
+These parameters are automatically passed to the autograder via `/grade/data/data.json` and enforced during student code execution.
+
+#### Testing Import/Builtin Restrictions Locally
+
+To test your restrictions in the test scenarios:
+
+```python
+# tests/test_student.py
+import pytest
+from pytest_prairielearn_grader.fixture import StudentFixture
+
+@pytest.mark.grading_data(name="Test with restrictions", points=5)
+def test_security(sandbox: StudentFixture) -> None:
+    """Test that imports are properly restricted."""
+    # If student code tries to import blocked modules,
+    # the sandbox will raise an ImportError during initialization
+    result = sandbox.query_function("safe_function", data)
+    assert result == expected
+```
+
+```python
+# data.json
+{
+  "params": {
+    "import_whitelist": ["numpy", "math"],
+    "builtin_whitelist": ["dict"],
+    "names_for_user": [...]
+  }
+}
+```
+
+#### Common Use Cases
+
+**1. Force students to implement algorithms from scratch:**
+
+```python
+# Require students to implement their own sorting
+data["params"]["import_whitelist"] = []  # No imports allowed
+data["params"]["builtin_whitelist"] = []  # No additional builtins beyond safe defaults
+# Students must implement sorting without sorted() or external libraries
+```
+
+**2. Allow numerical computing but block system access:**
+
+```python
+# Scientific computing course
+data["params"]["import_whitelist"] = ["numpy", "scipy", "matplotlib", "pandas"]
+# Safe builtins are automatically enforced (no open, eval, etc.)
+```
+
+**3. Block dangerous operations explicitly:**
+
+```python
+# Block system and file operations
+data["params"]["import_blacklist"] = ["os", "sys", "subprocess", "pathlib", "shutil"]
+# All other imports allowed, but dangerous ones explicitly blocked
+```
+
 ### Timeout Configuration
 
 Control execution time limits for sandbox initialization and function calls to prevent infinite loops or slow student code.
@@ -414,3 +612,6 @@ In your PrairieLearn question's `info.json`, specify the grader:
 6. **Use `module_sandbox` sparingly**: Only when you need persistent state across tests
 7. **Block prohibited functions**: Use the setup code to prevent students from using disallowed functions
    (like in the `la.inv = not_allowed` example above)
+8. **Configure security restrictions**: Use `import_whitelist` and `builtin_whitelist` in `server.py`
+   to control what modules and functions students can access, preventing security issues and
+   enforcing pedagogical constraints

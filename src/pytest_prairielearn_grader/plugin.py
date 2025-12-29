@@ -101,7 +101,9 @@ def _initialize_sandbox_fixture(
         params_dict = data_json.get("params", {})
 
     import_whitelist = params_dict.get("import_whitelist")
-    import_blacklist = params_dict.get("import_blacklist")
+    # Default blacklist for security - blocks dangerous system operations
+    default_import_blacklist = ["os", "sys", "subprocess", "pathlib", "shutil"]
+    import_blacklist = params_dict.get("import_blacklist", default_import_blacklist)
 
     # TODO make sure this contains only valid builtins
     builtin_whitelist = params_dict.get("builtin_whitelist")
