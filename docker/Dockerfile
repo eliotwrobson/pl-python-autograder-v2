@@ -1,5 +1,5 @@
 # https://docs.astral.sh/uv/guides/integration/docker/#available-images
-FROM ghcr.io/astral-sh/uv:python3.12-alpine
+FROM ghcr.io/astral-sh/uv:python3.13-alpine
 #ARG CACHEBUST=2025-07-15-14-16-18
 
 # Needed to properly handle UTF-8
