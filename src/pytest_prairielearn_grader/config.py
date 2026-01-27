@@ -4,8 +4,6 @@ from dataclasses import dataclass
 from dataclasses import field
 from typing import Any
 
-from .utils import NamesForUserInfo
-
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class ConfigObject:

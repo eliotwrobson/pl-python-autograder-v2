@@ -22,7 +22,6 @@ from .fixture import FeedbackFixture
 from .fixture import StudentFiles
 from .fixture import StudentFixture
 from .utils import GradingOutputLevel
-from .utils import NamesForUserInfo
 from .utils import ProcessStartResponse
 from .utils import ProcessStatusCode
 from .utils import get_output_level_marker

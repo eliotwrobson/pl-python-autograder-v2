@@ -21,7 +21,6 @@ from pytest_prairielearn_grader.json_utils import from_server_json
 # ask Gemini how to do it
 from pytest_prairielearn_grader.json_utils import to_json
 from pytest_prairielearn_grader.utils import FunctionStatusCode
-from pytest_prairielearn_grader.utils import NamesForUserInfo
 from pytest_prairielearn_grader.utils import ProcessStartRequest
 from pytest_prairielearn_grader.utils import ProcessStartResponse
 from pytest_prairielearn_grader.utils import ProcessStatusCode

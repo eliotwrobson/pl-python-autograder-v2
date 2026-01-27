@@ -51,12 +51,6 @@ class ProcessStatusCode(StrEnum):
 # TODO use some inheritance on the query and response types
 
 
-class NamesForUserInfo(TypedDict):
-    name: str
-    description: str
-    type: str
-
-
 class SetupQueryRequest(TypedDict):
     message_type: Literal["query_setup"]
     var: str

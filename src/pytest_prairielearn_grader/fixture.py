@@ -10,7 +10,6 @@ from typing import Any
 from typing import NamedTuple
 
 from .json_utils import from_json
-from .utils import NamesForUserInfo
 from .utils import ProcessStartRequest
 from .utils import ProcessStartResponse
 from .utils import ProcessStatusCode
