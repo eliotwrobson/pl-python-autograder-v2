@@ -1,0 +1,56 @@
+{
+  "expected_data_object": {
+    "score": 1.0,
+    "tests": [
+      {
+        "max_points": 10,
+        "message": "",
+        "name": "Test ConfigObject overrides data.json",
+        "outcome": "passed",
+        "points": 10.0,
+        "points_frac": 1.0,
+        "test_id": "test_config_object.py::test_config_object_overrides_data_json[student_code]"
+      },
+      {
+        "max_points": 10,
+        "message": "",
+        "name": "Test ConfigObject custom starting_vars",
+        "outcome": "passed",
+        "points": 10.0,
+        "points_frac": 1.0,
+        "test_id": "test_config_object.py::test_config_object_custom_vars[student_code]"
+      },
+      {
+        "max_points": 10,
+        "message": "",
+        "name": "Test ConfigObject allows numpy import",
+        "outcome": "passed",
+        "points": 10.0,
+        "points_frac": 1.0,
+        "test_id": "test_config_object.py::test_config_object_import_whitelist[student_code]"
+      },
+      {
+        "max_points": 10,
+        "message": "",
+        "name": "Test ConfigObject timeout override",
+        "outcome": "passed",
+        "points": 10.0,
+        "points_frac": 1.0,
+        "test_id": "test_config_object.py::test_config_object_timeout_override[student_code]"
+      },
+      {
+        "max_points": 10,
+        "message": "",
+        "name": "Test ConfigObject builtin_whitelist",
+        "outcome": "passed",
+        "points": 10.0,
+        "points_frac": 1.0,
+        "test_id": "test_config_object.py::test_config_object_builtin_whitelist[student_code]"
+      }
+    ]
+  },
+  "expected_outcome": {
+    "passed": 5,
+    "failed": 0
+  }
+}

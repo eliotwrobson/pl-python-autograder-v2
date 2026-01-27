@@ -1,9 +1,14 @@
-import pwd
 import sys
 
 import pytest
 
 from pytest_prairielearn_grader.fixture import StudentFixture
+
+# Unix-only import for privilege dropping
+if sys.platform != "win32":
+    import pwd
+else:
+    pwd = None  # type: ignore[assignment]
 
 # Module level timeout
 initialization_timeout = 2.0
@@ -25,12 +30,13 @@ def test_subprocess_runs_as_worker_user(sandbox: StudentFixture) -> None:
     # If a worker username was provided, verify the subprocess runs as that user
     if sandbox.worker_username is not None:
         try:
+            assert pwd is not None, "pwd module not available on this platform"
             expected_uid = pwd.getpwnam(sandbox.worker_username).pw_uid
         except KeyError:
             pytest.skip(f"User '{sandbox.worker_username}' does not exist on system")
 
         assert subprocess_uid == expected_uid, (
-            f"Subprocess should run as user '{sandbox.worker_username}' (UID {expected_uid}), " f"but is running as UID {subprocess_uid}"
+            f"Subprocess should run as user '{sandbox.worker_username}' (UID {expected_uid}), but is running as UID {subprocess_uid}"
         )
 
 
