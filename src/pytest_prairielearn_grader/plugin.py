@@ -139,6 +139,15 @@ def _initialize_sandbox_fixture(
 
         config_starting_vars = {}
 
+    # Handle names_for_user before merging - ConfigObject has list[str], data.json has list[dict]
+    names_for_user_list: list[str] | None = None
+    if "names_for_user" in config_dict:
+        # ConfigObject format: already list of strings
+        names_for_user_list = config_dict["names_for_user"]
+    elif "names_for_user" in params_dict:
+        # data.json format: extract names from list of dicts
+        names_for_user_list = [item["name"] for item in params_dict["names_for_user"]]
+
     # Merge config_dict with params_dict, with config_dict taking precedence
     merged_params = {**params_dict, **config_dict}
 
@@ -147,7 +156,6 @@ def _initialize_sandbox_fixture(
     import_blacklist = merged_params.get("import_blacklist", DEFAULT_IMPORT_BLACKLIST)
     # TODO make sure this contains only valid builtins
     builtin_whitelist = merged_params.get("builtin_whitelist")
-    names_for_user_list = cast(list[NamesForUserInfo] | None, merged_params.get("names_for_user"))
 
     # Merge starting_vars: __data_params always present, then config_starting_vars
     starting_vars: dict[str, Any] = {
@@ -159,19 +167,12 @@ def _initialize_sandbox_fixture(
 
     # Process names_for_user_list to inject variables from params_dict or starting_vars
     if names_for_user_list is not None:
-        for names_dict in names_for_user_list:
-            name = names_dict["name"]
+        for name in names_for_user_list:
             # Check if value is already in starting_vars (from ConfigObject), otherwise get from params
             if name in starting_vars and name != "__data_params":
                 value = starting_vars[name]
             else:
                 value = params_dict.get(name, None)
-
-            variable_type = type(value).__name__.strip()
-            expected_variable_type = names_dict["type"].strip()
-
-            if variable_type != expected_variable_type and value is not None:
-                logger.warning(f"Variable type mismatch for starting var {name}: expected {expected_variable_type}, got {variable_type}")
 
             starting_vars[name] = value
 

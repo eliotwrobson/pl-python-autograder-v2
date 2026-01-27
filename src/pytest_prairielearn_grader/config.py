@@ -51,17 +51,17 @@ class ConfigObject:
     If set, only these modules can be imported (whitelist mode).
     If None, all modules are allowed except those in import_blacklist.
     Can be combined with import_blacklist - blacklist is checked first, then whitelist.
-    
+
     Example: ["numpy", "math", "pandas"]
     """
 
     import_blacklist: list[str] | None = None
     """List of Python modules that student code is prohibited from importing.
-    
+
     Modules in the blacklist are always blocked, even if in the whitelist.
     Can be combined with import_whitelist for fine-grained control.
     Default blocks dangerous system operations: ["os", "sys", "subprocess", "pathlib", "shutil"].
-    
+
     Example: ["requests", "socket"]
     """
 
@@ -74,14 +74,14 @@ class ConfigObject:
     Example: ["len", "range", "sum", "print"]
     """
 
-    names_for_user: list[NamesForUserInfo] | None = None
-    """List of variable definitions to inject into student sandbox.
+    names_for_user: list[str] | None = None
+    """List of variable names to inject into student sandbox.
 
-    Each item should be a dict with keys: "name", "type", "description".
     Only variables listed here will be injected into student code.
     Values are taken from starting_vars or from setup_code execution.
+    This is a simplified version for ConfigObject - just provide variable names.
 
-    Example: [{"name": "coefficient", "type": "float", "description": "The multiplier"}]
+    Example: ["coefficient", "threshold", "data_array"]
     """
 
     student_code_pattern: str = "student_code*.py"
@@ -142,16 +142,11 @@ class ConfigObject:
         if self.names_for_user is not None:
             if not isinstance(self.names_for_user, list):
                 raise TypeError(f"names_for_user must be a list, got {type(self.names_for_user).__name__}")
-            for name_info in self.names_for_user:
-                # Note: At runtime TypedDict is just a dict, so we need to cast
-                name_dict: Any = name_info
-                if not isinstance(name_dict, dict):
-                    raise TypeError(f"names_for_user items must be dicts, got {type(name_dict).__name__}")
-                if "name" not in name_dict:
-                    raise ValueError(f"names_for_user item missing 'name' key: {name_dict}")
-                name_value: str = name_dict["name"]
-                if not isinstance(name_value, str) or not name_value.strip():
-                    raise ValueError(f"names_for_user 'name' must be non-empty string, got: {name_value!r}")
+            if not self.names_for_user:
+                raise ValueError("names_for_user cannot be empty (use None to inject no variables)")
+            for name in self.names_for_user:
+                if not isinstance(name, str) or not name.strip():
+                    raise ValueError(f"names_for_user must contain non-empty strings, got: {name!r}")
 
         # Validate student_code_pattern is non-empty
         if not isinstance(self.student_code_pattern, str) or not self.student_code_pattern.strip():

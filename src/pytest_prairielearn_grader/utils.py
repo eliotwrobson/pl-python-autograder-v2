@@ -113,7 +113,7 @@ class ProcessStartRequest(TypedDict):
     import_blacklist: list[str] | None
     starting_vars: dict[str, Any] | None
     builtin_whitelist: list[str] | None
-    names_for_user_list: list[NamesForUserInfo] | None
+    names_for_user_list: list[str] | None
 
 
 class ProcessStartResponse(TypedDict):

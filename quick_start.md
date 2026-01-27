@@ -192,10 +192,10 @@ def test_with_error_handling(sandbox: StudentFixture) -> None:
 ### 3. Get Captured Output
 
 ```python
-output = sandbox.get_stdout()
+output = sandbox.get_accumulated_stdout()
 ```
 
-Retrieves stdout captured from student code execution.
+Retrieves stdout captured from student code execution across all function calls.
 
 **Example:**
 
@@ -203,7 +203,7 @@ Retrieves stdout captured from student code execution.
 @pytest.mark.grading_data(name="Test Output", points=2)
 def test_output(sandbox: StudentFixture) -> None:
     sandbox.query_function("print_greeting", "Alice")
-    output = sandbox.get_stdout()
+    output = sandbox.get_accumulated_stdout()
     assert "Hello, Alice!" in output, "Greeting not found in output"
 ```
 
@@ -283,10 +283,7 @@ autograder_config = ConfigObject(
     import_whitelist=["numpy", "pandas"],
     builtin_whitelist=["len", "range", "sum", "print"],
     starting_vars={"coefficient": 10, "threshold": 5.0},
-    names_for_user=[
-        {"name": "coefficient", "type": "int", "description": "Test coefficient"},
-        {"name": "threshold", "type": "float", "description": "Threshold value"},
-    ],
+    names_for_user=["coefficient", "threshold"],
 )
 
 @pytest.mark.grading_data(name="Test with Config", points=5)
@@ -304,11 +301,12 @@ All parameters are optional with sensible defaults:
 - **`import_whitelist`** (list[str] | None): Allowed import modules (whitelist mode)
 - **`import_blacklist`** (list[str] | None): Blocked import modules (blacklist mode)
 - **`builtin_whitelist`** (list[str] | None): Allowed builtin functions
-- **`names_for_user`** (list[dict] | None): Variables to inject into student code
+- **`names_for_user`** (list[str] | None): List of variable names to inject into student code
 - **`student_code_pattern`** (str, default="student_code\*.py"): Glob pattern for finding student files
 - **`starting_vars`** (dict[str, Any], default={}): Dictionary of variable names and values to make available
 
 **How variable injection works**:
+
 - Variables listed in `names_for_user` are injected into the student code namespace
 - Values come from either `setup_code.py` execution or `starting_vars` (with `starting_vars` taking priority)
 - This allows `ConfigObject` to override values from data.json params
@@ -328,9 +326,7 @@ autograder_config = ConfigObject(
     sandbox_timeout=3.0,  # Overrides module-level timeout
     import_whitelist=["numpy"],  # Overrides data.json import_whitelist
     starting_vars={"x": 10},  # Overrides data.json params["x"]
-    names_for_user=[
-        {"name": "x", "type": "int", "description": "Value of x"}
-    ],
+    names_for_user=["x"],
 )
 
 # This module-level timeout is ignored when ConfigObject is present
@@ -363,11 +359,7 @@ autograder_config = ConfigObject(
     },
 
     # Explicitly list what gets injected
-    names_for_user=[
-        {"name": "input_data", "type": "list", "description": "Input dataset"},
-        {"name": "multiplier", "type": "float", "description": "Multiplication factor"},
-        {"name": "threshold", "type": "int", "description": "Threshold for filtering"},
-    ],
+    names_for_user=["input_data", "multiplier", "threshold"],
 )
 
 @pytest.mark.grading_data(name="Test Processing", points=10)
@@ -404,6 +396,9 @@ config = ConfigObject(sandbox_timeout=-1.0)  # ValueError
 
 # ✗ Error: must use keyword arguments
 config = ConfigObject(2.0)  # TypeError
+
+# ✗ Error: names_for_user must contain strings
+config = ConfigObject(names_for_user=[123, 456])  # ValueError
 ```
 
 ### Security: Import and Builtin Restrictions
@@ -752,7 +747,7 @@ def test_without_output(sandbox: StudentFixture) -> None:
 def test_output_manually(sandbox: StudentFixture) -> None:
     """Manually inspect and test stdout."""
     sandbox.query_function("print_greeting", "Alice")
-    output = sandbox.get_stdout()
+    output = sandbox.get_accumulated_stdout()
     assert "Hello, Alice!" in output, "Greeting message not found in output"
 ```
 

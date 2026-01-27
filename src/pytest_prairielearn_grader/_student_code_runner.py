@@ -134,7 +134,7 @@ async def student_code_runner(
     import_blacklist: list[str] | None,
     starting_vars: dict[str, Any] | None,
     builtin_whitelist: list[str] | None,
-    names_for_user_list: list[NamesForUserInfo] | None,
+    names_for_user_list: list[str] | None,
 ) -> tuple[dict[str, Any], dict[str, Any], ProcessStartResponse]:
     stdout_capture = io.StringIO()
     stderr_capture = io.StringIO()
@@ -174,9 +174,7 @@ async def student_code_runner(
     # Only inject variables that are explicitly listed in names_for_user_list
     # This prevents accidental variable leaking from setup_code or starting_vars
     if names_for_user_list is not None:
-        for name_info in names_for_user_list:
-            var_name = name_info["name"]
-
+        for var_name in names_for_user_list:
             if var_name in local_vars:
                 # NOTE I think there might be issues with security with deepcopying certain
                 # objects. If needed, we can prevent leaks here through serialization.

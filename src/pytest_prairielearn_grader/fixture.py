@@ -91,7 +91,7 @@ class StudentFixture:
     import_blacklist: list[str] | None
     starting_vars: dict[str, Any] | None
     builtin_whitelist: list[str] | None
-    names_for_user_list: list[NamesForUserInfo] | None
+    names_for_user_list: list[str] | None
     worker_username: str | None
     _accumulated_stdout: list[str]
 
@@ -102,7 +102,7 @@ class StudentFixture:
         import_blacklist: list[str] | None,
         starting_vars: dict[str, Any] | None,
         builtin_whitelist: list[str] | None,
-        names_for_user_list: list[NamesForUserInfo] | None,
+        names_for_user_list: list[str] | None,
         worker_username: str | None,
     ) -> None:
         self.leading_file = file_names.leading_file

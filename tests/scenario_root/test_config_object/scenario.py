@@ -24,10 +24,7 @@ autograder_config = ConfigObject(
     import_blacklist=None,  # Override data.json blacklist
     builtin_whitelist=["len", "range", "sum", "print"],  # Override data.json builtin_whitelist
     starting_vars={"coefficient": 10, "custom_multiplier": 3},  # Override data.json coefficient value
-    names_for_user=[
-        {"name": "coefficient", "type": "int", "description": "Coefficient from ConfigObject"},
-        {"name": "custom_multiplier", "type": "int", "description": "Custom variable from ConfigObject"},
-    ],  # Override data.json names_for_user to include both variables
+    names_for_user=["coefficient", "custom_multiplier"],  # Override data.json names_for_user to include both variables
     student_code_pattern="student_code.py",  # Explicitly specify which student code file
 )
 
