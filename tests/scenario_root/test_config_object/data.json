@@ -1,0 +1,15 @@
+{
+  "params": {
+    "coefficient": 5,
+    "import_whitelist": ["math"],
+    "import_blacklist": ["os", "sys"],
+    "builtin_whitelist": ["len", "range"],
+    "names_for_user": [
+      {
+        "name": "coefficient",
+        "type": "int",
+        "description": "A coefficient value from data.json"
+      }
+    ]
+  }
+}

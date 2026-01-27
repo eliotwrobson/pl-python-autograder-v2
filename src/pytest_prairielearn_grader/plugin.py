@@ -17,6 +17,7 @@ import pytest
 from _pytest.config import Config
 from prettytable import PrettyTable
 
+from .config import ConfigObject
 from .fixture import FeedbackFixture
 from .fixture import StudentFiles
 from .fixture import StudentFixture
@@ -96,6 +97,11 @@ def _initialize_sandbox_fixture(
     Common initialization logic for both sandbox and module_sandbox fixtures.
     Handles parameter parsing, timeout configuration, and StudentFixture creation.
     Returns the fixture and the initialization timeout.
+
+    Args:
+        request: The pytest fixture request
+        data_json: Data loaded from data.json file
+        file_names: StudentFiles namedtuple with file paths
     """
     # Default timeout TODO make this a command line option?
     initialization_timeout = DEFAULT_SANDBOX_TIMEOUT
@@ -107,24 +113,59 @@ def _initialize_sandbox_fixture(
         params_dict = data_json.get("params", {})
         logger.debug(f"Loaded params from data.json: {list(params_dict.keys())}")
 
-    import_whitelist = params_dict.get("import_whitelist")
+    # Check for module-level ConfigObject that overrides all other configuration
+    config_dict: dict[str, Any] = {}
+    if hasattr(request, "module") and hasattr(request.module, "autograder_config"):
+        config_object = request.module.autograder_config
+        if not isinstance(config_object, ConfigObject):
+            pytest.fail(f"autograder_config must be a ConfigObject instance, got {type(config_object).__name__}")
+        logger.debug("Using module-level autograder_config - overriding all other configuration sources")
+        config_dict = config_object.to_dict()
+        # Handle timeout and starting_vars separately as they're not in to_dict()
+        initialization_timeout = config_object.sandbox_timeout
+        config_starting_vars = config_object.starting_vars
+    else:
+        # Check for module-level timeout variable (works for module-scoped fixtures)
+        # This allows setting: sandbox_timeout = 0.5 at module level
+        if hasattr(request, "module") and hasattr(request.module, "sandbox_timeout"):
+            initialization_timeout = request.module.sandbox_timeout
+            logger.debug(f"Using module-level timeout: {initialization_timeout}s")
+
+        # Check for the custom mark (overrides module-level setting)
+        marker = request.node.get_closest_marker("sandbox_timeout")
+        if marker and marker.args:
+            initialization_timeout = marker.args[0]
+            logger.debug(f"Using test-specific timeout override: {initialization_timeout}s")
+
+        config_starting_vars = {}
+
+    # Merge config_dict with params_dict, with config_dict taking precedence
+    merged_params = {**params_dict, **config_dict}
+
+    import_whitelist = merged_params.get("import_whitelist")
     # Default blacklist for security - blocks dangerous system operations
-    import_blacklist = params_dict.get("import_blacklist", DEFAULT_IMPORT_BLACKLIST)
+    import_blacklist = merged_params.get("import_blacklist", DEFAULT_IMPORT_BLACKLIST)
+    # TODO make sure this contains only valid builtins
+    builtin_whitelist = merged_params.get("builtin_whitelist")
+    names_for_user_list = cast(list[NamesForUserInfo] | None, merged_params.get("names_for_user"))
+
+    # Merge starting_vars: __data_params always present, then config_starting_vars
+    starting_vars: dict[str, Any] = {
+        "__data_params": deepcopy(params_dict) if data_json is not None else {},
+        **config_starting_vars,
+    }
 
     logger.debug(f"Import restrictions - whitelist: {import_whitelist}, blacklist: {import_blacklist}")
 
-    # TODO make sure this contains only valid builtins
-    builtin_whitelist = params_dict.get("builtin_whitelist")
-    names_for_user_list = cast(list[NamesForUserInfo] | None, params_dict.get("names_for_user"))
-
-    starting_vars: dict[str, Any] = {
-        "__data_params": deepcopy(params_dict) if data_json is not None else {},
-    }
-
+    # Process names_for_user_list to inject variables from params_dict or starting_vars
     if names_for_user_list is not None:
         for names_dict in names_for_user_list:
             name = names_dict["name"]
-            value = params_dict.get(name, None)
+            # Check if value is already in starting_vars (from ConfigObject), otherwise get from params
+            if name in starting_vars and name != "__data_params":
+                value = starting_vars[name]
+            else:
+                value = params_dict.get(name, None)
 
             variable_type = type(value).__name__.strip()
             expected_variable_type = names_dict["type"].strip()
@@ -133,18 +174,6 @@ def _initialize_sandbox_fixture(
                 logger.warning(f"Variable type mismatch for starting var {name}: expected {expected_variable_type}, got {variable_type}")
 
             starting_vars[name] = value
-
-    # Check for module-level timeout variable (works for module-scoped fixtures)
-    # This allows setting: sandbox_timeout = 0.5 at module level
-    if hasattr(request, "module") and hasattr(request.module, "sandbox_timeout"):
-        initialization_timeout = request.module.sandbox_timeout
-        logger.debug(f"Using module-level timeout: {initialization_timeout}s")
-
-    # Check for the custom mark (overrides module-level setting)
-    marker = request.node.get_closest_marker("sandbox_timeout")
-    if marker and marker.args:
-        initialization_timeout = marker.args[0]
-        logger.debug(f"Using test-specific timeout override: {initialization_timeout}s")
 
     fixture = StudentFixture(
         file_names=file_names,
@@ -229,7 +258,23 @@ def _start_and_yield_sandbox(
 
 @pytest.fixture
 def sandbox(request: pytest.FixtureRequest, data_json: dict[str, Any] | None) -> Iterable[StudentFixture]:
-    fixture, initialization_timeout = _initialize_sandbox_fixture(request, data_json, request.param)
+    # Get student files from parameterization or find them
+    if hasattr(request, "param"):
+        # Parameterized case - multiple student files
+        student_files = request.param
+    else:
+        # Non-parameterized case - need to find student files
+        file_tups = _find_student_files(request.module)
+        if not file_tups:
+            pytest.fail("No student code files found")
+        if len(file_tups) > 1:
+            pytest.fail(
+                f"Multiple student code files found: {[f.student_code_file.name for f in file_tups]}. "
+                f"Use pytest_generate_tests to parameterize or set student_code_pattern in ConfigObject."
+            )
+        student_files = file_tups[0]
+
+    fixture, initialization_timeout = _initialize_sandbox_fixture(request, data_json, student_files)
     yield from _start_and_yield_sandbox(request, fixture, initialization_timeout)
 
 
@@ -242,7 +287,11 @@ def _find_student_files(module: ModuleType) -> list[StudentFiles]:
     if data_dir is None or not data_dir.is_dir():
         return []
 
-    student_code_pattern = getattr(module, "student_code_pattern", "student_code*.py")
+    # Check for ConfigObject first, then module-level pattern, then default
+    if hasattr(module, "autograder_config") and isinstance(module.autograder_config, ConfigObject):
+        student_code_pattern = module.autograder_config.student_code_pattern
+    else:
+        student_code_pattern = getattr(module, "student_code_pattern", "student_code*.py")
     logger.debug(f"Looking for student code files in {data_dir} with pattern '{student_code_pattern}'")
 
     # Set up file paths
