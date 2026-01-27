@@ -189,6 +189,42 @@ def test_with_error_handling(sandbox: StudentFixture) -> None:
         pytest.fail(f"Function raised an error: {e}")
 ```
 
+**Testing for specific exceptions with `query_function_raw`:**
+
+When you need to verify that student code raises a specific exception (e.g., testing input validation),
+use `query_function_raw` to inspect the response directly:
+
+```python
+@pytest.mark.grading_data(name="Test Exception Handling", points=3)
+def test_raises_value_error(sandbox: StudentFixture, feedback: FeedbackFixture) -> None:
+    """Test that student code properly validates input and raises ValueError."""
+    # Call function with invalid input - use query_function_raw to get the full response
+    response = sandbox.query_function_raw("validate_input", -1)
+
+    # Check that an exception was raised
+    assert response["status"] == "exception", "Function should raise an exception for negative input"
+    feedback.set_score(0.5)
+
+    # Verify it's the correct exception type
+    assert response["exception_name"] == "ValueError", \
+        f"Expected ValueError, got {response['exception_name']}"
+    feedback.set_score(0.75)
+
+    # Optionally check the error message
+    assert "negative" in response["exception_message"].lower(), \
+        "Error message should mention negative values"
+    feedback.set_score(1.0)
+```
+
+The `query_function_raw` response contains:
+
+- `status`: One of `"success"`, `"exception"`, `"timeout"`, or `"not_found"`
+- `value`: The return value (when status is `"success"`)
+- `stdout` / `stderr`: Captured output from the function call
+- `exception_name`: The exception class name (e.g., `"ValueError"`)
+- `exception_message`: The exception message string
+- `traceback`: Full traceback string for debugging
+
 ### 3. Get Captured Output
 
 ```python
