@@ -49,19 +49,19 @@ class ConfigObject:
     """List of allowed Python modules that student code can import.
 
     If set, only these modules can be imported (whitelist mode).
-    If None, all modules except those in import_blacklist can be imported.
-    Cannot be used together with import_blacklist.
-
+    If None, all modules are allowed except those in import_blacklist.
+    Can be combined with import_blacklist - blacklist is checked first, then whitelist.
+    
     Example: ["numpy", "math", "pandas"]
     """
 
     import_blacklist: list[str] | None = None
     """List of Python modules that student code is prohibited from importing.
-
-    Only applies when import_whitelist is None (blacklist mode).
+    
+    Modules in the blacklist are always blocked, even if in the whitelist.
+    Can be combined with import_whitelist for fine-grained control.
     Default blocks dangerous system operations: ["os", "sys", "subprocess", "pathlib", "shutil"].
-    Cannot be used together with import_whitelist.
-
+    
     Example: ["requests", "socket"]
     """
 
@@ -109,10 +109,6 @@ class ConfigObject:
         # Validate sandbox_timeout
         if self.sandbox_timeout <= 0:
             raise ValueError(f"sandbox_timeout must be positive, got {self.sandbox_timeout}")
-
-        # Validate that import_whitelist and import_blacklist are not both set
-        if self.import_whitelist is not None and self.import_blacklist is not None:
-            raise ValueError("Cannot specify both import_whitelist and import_blacklist")
 
         # Validate import_whitelist contains non-empty strings
         if self.import_whitelist is not None:

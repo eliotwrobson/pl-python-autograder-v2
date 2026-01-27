@@ -306,10 +306,13 @@ All parameters are optional with sensible defaults:
 - **`builtin_whitelist`** (list[str] | None): Allowed builtin functions
 - **`names_for_user`** (list[dict] | None): Variables to inject into student code
 - **`student_code_pattern`** (str, default="student_code\*.py"): Glob pattern for finding student files
-- **`starting_vars`** (dict[str, Any], default={}): Variables to provide to student code
+- **`starting_vars`** (dict[str, Any], default={}): Dictionary of variable names and values to make available
 
-**Important**: Variables in `starting_vars` must also be listed in `names_for_user` to be injected.
-This prevents accidental variable leaking.
+**How variable injection works**:
+- Variables listed in `names_for_user` are injected into the student code namespace
+- Values come from either `setup_code.py` execution or `starting_vars` (with `starting_vars` taking priority)
+- This allows `ConfigObject` to override values from data.json params
+- Only variables explicitly listed in `names_for_user` are injected (prevents variable leaking)
 
 #### Configuration Priority
 
@@ -390,14 +393,14 @@ config = ConfigObject(
     import_whitelist=["numpy"],
 )
 
+# ✓ Valid: can combine whitelist and blacklist
+config = ConfigObject(
+    import_whitelist=["numpy", "matplotlib"],
+    import_blacklist=["matplotlib.pyplot"]  # Block pyplot specifically
+)
+
 # ✗ Error: timeout must be positive
 config = ConfigObject(sandbox_timeout=-1.0)  # ValueError
-
-# ✗ Error: cannot use both whitelist and blacklist
-config = ConfigObject(
-    import_whitelist=["numpy"],
-    import_blacklist=["os"]  # ValueError
-)
 
 # ✗ Error: must use keyword arguments
 config = ConfigObject(2.0)  # TypeError
@@ -415,7 +418,7 @@ Control which Python modules and builtin functions students can use in their cod
 
 Restrict which Python modules students can import using whitelists or blacklists.
 
-**Import Whitelist** (recommended): Only allow specific modules:
+**Import Whitelist**: Only allow specific modules:
 
 ```python
 # In server.py (PrairieLearn question)
@@ -433,6 +436,17 @@ def generate(data):
     data["params"]["import_blacklist"] = ["os", "subprocess", "sys"]
     # os, subprocess, and sys cannot be imported
     # All other modules are allowed
+```
+
+**Combining Whitelist and Blacklist**: Use both for fine-grained control (blacklist checked first):
+
+```python
+# In server.py
+def generate(data):
+    # Allow scientific libraries but block specific dangerous submodules
+    data["params"]["import_whitelist"] = ["numpy", "scipy", "matplotlib"]
+    data["params"]["import_blacklist"] = ["matplotlib.pyplot"]  # Block pyplot even though matplotlib is allowed
+    # Result: numpy, scipy, and matplotlib are allowed, but matplotlib.pyplot is blocked
 ```
 
 **Example student code with import whitelist:**
@@ -456,7 +470,7 @@ def my_function():
     return os.getcwd()
 ```
 
-**Important**: If a whitelist is specified, **only** those modules can be imported. If a blacklist is specified, those modules are blocked but all others are allowed. You cannot use both simultaneously.
+**Note**: Blacklist is checked first, then whitelist. If a whitelist is specified, only those modules (minus any in blacklist) can be imported. If only a blacklist is specified, those modules are blocked but all others are allowed.
 
 #### Builtin Function Control
 
