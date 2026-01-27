@@ -41,7 +41,17 @@ The `setup_code.py` file defines variables and functions that are available to t
 code. Only variables listed in the `names_for_user` entry in `data.json` (via the
 `pl-external-grader-variables` element) are accessible to the student.
 
-Example `setup_code.py`:
+### Accessing `data.json` Parameters
+
+Inside `setup_code.py`, you can access parameters from `data.json` via the special `__data_params` variable, which contains the `params` dict (i.e., `data.json["params"]`):
+
+```python
+# Access parameters passed from PrairieLearn
+coefficient = __data_params["coefficient"]
+matrix_size = __data_params["matrix_size"]
+```
+
+### Example `setup_code.py`
 
 ```python
 import numpy as np
@@ -339,14 +349,17 @@ All parameters are optional with sensible defaults:
 - **`builtin_whitelist`** (list[str] | None): Allowed builtin functions
 - **`names_for_user`** (list[str] | None): List of variable names to inject into student code
 - **`student_code_pattern`** (str, default="student_code\*.py"): Glob pattern for finding student files
-- **`starting_vars`** (dict[str, Any], default={}): Dictionary of variable names and values to make available
+- **`starting_vars`** (dict[str, Any], default={}): Dictionary of variable values to provide for injection
 
 **How variable injection works**:
 
-- Variables listed in `names_for_user` are injected into the student code namespace
-- Values come from either `setup_code.py` execution or `starting_vars` (with `starting_vars` taking priority)
-- This allows `ConfigObject` to override values from data.json params
-- Only variables explicitly listed in `names_for_user` are injected (prevents variable leaking)
+- Only variables listed in `names_for_user` are injected into the student code namespace
+- Values are resolved in this priority order:
+  1. **Highest**: Variables defined in `setup_code.py` execution
+  2. **Medium**: Values from `ConfigObject.starting_vars`
+  3. **Lowest**: Values from `data.json` params
+- If `names_for_user` is not specified, no variables are injected (prevents variable leaking)
+- `starting_vars` provides values but does NOT automatically inject them - variables must still be listed in `names_for_user`
 
 #### Configuration Priority
 

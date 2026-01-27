@@ -148,8 +148,6 @@ async def student_code_runner(
     student_code_vars["__builtins__"]["__name__"] = "__main__"  # Set __name__ to "__main__" to mimic the main module
     student_code_vars["__builtins__"]["__import__"] = get_custom_importer(import_whitelist, import_blacklist)
 
-    # TODO the data object is not passed into the setup code. Add this if needed.
-
     try:
         # First, execute the setup code if provided
         if setup_code:
