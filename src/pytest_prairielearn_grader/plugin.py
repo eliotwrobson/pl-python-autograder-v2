@@ -92,7 +92,7 @@ def _initialize_sandbox_fixture(
     request: pytest.FixtureRequest,
     data_json: dict[str, Any] | None,
     file_names: StudentFiles,
-) -> tuple[StudentFixture, int]:
+) -> tuple[StudentFixture, float]:
     """
     Common initialization logic for both sandbox and module_sandbox fixtures.
     Handles parameter parsing, timeout configuration, and StudentFixture creation.
@@ -104,7 +104,7 @@ def _initialize_sandbox_fixture(
         file_names: StudentFiles namedtuple with file paths
     """
     # Default timeout TODO make this a command line option?
-    initialization_timeout = DEFAULT_SANDBOX_TIMEOUT
+    initialization_timeout: float = DEFAULT_SANDBOX_TIMEOUT
 
     if data_json is None:
         params_dict = {}
@@ -191,7 +191,7 @@ def _initialize_sandbox_fixture(
 def _handle_sandbox_startup_errors(
     request: pytest.FixtureRequest,
     response: ProcessStartResponse,
-    initialization_timeout: int,
+    initialization_timeout: float,
 ) -> None:
     """
     Common error handling logic for sandbox fixture startup failures.
@@ -236,7 +236,7 @@ def _handle_sandbox_startup_errors(
 def _start_and_yield_sandbox(
     request: pytest.FixtureRequest,
     fixture: StudentFixture,
-    initialization_timeout: int,
+    initialization_timeout: float,
 ) -> Iterable[StudentFixture]:
     """
     Common logic to start a sandbox server and yield the fixture.

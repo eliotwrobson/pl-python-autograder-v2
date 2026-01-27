@@ -181,7 +181,7 @@ async def student_code_runner(
                 # NOTE I think there might be issues with security with deepcopying certain
                 # objects. If needed, we can prevent leaks here through serialization.
                 student_code_vars[var_name] = deepcopy(local_vars[var_name])
-            elif var_name in starting_vars:
+            elif starting_vars is not None and var_name in starting_vars:
                 # If not in local_vars (setup_code), try getting from starting_vars
                 student_code_vars[var_name] = deepcopy(starting_vars[var_name])
 
