@@ -1,1 +1,6 @@
-__version__ = "5.1.0"
+try:
+    from importlib.metadata import version
+
+    __version__ = version("pytest-prairielearn-grader")
+except Exception:
+    __version__ = "0.0.0"

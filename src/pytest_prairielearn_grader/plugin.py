@@ -29,7 +29,7 @@ from .utils import get_output_level_marker
 logger = logging.getLogger(__name__)
 
 # Default configuration constants
-DEFAULT_SANDBOX_TIMEOUT = 1
+DEFAULT_SANDBOX_TIMEOUT = 1.0
 DEFAULT_IMPORT_BLACKLIST = ["os", "sys", "subprocess", "pathlib", "shutil"]
 
 
