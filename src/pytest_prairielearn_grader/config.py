@@ -146,7 +146,7 @@ class ConfigObject:
         if self.names_for_user is not None:
             if not isinstance(self.names_for_user, list):
                 raise TypeError(f"names_for_user must be a list, got {type(self.names_for_user).__name__}")
-            for i, name_info in enumerate(self.names_for_user):
+            for name_info in self.names_for_user:
                 # Note: At runtime TypedDict is just a dict, so we need to cast
                 name_dict: Any = name_info
                 if not isinstance(name_dict, dict):
