@@ -140,7 +140,16 @@ value = sandbox.query("variable_name")
 ```
 
 Retrieves the value of a variable defined in the student code or `setup_code.py`.
-Raises an error if the variable doesn't exist.
+Raises a `RuntimeError` if the variable doesn't exist.
+
+**Example:**
+
+```python
+@pytest.mark.grading_data(name="Check Variable", points=2)
+def test_variable(sandbox: StudentFixture) -> None:
+    coefficient = sandbox.query("coefficient")
+    assert coefficient > 0, "Coefficient must be positive"
+```
 
 ### 2. Query Functions
 
@@ -148,22 +157,36 @@ Raises an error if the variable doesn't exist.
 result = sandbox.query_function("function_name", arg1, arg2, kwarg1=value1)
 ```
 
-Calls a function defined in the student code with the given arguments.
-Returns a `StudentFunctionResponse` object with:
+Calls a function defined in the student code with the given arguments and **returns the value directly**.
 
-- `status`: `SUCCESS`, `EXCEPTION`, `TIMEOUT`, or `NOT_FOUND`
-- `value`: The return value (if successful)
-- `stdout`/`stderr`: Captured output
-- `exception_name`, `exception_message`, `traceback`: Error details (if exception occurred)
+- **On success**: Returns the function's return value
+- **On error**: Raises a `RuntimeError` with details about the exception
 
-Example checking function response:
+**Example:**
 
 ```python
-response = sandbox.query_function("calculate", x, y)
-if response.status == "SUCCESS":
-    assert response.value == expected_result
-else:
-    pytest.fail(f"Function failed: {response.exception_message}")
+@pytest.mark.grading_data(name="Test Function", points=5)
+def test_function(sandbox: StudentFixture) -> None:
+    # Function returns value directly
+    result = sandbox.query_function("calculate", 10, 20)
+    assert result == 30, f"Expected 30, got {result}"
+
+    # With keyword arguments
+    result = sandbox.query_function("process", x=5, y=10)
+    assert result == expected_value
+```
+
+**Error handling:**
+
+```python
+@pytest.mark.grading_data(name="Test with Error Handling", points=3)
+def test_with_error_handling(sandbox: StudentFixture) -> None:
+    try:
+        result = sandbox.query_function("risky_function", data)
+        assert result == expected_value
+    except RuntimeError as e:
+        # The error message includes the original exception details
+        pytest.fail(f"Function raised an error: {e}")
 ```
 
 ### 3. Get Captured Output
@@ -173,6 +196,25 @@ output = sandbox.get_stdout()
 ```
 
 Retrieves stdout captured from student code execution.
+
+**Example:**
+
+```python
+@pytest.mark.grading_data(name="Test Output", points=2)
+def test_output(sandbox: StudentFixture) -> None:
+    sandbox.query_function("print_greeting", "Alice")
+    output = sandbox.get_stdout()
+    assert "Hello, Alice!" in output, "Greeting not found in output"
+```
+
+### 4. Function Timeout
+
+Control execution time for individual function calls:
+
+```python
+# Set a 2-second timeout for this specific function call
+result = sandbox.query_function("slow_computation", data, query_timeout=2.0)
+```
 
 **Note**: Student code must define the queried symbols, and return values must be JSON-serializable.
 Supported types include: `int`, `float`, `str`, `list`, `dict`, `bool`, `None`, numpy arrays, pandas DataFrames,
@@ -212,6 +254,154 @@ def test_with_partial_credit(sandbox: StudentFixture, feedback: FeedbackFixture)
 - `feedback.add_message(msg)`: Add custom feedback message
 
 ## Advanced Features
+
+### Configuration with ConfigObject
+
+For complex test scenarios, you can use the `ConfigObject` class to configure all autograder settings
+in a single, type-safe, immutable object. This is especially useful when you need to override multiple
+settings or want better IDE support with autocomplete and type checking.
+
+**Key Features:**
+
+- **Type-safe**: All parameters are type-checked with validation
+- **Immutable**: Configuration cannot be modified after creation (frozen dataclass)
+- **Keyword-only**: Must use explicit parameter names for clarity
+- **Comprehensive**: Supports all security and execution settings
+
+#### Basic Usage
+
+Import and create a `ConfigObject` at the module level in your `test_student.py`:
+
+```python
+from pytest_prairielearn_grader import ConfigObject
+from pytest_prairielearn_grader.fixture import StudentFixture
+import pytest
+
+# Module-level configuration - detected automatically by the plugin
+autograder_config = ConfigObject(
+    sandbox_timeout=2.0,
+    import_whitelist=["numpy", "pandas"],
+    builtin_whitelist=["len", "range", "sum", "print"],
+    starting_vars={"coefficient": 10, "threshold": 5.0},
+    names_for_user=[
+        {"name": "coefficient", "type": "int", "description": "Test coefficient"},
+        {"name": "threshold", "type": "float", "description": "Threshold value"},
+    ],
+)
+
+@pytest.mark.grading_data(name="Test with Config", points=5)
+def test_with_config(sandbox: StudentFixture) -> None:
+    # Configuration is automatically applied
+    result = sandbox.query_function("process", data)
+    assert result == expected_value
+```
+
+#### ConfigObject Parameters
+
+All parameters are optional with sensible defaults:
+
+- **`sandbox_timeout`** (float, default=1.0): Timeout in seconds for sandbox initialization and operations
+- **`import_whitelist`** (list[str] | None): Allowed import modules (whitelist mode)
+- **`import_blacklist`** (list[str] | None): Blocked import modules (blacklist mode)
+- **`builtin_whitelist`** (list[str] | None): Allowed builtin functions
+- **`names_for_user`** (list[dict] | None): Variables to inject into student code
+- **`student_code_pattern`** (str, default="student_code\*.py"): Glob pattern for finding student files
+- **`starting_vars`** (dict[str, Any], default={}): Variables to provide to student code
+
+**Important**: Variables in `starting_vars` must also be listed in `names_for_user` to be injected.
+This prevents accidental variable leaking.
+
+#### Configuration Priority
+
+When `ConfigObject` is defined, it overrides all other configuration sources:
+
+1. **Highest priority**: `ConfigObject` (when `autograder_config` variable exists)
+2. **Medium priority**: Module-level variables (e.g., `sandbox_timeout = 2.0`)
+3. **Lowest priority**: `data.json` params from PrairieLearn
+
+```python
+# This ConfigObject overrides everything
+autograder_config = ConfigObject(
+    sandbox_timeout=3.0,  # Overrides module-level timeout
+    import_whitelist=["numpy"],  # Overrides data.json import_whitelist
+    starting_vars={"x": 10},  # Overrides data.json params["x"]
+    names_for_user=[
+        {"name": "x", "type": "int", "description": "Value of x"}
+    ],
+)
+
+# This module-level timeout is ignored when ConfigObject is present
+sandbox_timeout = 1.0
+```
+
+#### Complete Example
+
+```python
+from pytest_prairielearn_grader import ConfigObject
+from pytest_prairielearn_grader.fixture import StudentFixture, FeedbackFixture
+import pytest
+
+# Comprehensive configuration
+autograder_config = ConfigObject(
+    # Execution settings
+    sandbox_timeout=2.5,
+
+    # Security: only allow scientific computing libraries
+    import_whitelist=["numpy", "scipy", "matplotlib"],
+
+    # Allow specific builtins for data processing
+    builtin_whitelist=["len", "range", "sum", "min", "max", "sorted"],
+
+    # Provide test data
+    starting_vars={
+        "input_data": [1, 2, 3, 4, 5],
+        "multiplier": 2.5,
+        "threshold": 10,
+    },
+
+    # Explicitly list what gets injected
+    names_for_user=[
+        {"name": "input_data", "type": "list", "description": "Input dataset"},
+        {"name": "multiplier", "type": "float", "description": "Multiplication factor"},
+        {"name": "threshold", "type": "int", "description": "Threshold for filtering"},
+    ],
+)
+
+@pytest.mark.grading_data(name="Test Processing", points=10)
+def test_data_processing(sandbox: StudentFixture, feedback: FeedbackFixture) -> None:
+    # All configuration from ConfigObject is automatically applied
+    result = sandbox.query_function("process_data")
+
+    assert len(result) > 0, "Result should not be empty"
+    feedback.set_score(0.5)
+
+    assert result == expected_output, "Incorrect processing result"
+    feedback.set_score(1.0)
+```
+
+#### Validation
+
+`ConfigObject` validates all parameters at creation time:
+
+```python
+# ✓ Valid configuration
+config = ConfigObject(
+    sandbox_timeout=2.0,
+    import_whitelist=["numpy"],
+)
+
+# ✗ Error: timeout must be positive
+config = ConfigObject(sandbox_timeout=-1.0)  # ValueError
+
+# ✗ Error: cannot use both whitelist and blacklist
+config = ConfigObject(
+    import_whitelist=["numpy"],
+    import_blacklist=["os"]  # ValueError
+)
+
+# ✗ Error: must use keyword arguments
+config = ConfigObject(2.0)  # TypeError
+```
 
 ### Security: Import and Builtin Restrictions
 
@@ -418,7 +608,7 @@ Control execution time limits for sandbox initialization and function calls to p
 **Important**: Timeouts apply to:
 
 - **Sandbox initialization** (loading and executing student code at startup)
-- **Function calls** via `sandbox.query_function()`
+- **Function calls** via `sandbox.query_function()` with `query_timeout` parameter
 
 Variable queries via `sandbox.query()` do not have timeouts since they're simple lookups.
 
@@ -428,7 +618,7 @@ Set a default timeout for sandbox initialization in all tests in a file:
 
 ```python
 # At the top of test_student.py (before imports)
-sandbox_timeout = 2.0  # 2 second timeout for initialization
+initialization_timeout = 2.0  # 2 second timeout for initialization
 
 import pytest
 from pytest_prairielearn_grader.fixture import StudentFixture
@@ -466,9 +656,25 @@ def test_function_timeout(sandbox: StudentFixture) -> None:
     result = sandbox.query_function("compute", data, query_timeout=1.0)
     assert result == expected_value
 
-    # This function call uses the default timeout
+    # This function call uses the default timeout (no per-function limit)
     result2 = sandbox.query_function("another_compute", data)
     assert result2 == expected_value2
+```
+
+**Using ConfigObject for timeouts:**
+
+```python
+from pytest_prairielearn_grader import ConfigObject
+
+autograder_config = ConfigObject(
+    sandbox_timeout=3.0,  # Sets initialization timeout
+)
+
+@pytest.mark.grading_data(name="Test", points=1)
+def test_with_config_timeout(sandbox: StudentFixture) -> None:
+    # Initialized with 3 second timeout from ConfigObject
+    result = sandbox.query_function("process", query_timeout=1.0)
+    assert result == expected
 ```
 
 ### Module-Scoped Sandbox
