@@ -7,7 +7,7 @@ from typing import Any
 from .utils import NamesForUserInfo
 
 
-@dataclass
+@dataclass(frozen=True, slots=True, kw_only=True)
 class ConfigObject:
     """
     Configuration object for the autograder sandbox environment.
@@ -16,6 +16,9 @@ class ConfigObject:
     that can be set using the data["params"] dictionary or module-level variables.
     When provided to a test, this configuration takes precedence over all other
     configuration sources (data.json params, module-level variables, etc.).
+
+    This class is immutable (frozen) and uses slots for memory efficiency.
+    All constructor arguments must be passed as keyword arguments.
 
     Example usage:
         ```python
@@ -33,48 +36,131 @@ class ConfigObject:
             result = sandbox.query_function("student_func")
             assert result.status == "success"
         ```
-
-    Attributes:
-        sandbox_timeout: Timeout in seconds for sandbox initialization and operations.
-            Default is 1.0 second.
-
-        import_whitelist: List of allowed Python modules that student code can import.
-            If set, only these modules can be imported (whitelist mode).
-            If None, all modules except those in import_blacklist can be imported.
-            Example: ["numpy", "math", "pandas"]
-
-        import_blacklist: List of Python modules that student code is prohibited from importing.
-            Default blocks dangerous system operations: ["os", "sys", "subprocess", "pathlib", "shutil"].
-            Only applies when import_whitelist is None (blacklist mode).
-
-        builtin_whitelist: List of allowed Python builtin functions that student code can use.
-            If set, only these builtins are accessible (whitelist mode).
-            If None, all builtins are available.
-            Example: ["len", "range", "sum", "print"]
-
-        names_for_user: List of variable definitions to inject into student sandbox.
-            Each item should be a dict with keys: "name", "type", "description".
-            Values are taken from data["params"] and injected as global variables.
-            Example: [{"name": "coefficient", "type": "float", "description": "The multiplier"}]
-
-        student_code_pattern: Glob pattern for finding student code files.
-            Default is "student_code*.py".
-            Used by pytest_generate_tests to discover student code variants.
-            Example: "submission*.py"
-
-        starting_vars: Additional variables to inject into the student sandbox namespace.
-            This is a dictionary of variable names to values that will be available
-            in the student code's global scope.
-            Example: {"constant": 42, "data_array": [1, 2, 3]}
     """
 
     sandbox_timeout: float = 1.0
+    """Timeout in seconds for sandbox initialization and operations.
+    
+    Must be a positive number. Default is 1.0 second.
+    This timeout applies to both sandbox initialization and individual student code operations.
+    """
+
     import_whitelist: list[str] | None = None
+    """List of allowed Python modules that student code can import.
+    
+    If set, only these modules can be imported (whitelist mode).
+    If None, all modules except those in import_blacklist can be imported.
+    Cannot be used together with import_blacklist.
+    
+    Example: ["numpy", "math", "pandas"]
+    """
+
     import_blacklist: list[str] | None = None
+    """List of Python modules that student code is prohibited from importing.
+    
+    Only applies when import_whitelist is None (blacklist mode).
+    Default blocks dangerous system operations: ["os", "sys", "subprocess", "pathlib", "shutil"].
+    Cannot be used together with import_whitelist.
+    
+    Example: ["requests", "socket"]
+    """
+
     builtin_whitelist: list[str] | None = None
+    """List of allowed Python builtin functions that student code can use.
+    
+    If set, only these builtins are accessible in student code (whitelist mode).
+    If None, all builtins are available.
+    
+    Example: ["len", "range", "sum", "print"]
+    """
+
     names_for_user: list[NamesForUserInfo] | None = None
+    """List of variable definitions to inject into student sandbox.
+    
+    Each item should be a dict with keys: "name", "type", "description".
+    Only variables listed here will be injected into student code.
+    Values are taken from starting_vars or from setup_code execution.
+    
+    Example: [{"name": "coefficient", "type": "float", "description": "The multiplier"}]
+    """
+
     student_code_pattern: str = "student_code*.py"
+    """Glob pattern for finding student code files.
+    
+    Used by pytest_generate_tests to discover student code variants.
+    Default is "student_code*.py".
+    Must be a valid glob pattern.
+    
+    Example: "submission*.py"
+    """
+
     starting_vars: dict[str, Any] = field(default_factory=dict)
+    """Additional variables to inject into the student sandbox namespace.
+    
+    This is a dictionary of variable names to values.
+    Variables must also be listed in names_for_user to be injected into student code.
+    This allows ConfigObject to override values from data.json params.
+    
+    Example: {"constant": 42, "data_array": [1, 2, 3]}
+    """
+
+    def __post_init__(self) -> None:
+        """Validate configuration values after initialization."""
+        # Validate sandbox_timeout
+        if self.sandbox_timeout <= 0:
+            raise ValueError(f"sandbox_timeout must be positive, got {self.sandbox_timeout}")
+
+        # Validate that import_whitelist and import_blacklist are not both set
+        if self.import_whitelist is not None and self.import_blacklist is not None:
+            raise ValueError("Cannot specify both import_whitelist and import_blacklist")
+
+        # Validate import_whitelist contains non-empty strings
+        if self.import_whitelist is not None:
+            if not isinstance(self.import_whitelist, list):
+                raise TypeError(f"import_whitelist must be a list, got {type(self.import_whitelist).__name__}")
+            if not self.import_whitelist:
+                raise ValueError("import_whitelist cannot be empty (use None to allow all imports)")
+            for item in self.import_whitelist:
+                if not isinstance(item, str) or not item.strip():
+                    raise ValueError(f"import_whitelist must contain non-empty strings, got: {item!r}")
+
+        # Validate import_blacklist contains non-empty strings
+        if self.import_blacklist is not None:
+            if not isinstance(self.import_blacklist, list):
+                raise TypeError(f"import_blacklist must be a list, got {type(self.import_blacklist).__name__}")
+            for item in self.import_blacklist:
+                if not isinstance(item, str) or not item.strip():
+                    raise ValueError(f"import_blacklist must contain non-empty strings, got: {item!r}")
+
+        # Validate builtin_whitelist contains non-empty strings
+        if self.builtin_whitelist is not None:
+            if not isinstance(self.builtin_whitelist, list):
+                raise TypeError(f"builtin_whitelist must be a list, got {type(self.builtin_whitelist).__name__}")
+            if not self.builtin_whitelist:
+                raise ValueError("builtin_whitelist cannot be empty (use None to allow all builtins)")
+            for item in self.builtin_whitelist:
+                if not isinstance(item, str) or not item.strip():
+                    raise ValueError(f"builtin_whitelist must contain non-empty strings, got: {item!r}")
+
+        # Validate names_for_user structure
+        if self.names_for_user is not None:
+            if not isinstance(self.names_for_user, list):
+                raise TypeError(f"names_for_user must be a list, got {type(self.names_for_user).__name__}")
+            for item in self.names_for_user:
+                if not isinstance(item, dict):
+                    raise TypeError(f"names_for_user items must be dicts, got {type(item).__name__}")
+                if "name" not in item:
+                    raise ValueError(f"names_for_user item missing 'name' key: {item}")
+                if not isinstance(item["name"], str) or not item["name"].strip():
+                    raise ValueError(f"names_for_user 'name' must be non-empty string, got: {item['name']!r}")
+
+        # Validate student_code_pattern is non-empty
+        if not isinstance(self.student_code_pattern, str) or not self.student_code_pattern.strip():
+            raise ValueError(f"student_code_pattern must be a non-empty string, got: {self.student_code_pattern!r}")
+
+        # Validate starting_vars is a dict
+        if not isinstance(self.starting_vars, dict):
+            raise TypeError(f"starting_vars must be a dict, got {type(self.starting_vars).__name__}")
 
     def to_dict(self) -> dict[str, Any]:
         """
