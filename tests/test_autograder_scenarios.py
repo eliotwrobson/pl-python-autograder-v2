@@ -1,5 +1,7 @@
 import math
 import platform
+import shutil
+import sys
 from collections import defaultdict
 from pathlib import Path
 
@@ -60,8 +62,6 @@ def test_autograder_scenario_with_pytester(pytester: pytest.Pytester, scenario_d
     3. Asserts on the pytest outcome (passed, failed, etc.) and captured stdout/stderr.
     """
     # Skip privilege_drop test on Windows since it requires Unix-specific functionality
-    import sys
-
     if sys.platform == "win32" and scenario_dir.name == "test_privilege_drop":
         pytest.skip("Privilege dropping tests only run on Unix systems")
 
@@ -93,8 +93,6 @@ def test_autograder_scenario_with_pytester(pytester: pytest.Pytester, scenario_d
                 # print(f"Copied '{item.name}' to pytester's testdir.")
         elif item.is_dir():
             # Copy subdirectories recursively (needed for workspace scenarios)
-            import shutil
-
             shutil.copytree(item, pytester_scenario_dir / item.name)
 
     if expected_outcome_dict is None:
