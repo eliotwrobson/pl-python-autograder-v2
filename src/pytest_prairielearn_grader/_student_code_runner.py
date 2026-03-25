@@ -39,7 +39,12 @@ from pytest_prairielearn_grader.utils import deserialize_object_unsafe
 from pytest_prairielearn_grader.utils import get_builtins
 from pytest_prairielearn_grader.utils import serialize_object_unsafe
 
-ImportFunction = Callable[[str, Mapping[str, object] | None, Mapping[str, object] | None, Sequence[str], int], types.ModuleType]
+ImportFunction = Callable[[str, Mapping[str, object] | None, Mapping[str, object] | None, Sequence[str] | None, int], types.ModuleType]
+
+# Capture the real built-in import once at module load time, before any patching.
+# get_custom_importer must delegate to this to avoid recursion when builtins.__import__
+# is later replaced by a workspace_importer in workspace_runner.
+_REAL_IMPORT: ImportFunction = builtins.__import__  # type: ignore[assignment]
 
 HOST = "127.0.0.1"  # Loopback address, means "this computer only"
 
@@ -139,18 +144,19 @@ def get_custom_importer(
     Relative imports (level > 0) are always permitted for the same reason.
     """
 
-    original_import = __import__
+    original_import = _REAL_IMPORT
 
     def custom_import(
         name: str,
         globals: Mapping[str, object] | None = None,
         locals: Mapping[str, object] | None = None,
-        fromlist: Sequence[str] = (),
+        fromlist: Sequence[str] | None = None,
         level: int = 0,
     ) -> types.ModuleType:
+        fl = fromlist or ()
         # Relative imports are always intra-package and allowed.
         if level > 0:
-            return original_import(name, globals, locals, fromlist, level)
+            return original_import(name, globals, locals, fl, level)
 
         # Workspace-local modules are always importable regardless of whitelist/blacklist.
         # A module is considered local if its top-level package maps to a file or directory
@@ -159,7 +165,7 @@ def get_custom_importer(
             top_level = name.split(".")[0]
             ws = pathlib.Path(workspace_dir)
             if (ws / (top_level + ".py")).exists() or (ws / top_level).is_dir():
-                return original_import(name, globals, locals, fromlist, level)
+                return original_import(name, globals, locals, fl, level)
 
         # Apply blacklist / whitelist to external imports.
         if import_blacklist is not None and name in import_blacklist:
@@ -169,7 +175,7 @@ def get_custom_importer(
             or name.startswith("_")  # Allow Python internal/private modules (_io, _abc, _collections, etc.)
             or import_whitelist is None
         ):
-            return original_import(name, globals, locals, fromlist, level)
+            return original_import(name, globals, locals, fl, level)
         else:
             # Forbid other imports
             raise ImportError(f"Module '{name}' is not allowed to be imported.")
@@ -307,7 +313,7 @@ async def workspace_runner(
     # importlib.import_module() (which use the real builtins, not student_code_vars)
     # also go through the same restrictions.  The subprocess is dedicated to one
     # grading session so this global patch is safe.
-    builtins.__import__ = workspace_importer
+    builtins.__import__ = workspace_importer  # type: ignore[assignment]
 
     # Insert workspace_dir at the front of sys.path so imports resolve against it.
     # Use insert(0, ...) to take precedence over any previously added paths.

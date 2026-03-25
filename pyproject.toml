@@ -100,7 +100,10 @@ prairielearn-grader = "pytest_prairielearn_grader.plugin"
 # prairielearn-pytest-autograder = "pytest_prairielearn_grader.cli:main"
 
 [tool.mypy]
-exclude = "tests/scenario_root/.*(student_code.*|setup_code)\\.py"
+exclude = [
+    "tests/scenario_root/.*(student_code.*|setup_code)\\.py",
+    "tests/scenario_root/.*/student/.*\\.py",
+]
 
 [[tool.mypy.overrides]]
 module = ["sympy.*", "dill.*", "plot_serializer.*"]

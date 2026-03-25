@@ -224,9 +224,7 @@ class _SandboxBase:
             self._accumulated_stdout.append(data["stdout"])
         return data
 
-    def query_function(
-        self, function_name: str, *args: Any, query_timeout: float = DEFAULT_TIMEOUT, **kwargs: Any
-    ) -> Any:
+    def query_function(self, function_name: str, *args: Any, query_timeout: float = DEFAULT_TIMEOUT, **kwargs: Any) -> Any:
         """Call a function in the student sandbox and return its value."""
         response = self.query_function_raw(function_name, *args, query_timeout=query_timeout, **kwargs)
         match response["status"]:
