@@ -19,6 +19,7 @@ from .utils import StudentFunctionRequest
 from .utils import StudentFunctionResponse
 from .utils import StudentQueryRequest
 from .utils import StudentQueryResponse
+from .utils import WorkspaceStartRequest
 from .utils import deserialize_object_unsafe
 from .utils import drop_privileges
 from .utils import serialize_object_unsafe
@@ -378,3 +379,241 @@ class StudentFixture:
 
     def __repr__(self) -> str:
         return f"StudentFixture(leading_file={self.leading_file}, trailing_file={self.trailing_file}, student_code_file={self.student_code_file})"
+
+
+class WorkspaceFixture:
+    """
+    Fixture for grading workspace-based student projects.
+
+    In workspace mode the student submission is a multi-file Python project
+    rooted at *workspace_dir*.  That directory is added to ``sys.path`` inside
+    the sandbox subprocess so that standard Python import machinery works
+    transparently.
+
+    Tests interact with the student's project using dotted module paths:
+
+    .. code-block:: python
+
+        result = workspace_sandbox.query_function("models.classifier.predict", X)
+        value  = workspace_sandbox.query("utils.EPSILON")
+
+    Flat (non-dotted) names fall back to variables injected via ``setup_code``
+    or ``names_for_user``, exactly as in the regular :class:`StudentFixture`.
+    """
+
+    process: subprocess.Popen | None
+    workspace_dir: Path
+    setup_code_file: Path
+    exec_entry: str | None
+    student_socket: socket.socket | None
+    import_whitelist: list[str] | None
+    import_blacklist: list[str] | None
+    starting_vars: dict[str, Any] | None
+    builtin_whitelist: list[str] | None
+    names_for_user_list: list[str] | None
+    worker_username: str | None
+    _accumulated_stdout: list[str]
+
+    def __init__(
+        self,
+        workspace_dir: Path,
+        setup_code_file: Path,
+        import_whitelist: list[str] | None,
+        import_blacklist: list[str] | None,
+        starting_vars: dict[str, Any] | None,
+        builtin_whitelist: list[str] | None,
+        names_for_user_list: list[str] | None,
+        worker_username: str | None,
+        exec_entry: str | None = None,
+    ) -> None:
+        self.workspace_dir = workspace_dir
+        self.setup_code_file = setup_code_file
+        self.exec_entry = exec_entry
+        self.import_whitelist = import_whitelist
+        self.import_blacklist = import_blacklist
+        self.starting_vars = starting_vars
+        self.builtin_whitelist = builtin_whitelist
+        self.names_for_user_list = names_for_user_list
+        self.worker_username = worker_username
+        self.process = None
+        self.student_socket = None
+        self._accumulated_stdout = []
+
+    # ------------------------------------------------------------------
+    # Internal helpers – identical in behaviour to StudentFixture
+    # ------------------------------------------------------------------
+
+    def _assert_process_running(self) -> None:
+        assert self.process is not None, "Workspace sandbox process is not running. Please start it first."
+        process_return_code = self.process.poll()
+        if process_return_code is not None:
+            raise RuntimeError(f"Workspace sandbox process terminated with code {process_return_code}.")
+
+    def _send_json_object(self, json_object: Any) -> None:
+        assert self.student_socket is not None, "Workspace socket is not connected."
+        self.student_socket.sendall((json.dumps(json_object) + os.linesep).encode("utf-8"))
+
+    def _read_from_socket(self) -> bytes:
+        buffer = bytearray()
+        terminator = os.linesep.encode("utf-8")
+        assert self.student_socket is not None, "Workspace socket is not connected."
+        chunk_size = 4096
+        chunk: bytes = b""
+        while (idx := chunk.rfind(terminator)) == -1:
+            try:
+                chunk = self.student_socket.recv(chunk_size)
+            except TimeoutError as e:
+                raise TimeoutError("Socket read timed out.") from e
+            if not chunk:
+                raise Exception("Connection closed by peer before termination character was found.")
+            buffer.extend(chunk)
+        loc = len(buffer) - len(chunk) + idx + len(terminator)
+        return buffer[:loc]
+
+    # ------------------------------------------------------------------
+    # Startup
+    # ------------------------------------------------------------------
+
+    def start_workspace_server(self, *, initialization_timeout: float = DEFAULT_TIMEOUT) -> ProcessStartResponse:
+        """Start the sandbox subprocess and initialise the workspace."""
+
+        def try_drop_privileges() -> None:
+            if self.worker_username is not None:
+                drop_privileges(self.worker_username)
+
+        if sys.platform == "win32":
+            preexec_fn_arg = None
+        else:
+            preexec_fn_arg = try_drop_privileges
+
+        self.process = subprocess.Popen(
+            args=(sys.executable, SCRIPT_PATH),
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            preexec_fn=preexec_fn_arg,
+        )
+        self._assert_process_running()
+
+        setup_code: str | None = None
+        if self.setup_code_file.is_file():
+            setup_code = self.setup_code_file.read_text(encoding="utf-8")
+
+        json_message = WorkspaceStartRequest(
+            message_type="start_workspace",
+            workspace_dir=str(self.workspace_dir),
+            exec_entry=self.exec_entry,
+            setup_code=setup_code,
+            initialization_timeout=initialization_timeout,
+            import_whitelist=self.import_whitelist,
+            import_blacklist=self.import_blacklist,
+            starting_vars=self.starting_vars,
+            builtin_whitelist=self.builtin_whitelist,
+            names_for_user_list=self.names_for_user_list,
+        )
+
+        assert self.process.stdout is not None
+        line = self.process.stdout.readline().decode()
+        host, port = line.strip().split(",")
+
+        self.student_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.student_socket.settimeout(initialization_timeout)
+        self.student_socket.connect((host, int(port)))
+
+        self._send_json_object(json_message)
+
+        try:
+            data = self._read_from_socket().decode()
+            res: ProcessStartResponse = json.loads(data)
+            if res.get("stdout"):
+                self._accumulated_stdout.append(res["stdout"])
+        except Exception as e:
+            res = {
+                "status": ProcessStatusCode.NO_RESPONSE,
+                "execution_error": type(e).__name__,
+                "execution_message": str(e),
+                "execution_traceback": "",
+                "stdout": "",
+                "stderr": "",
+            }
+
+        return res
+
+    # ------------------------------------------------------------------
+    # Query interface – mirrors StudentFixture exactly
+    # ------------------------------------------------------------------
+
+    def query_raw(self, var_to_query: str, *, query_timeout: float = DEFAULT_TIMEOUT) -> StudentQueryResponse:
+        self._assert_process_running()
+        json_message = StudentQueryRequest(message_type="query", var=var_to_query, query_timeout=query_timeout)
+        assert self.student_socket is not None
+        self.student_socket.settimeout(query_timeout)
+        self._send_json_object(json_message)
+        data: StudentQueryResponse = json.loads(self._read_from_socket().decode())
+        return data
+
+    def query(self, var_to_query: str, *, query_timeout: float = DEFAULT_TIMEOUT) -> Any:
+        """
+        Query a variable from the student workspace.
+
+        For dotted paths (e.g. ``"utils.EPSILON"``) the runner imports the
+        appropriate module and retrieves the attribute.  Flat names fall back to
+        the setup-code namespace.
+        """
+        response = self.query_raw(var_to_query, query_timeout=query_timeout)
+        if response["status"] == "not_found":
+            raise NameError(f"Query for '{var_to_query}' failed: name not found in workspace")
+        return from_json(response["value"])
+
+    def query_function_raw(self, function_name: str, *args: Any, query_timeout: float = DEFAULT_TIMEOUT, **kwargs: Any) -> StudentFunctionResponse:
+        json_message = StudentFunctionRequest(
+            message_type="query_function",
+            function_name=function_name,
+            args_encoded=serialize_object_unsafe(args),
+            kwargs_encoded=serialize_object_unsafe(kwargs),
+            query_timeout=query_timeout,
+        )
+        assert self.student_socket is not None
+        self.student_socket.settimeout(query_timeout)
+        self.student_socket.sendall((json.dumps(json_message) + os.linesep).encode("utf-8"))
+        data: StudentFunctionResponse = json.loads(self._read_from_socket().decode())
+        if data.get("stdout"):
+            self._accumulated_stdout.append(data["stdout"])
+        return data
+
+    def query_function(self, function_name: str, *args: Any, query_timeout: float = DEFAULT_TIMEOUT, **kwargs: Any) -> Any:
+        """
+        Call a function from the student workspace and return its value.
+
+        ``function_name`` may be a dotted module path such as
+        ``"calculator.add"`` or ``"models.classifier.Classifier.predict"``.
+        The runner resolves the path using Python's normal import machinery.
+        """
+        response = self.query_function_raw(function_name, *args, query_timeout=query_timeout, **kwargs)
+        match response["status"]:
+            case "exception":
+                raise RuntimeError(
+                    f"Function '{function_name}' raised an exception "
+                    f"{response['exception_name']}: {response['exception_message']}\n{response['traceback']}"
+                )
+            case "timeout":
+                raise TimeoutError(f"Query for function '{function_name}' timed out after {query_timeout} seconds.")
+            case "not_found":
+                raise NameError(f"Query for function '{function_name}' failed: {response['exception_message']}")
+        return from_json(response["value"])
+
+    def get_accumulated_stdout(self) -> str:
+        """Return all stdout captured from function calls made through this fixture."""
+        return "".join(self._accumulated_stdout)
+
+    def _cleanup(self) -> None:
+        if self.student_socket is not None:
+            self.student_socket.close()
+            self.student_socket = None
+        if self.process is not None:
+            self.process.terminate()
+            self.process.wait()
+            self.process = None
+
+    def __repr__(self) -> str:
+        return f"WorkspaceFixture(workspace_dir={self.workspace_dir})"

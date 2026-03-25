@@ -6,5 +6,6 @@ except Exception:
     __version__ = "0.0.0"
 
 from .config import ConfigObject
+from .fixture import WorkspaceFixture
 
-__all__ = ["ConfigObject", "__version__"]
+__all__ = ["ConfigObject", "WorkspaceFixture", "__version__"]

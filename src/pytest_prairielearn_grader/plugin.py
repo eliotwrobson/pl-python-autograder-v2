@@ -21,6 +21,7 @@ from .config import ConfigObject
 from .fixture import FeedbackFixture
 from .fixture import StudentFiles
 from .fixture import StudentFixture
+from .fixture import WorkspaceFixture
 from .utils import GradingOutputLevel
 from .utils import ProcessStartResponse
 from .utils import ProcessStatusCode
@@ -305,6 +306,168 @@ def _find_student_files(module: ModuleType) -> list[StudentFiles]:
     return [StudentFiles(leading_file, trailing_file, student_code_file, setup_code_file) for student_code_file in student_code_files]
 
 
+def _find_workspace_dir(module: ModuleType) -> Path | None:
+    """
+    Resolve the workspace student directory for a test module.
+
+    Resolution order:
+    1. ``autograder_config.workspace_student_dir`` if set as an absolute path.
+    2. ``autograder_config.workspace_student_dir`` resolved relative to the
+       module's data directory (``<parent>/<stem>/``). if set as a relative path.
+    3. A sub-directory named ``"student"`` inside the module's data directory
+       (mirrors the ``/grade/student`` directory provided by PrairieLearn and
+       the layout created by the pytester-based test runner).
+    4. A sub-directory named ``"student"`` in the same directory as the test
+       file itself (natural layout when running a test file directly).
+    """
+    config_workspace_dir: str | None = None
+    if hasattr(module, "autograder_config") and isinstance(module.autograder_config, ConfigObject):
+        config_workspace_dir = module.autograder_config.workspace_student_dir
+
+    if config_workspace_dir is not None:
+        p = Path(config_workspace_dir)
+        if p.is_absolute():
+            return p if p.is_dir() else None
+        # Relative path: try resolving from data_dir first, then module parent
+        data_dir = get_datadir(module)
+        if data_dir is not None:
+            resolved = data_dir / p
+            if resolved.is_dir():
+                return resolved
+        module_file = getattr(module, "__file__", None)
+        if module_file is not None:
+            resolved = Path(module_file).parent / p
+            if resolved.is_dir():
+                return resolved
+        return None
+
+    # Default: look for a 'student' sub-directory.
+    # Check the data subdir first (matches the pytester layout used by the automated
+    # scenario runner), then fall back to the module's own parent directory (the
+    # natural layout when running a test file directly from its source location).
+    data_dir = get_datadir(module)
+    if data_dir is not None and data_dir.is_dir():
+        candidate = data_dir / "student"
+        if candidate.is_dir():
+            return candidate
+
+    module_file = getattr(module, "__file__", None)
+    if module_file is not None:
+        candidate = Path(module_file).parent / "student"
+        if candidate.is_dir():
+            return candidate
+
+    return None
+
+
+def _initialize_workspace_fixture(
+    request: pytest.FixtureRequest,
+    data_json: dict[str, Any] | None,
+    workspace_dir: Path,
+) -> tuple[WorkspaceFixture, float]:
+    """Initialise a WorkspaceFixture analogously to _initialize_sandbox_fixture."""
+    initialization_timeout: float = DEFAULT_SANDBOX_TIMEOUT
+
+    params_dict = data_json.get("params", {}) if data_json is not None else {}
+
+    config_dict: dict[str, Any] = {}
+    exec_entry: str | None = None
+    if hasattr(request, "module") and hasattr(request.module, "autograder_config"):
+        config_object = request.module.autograder_config
+        if not isinstance(config_object, ConfigObject):
+            pytest.fail(f"autograder_config must be a ConfigObject instance, got {type(config_object).__name__}")
+        config_dict = config_object.to_dict()
+        initialization_timeout = config_object.sandbox_timeout
+        config_starting_vars = config_object.starting_vars
+        exec_entry = config_object.workspace_exec_entry
+    else:
+        if hasattr(request, "module") and hasattr(request.module, "sandbox_timeout"):
+            initialization_timeout = request.module.sandbox_timeout
+        marker = request.node.get_closest_marker("sandbox_timeout")
+        if marker and marker.args:
+            initialization_timeout = marker.args[0]
+        config_starting_vars = {}
+
+    names_for_user_list: list[str] | None = None
+    if "names_for_user" in config_dict:
+        names_for_user_list = config_dict["names_for_user"]
+    elif "names_for_user" in params_dict:
+        names_for_user_list = [item["name"] for item in params_dict["names_for_user"]]
+
+    merged_params = {**params_dict, **config_dict}
+    import_whitelist = merged_params.get("import_whitelist")
+    import_blacklist = merged_params.get("import_blacklist", DEFAULT_IMPORT_BLACKLIST)
+    builtin_whitelist = merged_params.get("builtin_whitelist")
+
+    starting_vars: dict[str, Any] = {
+        "__data_params": deepcopy(params_dict) if data_json is not None else {},
+        **config_starting_vars,
+    }
+    if names_for_user_list is not None:
+        for name in names_for_user_list:
+            if name in starting_vars and name != "__data_params":
+                value = starting_vars[name]
+            else:
+                value = params_dict.get(name, None)
+            starting_vars[name] = value
+
+    # Resolve setup_code_file from the test module's data directory
+    data_dir = get_datadir(request.module)
+    setup_code_file = (data_dir / "setup_code.py") if data_dir is not None else Path("setup_code.py")
+
+    fixture = WorkspaceFixture(
+        workspace_dir=workspace_dir,
+        setup_code_file=setup_code_file,
+        import_whitelist=import_whitelist,
+        import_blacklist=import_blacklist,
+        starting_vars=starting_vars,
+        builtin_whitelist=builtin_whitelist,
+        names_for_user_list=names_for_user_list,
+        worker_username=request.config.getoption("--worker-username"),
+        exec_entry=exec_entry,
+    )
+    return fixture, initialization_timeout
+
+
+@pytest.fixture
+def workspace_sandbox(request: pytest.FixtureRequest, data_json: dict[str, Any] | None) -> Iterable[WorkspaceFixture]:
+    """
+    Function-scoped fixture for grading workspace-based student projects.
+
+    Usage in a test file::
+
+        from pytest_prairielearn_grader import ConfigObject
+        from pytest_prairielearn_grader.fixture import WorkspaceFixture
+
+        autograder_config = ConfigObject(workspace_mode=True, sandbox_timeout=5.0)
+
+        @pytest.mark.grading_data(name="Add two numbers", points=5)
+        def test_add(workspace_sandbox: WorkspaceFixture):
+            result = workspace_sandbox.query_function("calculator.add", 2, 3)
+            assert result == 5
+
+    By default the fixture looks for a ``student/`` sub-directory next to the test
+    file.  Override the path via ``ConfigObject(workspace_student_dir="/grade/student")``
+    for PrairieLearn deployment.
+    """
+    workspace_dir = _find_workspace_dir(request.module)
+    if workspace_dir is None:
+        pytest.fail(
+            "workspace_sandbox: could not find the student workspace directory. "
+            "Create a 'student/' sub-directory next to your test file, or set "
+            "workspace_student_dir in your ConfigObject."
+        )
+
+    fixture, initialization_timeout = _initialize_workspace_fixture(request, data_json, workspace_dir)
+
+    try:
+        response = fixture.start_workspace_server(initialization_timeout=initialization_timeout)
+        _handle_sandbox_startup_errors(request, response, initialization_timeout)
+        yield fixture
+    finally:
+        fixture._cleanup()
+
+
 def _get_student_files_from_request(request: pytest.FixtureRequest) -> StudentFiles:
     """
     Get StudentFiles either from parameterization or by finding the single file manually.
@@ -535,8 +698,9 @@ class ResultCollectorPlugin:
             # Get accumulated stdout from the student fixture if available
             accumulated_stdout = ""
             funcargs = getattr(item, "funcargs", None)
-            if funcargs and "sandbox" in funcargs:
-                student_fixture = funcargs.get("sandbox")
+            if funcargs and ("sandbox" in funcargs or "workspace_sandbox" in funcargs):
+                fixture_name = "sandbox" if "sandbox" in funcargs else "workspace_sandbox"
+                student_fixture = funcargs.get(fixture_name)
                 if student_fixture and hasattr(student_fixture, "get_accumulated_stdout"):
                     stdout_content = student_fixture.get_accumulated_stdout()
                     if stdout_content.strip():  # Only store if there's actual content

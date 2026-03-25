@@ -1,9 +1,11 @@
 import asyncio
 import concurrent.futures
+import importlib
 import io
 import json
 import linecache
 import os
+import pathlib
 import sys
 import traceback
 import types
@@ -31,6 +33,7 @@ from pytest_prairielearn_grader.utils import StudentFunctionRequest
 from pytest_prairielearn_grader.utils import StudentFunctionResponse
 from pytest_prairielearn_grader.utils import StudentQueryRequest
 from pytest_prairielearn_grader.utils import StudentQueryResponse
+from pytest_prairielearn_grader.utils import WorkspaceStartRequest
 from pytest_prairielearn_grader.utils import deserialize_object_unsafe
 from pytest_prairielearn_grader.utils import get_builtins
 from pytest_prairielearn_grader.utils import serialize_object_unsafe
@@ -59,8 +62,32 @@ def populate_linecache(contents: str, fname: str) -> None:
     )
 
 
+def _resolve_dotted_name(name: str, student_code_vars: dict[str, Any]) -> Any:
+    """
+    Resolves a name that may be a dotted module path (e.g. 'models.classifier.predict').
+
+    For dotted names, splits on the last '.' to get a module path and attribute name,
+    then imports the module and retrieves the attribute.  This uses the normal Python
+    import machinery, so relative imports, __init__.py, and package structure all work
+    as expected.
+
+    For flat names, falls back to looking up the name in student_code_vars (the
+    namespace populated by setup_code and direct exec).
+    """
+    if "." in name:
+        module_path, attr_name = name.rsplit(".", 1)
+        mod = importlib.import_module(module_path)
+        return getattr(mod, attr_name)
+    return student_code_vars[name]
+
+
 async def student_function_runner(
-    student_code_vars: dict[str, Any], func_name: str, timeout: float, args_tup: Any, kwargs_dict: Any
+    student_code_vars: dict[str, Any],
+    func_name: str,
+    timeout: float,
+    args_tup: Any,
+    kwargs_dict: Any,
+    workspace_mode: bool = False,
 ) -> StudentFunctionResponse:
     stdout_capture = io.StringIO()
     stderr_capture = io.StringIO()
@@ -71,7 +98,10 @@ async def student_function_runner(
     try:
 
         def student_function_temp() -> Any:
-            student_function = student_code_vars[func_name]
+            if workspace_mode:
+                student_function = _resolve_dotted_name(func_name, student_code_vars)
+            else:
+                student_function = student_code_vars[func_name]
             return student_function(*args_tup, **kwargs_dict)
 
         with redirect_stdout(stdout_capture), redirect_stderr(stderr_capture):
@@ -221,6 +251,98 @@ async def student_code_runner(
     return local_vars, student_code_vars, result_dict
 
 
+async def workspace_runner(
+    workspace_dir: str,
+    exec_entry: str | None,
+    setup_code: str | None,
+    timeout: float,
+    import_whitelist: list[str] | None,
+    import_blacklist: list[str] | None,
+    starting_vars: dict[str, Any] | None,
+    builtin_whitelist: list[str] | None,
+    names_for_user_list: list[str] | None,
+) -> tuple[dict[str, Any], dict[str, Any], ProcessStartResponse]:
+    """
+    Sets up a workspace sandbox by inserting workspace_dir at the front of sys.path
+    so that student modules can be imported via their dotted names.  Optionally
+    executes an entry-point file (exec_entry) and runs setup_code exactly as the
+    regular student_code_runner does.
+    """
+    stdout_capture = io.StringIO()
+    stderr_capture = io.StringIO()
+    execution_error: Exception | None = None
+    exception_traceback = None
+    local_vars = deepcopy(starting_vars) if starting_vars else {}
+    local_vars["__from_server_json"] = from_server_json
+
+    student_code_vars: dict[str, Any] = {}
+    student_code_vars["__builtins__"] = get_builtins(builtin_whitelist)
+    student_code_vars["__builtins__"]["__name__"] = "__main__"
+    student_code_vars["__builtins__"]["__import__"] = get_custom_importer(import_whitelist, import_blacklist)
+
+    # Insert workspace_dir at the front of sys.path so imports resolve against it.
+    # Use insert(0, ...) to take precedence over any previously added paths.
+    if workspace_dir not in sys.path:
+        sys.path.insert(0, workspace_dir)
+
+    try:
+        if setup_code:
+            code_setup = compile(setup_code, "<setup>", "exec")
+            with redirect_stdout(stdout_capture), redirect_stderr(stderr_capture):
+                await asyncio.wait_for(
+                    asyncio.get_event_loop().run_in_executor(executor, exec, code_setup, student_code_vars, local_vars),
+                    timeout=timeout,
+                )
+    except asyncio.TimeoutError:
+        execution_error = asyncio.TimeoutError("Setup code execution timed out")
+    except Exception as e:
+        execution_error = e
+
+    if names_for_user_list is not None:
+        for var_name in names_for_user_list:
+            if var_name in local_vars:
+                student_code_vars[var_name] = deepcopy(local_vars[var_name])
+            elif starting_vars is not None and var_name in starting_vars:
+                student_code_vars[var_name] = deepcopy(starting_vars[var_name])
+
+    # Optionally exec an entry-point file at startup (e.g. "main.py") so that
+    # module-level side effects in the student's root script are applied.
+    if execution_error is None and exec_entry is not None:
+        entry_path = pathlib.Path(workspace_dir) / exec_entry
+        try:
+            entry_source = entry_path.read_text(encoding="utf-8")
+            entry_code = compile(entry_source, str(entry_path), "exec")
+            populate_linecache(entry_source, str(entry_path))
+            with redirect_stdout(stdout_capture), redirect_stderr(stderr_capture):
+                await asyncio.wait_for(
+                    asyncio.get_event_loop().run_in_executor(executor, exec, entry_code, student_code_vars, student_code_vars),
+                    timeout=timeout,
+                )
+        except asyncio.TimeoutError:
+            execution_error = asyncio.TimeoutError("Entry-point file execution timed out")
+        except Exception as e:
+            execution_error = e
+            exception_traceback = traceback.format_exc(limit=-1)
+
+    if execution_error is None:
+        status = ProcessStatusCode.SUCCESS
+    elif isinstance(execution_error, asyncio.TimeoutError):
+        status = ProcessStatusCode.TIMEOUT
+    else:
+        status = ProcessStatusCode.EXCEPTION
+
+    result_dict: ProcessStartResponse = {
+        "status": status,
+        "stdout": stdout_capture.getvalue(),
+        "stderr": stderr_capture.getvalue(),
+        "execution_error": type(execution_error).__name__ if execution_error else None,
+        "execution_message": str(execution_error) if execution_error else None,
+        "execution_traceback": str(exception_traceback),
+    }
+
+    return local_vars, student_code_vars, result_dict
+
+
 async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
     """
     Reads lines from stdin asynchronously and responds on stdout.
@@ -249,6 +371,7 @@ async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWrit
     try:
         student_code_vars: None | dict = None
         local_vars: None | dict = None
+        workspace_mode: bool = False
 
         async for line_bytes in reader:
             line = line_bytes.decode().strip()
@@ -258,7 +381,25 @@ async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWrit
             json_message = json.loads(line)
 
             msg_type = json_message.get("message_type")
-            if msg_type == "start":
+            if msg_type == "start_workspace":
+                ws_json_message: WorkspaceStartRequest = json_message
+                workspace_mode = True
+
+                local_vars, student_code_vars, start_response = await workspace_runner(
+                    workspace_dir=ws_json_message["workspace_dir"],
+                    exec_entry=ws_json_message["exec_entry"],
+                    setup_code=ws_json_message["setup_code"],
+                    timeout=ws_json_message["initialization_timeout"],
+                    import_whitelist=ws_json_message["import_whitelist"],
+                    import_blacklist=ws_json_message["import_blacklist"],
+                    starting_vars=ws_json_message["starting_vars"],
+                    builtin_whitelist=ws_json_message["builtin_whitelist"],
+                    names_for_user_list=ws_json_message["names_for_user_list"],
+                )
+
+                writer.write((json.dumps(start_response) + os.linesep).encode())
+
+            elif msg_type == "start":
                 start_json_message: ProcessStartRequest = json_message
                 # Execute the student code for the first time and load
                 # variables into the student_code_vars dictionary
@@ -309,13 +450,19 @@ async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWrit
 
                 var_to_query = query_json_message["var"]
 
-                # Check if the variable exists in the student_code_vars
-                if var_to_query in student_code_vars:
+                try:
+                    if workspace_mode and "." in var_to_query:
+                        value = _resolve_dotted_name(var_to_query, student_code_vars)
+                    elif var_to_query in student_code_vars:
+                        value = student_code_vars[var_to_query]
+                    else:
+                        raise KeyError(var_to_query)
+
                     query_response: StudentQueryResponse = {
                         "status": QueryStatusCode.SUCCESS,
-                        "value": to_json(student_code_vars[var_to_query]),
+                        "value": to_json(value),
                     }
-                else:
+                except (KeyError, AttributeError, ImportError):
                     query_response = {"status": QueryStatusCode.NOT_FOUND, "value": ""}
 
                 writer.write((json.dumps(query_response) + os.linesep).encode())
@@ -329,7 +476,9 @@ async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWrit
                 kwargs = deserialize_object_unsafe(query_function_json_message["kwargs_encoded"])
                 query_timeout = query_function_json_message["query_timeout"]
 
-                function_response = await student_function_runner(student_code_vars, func_name, query_timeout, args, kwargs)
+                function_response = await student_function_runner(
+                    student_code_vars, func_name, query_timeout, args, kwargs, workspace_mode=workspace_mode
+                )
 
                 writer.write((json.dumps(function_response) + os.linesep).encode())
 

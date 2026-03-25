@@ -110,6 +110,19 @@ class ProcessStartRequest(TypedDict):
     names_for_user_list: list[str] | None
 
 
+class WorkspaceStartRequest(TypedDict):
+    message_type: Literal["start_workspace"]
+    workspace_dir: str
+    exec_entry: str | None
+    setup_code: str | None
+    initialization_timeout: float
+    import_whitelist: list[str] | None
+    import_blacklist: list[str] | None
+    starting_vars: dict[str, Any] | None
+    builtin_whitelist: list[str] | None
+    names_for_user_list: list[str] | None
+
+
 class ProcessStartResponse(TypedDict):
     status: ProcessStatusCode
     stdout: str
