@@ -1,0 +1,21 @@
+{
+  "expected_data_object": {
+    "score": 1.0,
+    "tests": [
+      {
+        "test_id": "test_docker_layout.py::test_query_variable[student_code]",
+        "outcome": "passed",
+        "max_points": 2,
+        "points": 2.0,
+        "points_frac": 1.0
+      },
+      {
+        "test_id": "test_docker_layout.py::test_call_function[student_code]",
+        "outcome": "passed",
+        "max_points": 2,
+        "points": 2.0,
+        "points_frac": 1.0
+      }
+    ]
+  }
+}
