@@ -206,10 +206,27 @@ class ConfigObject:
         if self.workspace_student_dir is not None:
             if not isinstance(self.workspace_student_dir, str) or not self.workspace_student_dir.strip():
                 raise ValueError(f"workspace_student_dir must be a non-empty string, got: {self.workspace_student_dir!r}")
+            if not self.workspace_mode:
+                raise ValueError(
+                    "workspace_student_dir requires workspace_mode=True. "
+                    "Set workspace_mode=True or remove workspace_student_dir."
+                )
 
         if self.workspace_exec_entry is not None:
             if not isinstance(self.workspace_exec_entry, str) or not self.workspace_exec_entry.strip():
                 raise ValueError(f"workspace_exec_entry must be a non-empty string, got: {self.workspace_exec_entry!r}")
+            if not self.workspace_mode:
+                raise ValueError(
+                    "workspace_exec_entry requires workspace_mode=True. "
+                    "Set workspace_mode=True or remove workspace_exec_entry."
+                )
+
+        # Validate cross-mode conflicts
+        if self.workspace_mode and self.student_code_pattern != "student_code*.py":
+            raise ValueError(
+                "student_code_pattern is not applicable in workspace mode "
+                "(workspace_mode=True). Remove student_code_pattern or set workspace_mode=False."
+            )
 
     def to_dict(self) -> dict[str, Any]:
         """

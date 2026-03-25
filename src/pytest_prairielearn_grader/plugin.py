@@ -259,6 +259,16 @@ def _start_and_yield_sandbox(
 
 @pytest.fixture
 def sandbox(request: pytest.FixtureRequest, data_json: dict[str, Any] | None) -> Iterable[StudentFixture]:
+    if hasattr(request, "module") and hasattr(request.module, "autograder_config"):
+        config = request.module.autograder_config
+        if isinstance(config, ConfigObject) and config.workspace_mode:
+            pytest.fail(
+                "sandbox fixture cannot be used with workspace_mode=True. "
+                "Replace 'sandbox' with 'workspace_sandbox' in your test, "
+                "or set workspace_mode=False in your ConfigObject.",
+                pytrace=False,
+            )
+
     # Get student files from parameterization or find them
     if hasattr(request, "param"):
         # Parameterized case - multiple student files
@@ -456,6 +466,15 @@ def workspace_sandbox(request: pytest.FixtureRequest, data_json: dict[str, Any] 
     file.  Override the path via ``ConfigObject(workspace_student_dir="/grade/student")``
     for PrairieLearn deployment.
     """
+    if hasattr(request, "module") and hasattr(request.module, "autograder_config"):
+        config = request.module.autograder_config
+        if isinstance(config, ConfigObject) and not config.workspace_mode:
+            pytest.fail(
+                "workspace_sandbox fixture requires workspace_mode=True in your ConfigObject. "
+                "Set workspace_mode=True or replace 'workspace_sandbox' with 'sandbox'.",
+                pytrace=False,
+            )
+
     workspace_dir = _find_workspace_dir(request.module)
     if workspace_dir is None:
         pytest.fail(
