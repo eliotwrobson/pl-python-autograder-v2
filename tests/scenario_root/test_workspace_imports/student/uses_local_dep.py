@@ -1,0 +1,3 @@
+from local_dep import LOCAL_CONSTANT
+
+IMPORTED_VALUE = LOCAL_CONSTANT

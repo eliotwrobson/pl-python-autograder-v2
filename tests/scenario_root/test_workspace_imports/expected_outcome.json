@@ -1,0 +1,35 @@
+{
+  "expected_data_object": {
+    "score": 1.0,
+    "tests": [
+      {
+        "test_id": "test_workspace_imports.py::test_local_dep_bypass_whitelist",
+        "outcome": "passed",
+        "max_points": 2,
+        "points": 2.0,
+        "points_frac": 1.0
+      },
+      {
+        "test_id": "test_workspace_imports.py::test_whitelisted_external_import",
+        "outcome": "passed",
+        "max_points": 2,
+        "points": 2.0,
+        "points_frac": 1.0
+      },
+      {
+        "test_id": "test_workspace_imports.py::test_local_subpkg_bypass_whitelist",
+        "outcome": "passed",
+        "max_points": 2,
+        "points": 2.0,
+        "points_frac": 1.0
+      },
+      {
+        "test_id": "test_workspace_imports.py::test_non_whitelisted_external_blocked",
+        "outcome": "passed",
+        "max_points": 2,
+        "points": 2.0,
+        "points_frac": 1.0
+      }
+    ]
+  }
+}

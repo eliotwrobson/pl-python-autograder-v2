@@ -1,4 +1,5 @@
 import asyncio
+import builtins
 import concurrent.futures
 import importlib
 import io
@@ -123,10 +124,19 @@ async def student_function_runner(
     return function_response
 
 
-def get_custom_importer(import_whitelist: list[str] | None, import_blacklist: list[str] | None) -> ImportFunction:
+def get_custom_importer(
+    import_whitelist: list[str] | None,
+    import_blacklist: list[str] | None,
+    workspace_dir: str | None = None,
+) -> ImportFunction:
     """
-    Returns a custom import function that restricts imports based on the provided whitelist and blacklist.
-    If a whitelist is provided, only those modules can be imported.
+    Returns a custom import function that restricts imports based on the provided whitelist and
+    blacklist.  If a whitelist is provided, only those modules can be imported.
+
+    When *workspace_dir* is given, any module whose top-level package name resolves to a file or
+    directory inside that directory is unconditionally allowed, so that student modules can import
+    each other without instructors needing to maintain a manual whitelist of their own files.
+    Relative imports (level > 0) are always permitted for the same reason.
     """
 
     original_import = __import__
@@ -138,12 +148,25 @@ def get_custom_importer(import_whitelist: list[str] | None, import_blacklist: li
         fromlist: Sequence[str] = (),
         level: int = 0,
     ) -> types.ModuleType:
-        # Allow specific modules to be imported
+        # Relative imports are always intra-package and allowed.
+        if level > 0:
+            return original_import(name, globals, locals, fromlist, level)
+
+        # Workspace-local modules are always importable regardless of whitelist/blacklist.
+        # A module is considered local if its top-level package maps to a file or directory
+        # directly inside workspace_dir.
+        if workspace_dir is not None:
+            top_level = name.split(".")[0]
+            ws = pathlib.Path(workspace_dir)
+            if (ws / (top_level + ".py")).exists() or (ws / top_level).is_dir():
+                return original_import(name, globals, locals, fromlist, level)
+
+        # Apply blacklist / whitelist to external imports.
         if import_blacklist is not None and name in import_blacklist:
             raise ImportError(f"Module '{name}' is blacklisted and cannot be imported.")
         elif (
             (import_whitelist is not None and name in import_whitelist)
-            or name.startswith("__")  # Allow internal dunder imports if necessary for basic functionality
+            or name.startswith("_")  # Allow Python internal/private modules (_io, _abc, _collections, etc.)
             or import_whitelist is None
         ):
             return original_import(name, globals, locals, fromlist, level)
@@ -278,7 +301,13 @@ async def workspace_runner(
     student_code_vars: dict[str, Any] = {}
     student_code_vars["__builtins__"] = get_builtins(builtin_whitelist)
     student_code_vars["__builtins__"]["__name__"] = "__main__"
-    student_code_vars["__builtins__"]["__import__"] = get_custom_importer(import_whitelist, import_blacklist)
+    workspace_importer = get_custom_importer(import_whitelist, import_blacklist, workspace_dir)
+    student_code_vars["__builtins__"]["__import__"] = workspace_importer
+    # Patch the real builtins.__import__ so that workspace modules loaded via
+    # importlib.import_module() (which use the real builtins, not student_code_vars)
+    # also go through the same restrictions.  The subprocess is dedicated to one
+    # grading session so this global patch is safe.
+    builtins.__import__ = workspace_importer
 
     # Insert workspace_dir at the front of sys.path so imports resolve against it.
     # Use insert(0, ...) to take precedence over any previously added paths.
