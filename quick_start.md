@@ -895,12 +895,12 @@ machinery — exactly the same way you would test a local Python package.
 
 ### Why a separate fixture?
 
-| | `sandbox` | `workspace_sandbox` |
-|---|---|---|
-| Student code | Single file | Multi-file project |
-| Startup | `exec` the file | Set `sys.path`, import on demand |
-| Querying | Flat variable/function names | Dotted module paths (`"models.predict"`) |
-| Use case | `pl-file-editor`, `pl-file-upload` | Workspace questions |
+|              | `sandbox`                          | `workspace_sandbox`                      |
+| ------------ | ---------------------------------- | ---------------------------------------- |
+| Student code | Single file                        | Multi-file project                       |
+| Startup      | `exec` the file                    | Set `sys.path`, import on demand         |
+| Querying     | Flat variable/function names       | Dotted module paths (`"models.predict"`) |
+| Use case     | `pl-file-editor`, `pl-file-upload` | Workspace questions                      |
 
 ### File Structure
 
@@ -965,7 +965,8 @@ questions/my_workspace_question/
 ```
 
 **Key points:**
-- `gradedFiles` controls which files are copied from the workspace into `/grade/student/`.  
+
+- `gradedFiles` controls which files are copied from the workspace into `/grade/student/`.
   Use glob patterns (`utils/*.py`) to capture whole directories.
 - `singleVariant: true` prevents the workspace from resetting between attempts.
 
@@ -1004,11 +1005,11 @@ def test_constant(workspace_sandbox: WorkspaceFixture) -> None:
 The dotted path is split on the **last dot**: `"calculator.add"` imports the module `calculator`
 and calls `getattr(calculator, "add")`. This means:
 
-| Query string | Module imported | Attribute retrieved |
-|---|---|---|
-| `"calculator.add"` | `calculator` | `add` |
-| `"utils.helpers.clamp"` | `utils.helpers` | `clamp` |
-| `"models.nn.Model.predict"` | `models.nn.Model` | `predict` |
+| Query string                | Module imported   | Attribute retrieved |
+| --------------------------- | ----------------- | ------------------- |
+| `"calculator.add"`          | `calculator`      | `add`               |
+| `"utils.helpers.clamp"`     | `utils.helpers`   | `clamp`             |
+| `"models.nn.Model.predict"` | `models.nn.Model` | `predict`           |
 
 ### Querying Variables vs. Functions
 
@@ -1050,14 +1051,14 @@ goes through the import machinery.
 
 ### ConfigObject Settings for Workspaces
 
-| Parameter | Type | Default | Description |
-|---|---|---|---|
-| `workspace_mode` | `bool` | `False` | Enable workspace grading mode |
-| `workspace_student_dir` | `str \| None` | `None` | Path to student project root. Defaults to `student/` next to tests. Set to `"/grade/student"` for production. |
-| `workspace_exec_entry` | `str \| None` | `None` | Relative path (from workspace root) to an entry-point file to `exec` at startup. |
-| `sandbox_timeout` | `float` | `1.0` | Timeout for sandbox startup (increase for larger projects). |
-| `import_whitelist` | `list[str] \| None` | `None` | Allowed imports. `None` = allow all. |
-| `import_blacklist` | `list[str] \| None` | default list | Blocked imports. |
+| Parameter               | Type                | Default      | Description                                                                                                   |
+| ----------------------- | ------------------- | ------------ | ------------------------------------------------------------------------------------------------------------- |
+| `workspace_mode`        | `bool`              | `False`      | Enable workspace grading mode                                                                                 |
+| `workspace_student_dir` | `str \| None`       | `None`       | Path to student project root. Defaults to `student/` next to tests. Set to `"/grade/student"` for production. |
+| `workspace_exec_entry`  | `str \| None`       | `None`       | Relative path (from workspace root) to an entry-point file to `exec` at startup.                              |
+| `sandbox_timeout`       | `float`             | `1.0`        | Timeout for sandbox startup (increase for larger projects).                                                   |
+| `import_whitelist`      | `list[str] \| None` | `None`       | Allowed imports. `None` = allow all.                                                                          |
+| `import_blacklist`      | `list[str] \| None` | default list | Blocked imports.                                                                                              |
 
 ### Production vs. Local Development
 
@@ -1092,7 +1093,7 @@ autograder_config = ConfigObject(
 ### Security Notes
 
 - The default `import_blacklist` (`["os", "sys", "subprocess", "pathlib", "shutil"]`) is
-  applied in workspace mode too.  If the student's project legitimately uses `pathlib` for
+  applied in workspace mode too. If the student's project legitimately uses `pathlib` for
   internal file operations, add it to `import_whitelist` explicitly.
 - `sys.path` inside the subprocess is modified to include `workspace_student_dir`, so all
   relative imports within the project work naturally.
@@ -1160,4 +1161,3 @@ def divide(a, b):
         raise ValueError("Cannot divide by zero")
     return a / b
 ```
-

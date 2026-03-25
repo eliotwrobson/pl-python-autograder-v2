@@ -301,6 +301,12 @@ def _find_student_files(module: ModuleType) -> list[StudentFiles]:
     setup_code_file = data_dir / "setup_code.py"
 
     student_code_files = list(data_dir.glob(student_code_pattern))
+    # Fall back to student/ subdirectory — matches the production Docker layout where
+    # run.sh moves /grade/student → test_student/student/ as a whole directory.
+    if not student_code_files:
+        student_subdir = data_dir / "student"
+        if student_subdir.is_dir():
+            student_code_files = list(student_subdir.glob(student_code_pattern))
     logger.debug(f"Found {len(student_code_files)} student code file(s): {[f.name for f in student_code_files]}")
 
     return [StudentFiles(leading_file, trailing_file, student_code_file, setup_code_file) for student_code_file in student_code_files]

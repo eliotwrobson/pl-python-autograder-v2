@@ -145,7 +145,9 @@ def test_autograder_scenario_with_pytester(pytester: pytest.Pytester, scenario_d
             # Normalize line endings before comparing (Windows uses \r\n, Unix uses \n)
             normalized_expected = expected_message.replace("\r\n", "\n")
             normalized_actual = actual_test["message"].replace("\r\n", "\n")
-            assert normalized_expected in normalized_actual, f"Message mismatch for test '{test_id}'.\nassert {normalized_expected!r} in {normalized_actual!r}"
+            assert normalized_expected in normalized_actual, (
+                f"Message mismatch for test '{test_id}'.\nassert {normalized_expected!r} in {normalized_actual!r}"
+            )
 
         assert actual_test["max_points"] == expected_test["max_points"], f"Max points mismatch for test '{test_id}'."
         assert math.isclose(expected_test["points_frac"], actual_test["points_frac"]), f"Points fraction mismatch for test '{test_id}'."
