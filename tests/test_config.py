@@ -178,3 +178,23 @@ def test_workspace_sandbox_fixture_fails_without_workspace_mode(pytester: pytest
     result = pytester.runpytest("-p", "prairielearn-grader", "-v")
     result.stdout.fnmatch_lines(["*workspace_sandbox fixture requires workspace_mode=True*"])
     assert result.ret != 0
+
+
+def test_module_sandbox_fixture_fails_with_workspace_mode(pytester: pytest.Pytester) -> None:
+    """Using module_sandbox with workspace_mode=True should error immediately."""
+    pytester.makepyfile(
+        """
+        import pytest
+        from pytest_prairielearn_grader import ConfigObject
+        from pytest_prairielearn_grader.fixture import StudentFixture
+
+        autograder_config = ConfigObject(workspace_mode=True)
+
+        @pytest.mark.grading_data(name="bad test", points=1)
+        def test_bad(module_sandbox: StudentFixture) -> None:
+            pass
+        """
+    )
+    result = pytester.runpytest("-p", "prairielearn-grader", "-v")
+    result.stdout.fnmatch_lines(["*module_sandbox fixture cannot be used with workspace_mode=True*"])
+    assert result.ret != 0

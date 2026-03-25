@@ -535,6 +535,16 @@ def module_sandbox(request: pytest.FixtureRequest, data_json: dict[str, Any] | N
     Use this when tests need to share state or when you want to test stateful behavior.
     This fixture is more efficient for scenarios where setup is expensive.
     """
+    if hasattr(request, "module") and hasattr(request.module, "autograder_config"):
+        config = request.module.autograder_config
+        if isinstance(config, ConfigObject) and config.workspace_mode:
+            pytest.fail(
+                "module_sandbox fixture cannot be used with workspace_mode=True. "
+                "Replace 'module_sandbox' with 'workspace_sandbox' in your test, "
+                "or set workspace_mode=False in your ConfigObject.",
+                pytrace=False,
+            )
+
     plugin = request.config.result_collector_plugin  # type: ignore[attr-defined]
     module_name = request.module.__name__
 
