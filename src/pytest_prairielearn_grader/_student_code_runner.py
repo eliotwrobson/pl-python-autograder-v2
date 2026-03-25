@@ -146,6 +146,14 @@ def get_custom_importer(
 
     original_import = _REAL_IMPORT
 
+    # Pre-compute the workspace directory string at factory time (before this importer is
+    # installed into builtins.__import__).  Doing pathlib.Path() or os.path operations
+    # inside custom_import itself would trigger re-entrant calls: Python 3.12 pathlib
+    # lazy-imports ntpath/posixpath on first use, which would call custom_import again
+    # and cause infinite RecursionError.  Using a plain str and os.path functions (which
+    # are loaded as part of the 'os' module and never need to re-import anything) is safe.
+    _ws_str: str | None = str(pathlib.Path(workspace_dir)) if workspace_dir is not None else None
+
     def custom_import(
         name: str,
         globals: Mapping[str, object] | None = None,
@@ -161,10 +169,9 @@ def get_custom_importer(
         # Workspace-local modules are always importable regardless of whitelist/blacklist.
         # A module is considered local if its top-level package maps to a file or directory
         # directly inside workspace_dir.
-        if workspace_dir is not None:
+        if _ws_str is not None:
             top_level = name.split(".")[0]
-            ws = pathlib.Path(workspace_dir)
-            if (ws / (top_level + ".py")).exists() or (ws / top_level).is_dir():
+            if os.path.isfile(os.path.join(_ws_str, top_level + ".py")) or os.path.isdir(os.path.join(_ws_str, top_level)):
                 return original_import(name, globals, locals, fl, level)
 
         # Apply blacklist / whitelist to external imports.
