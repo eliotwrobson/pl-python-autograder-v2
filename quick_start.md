@@ -879,3 +879,285 @@ In your PrairieLearn question's `info.json`, specify the grader:
 8. **Configure security restrictions**: Use `import_whitelist` and `builtin_whitelist` in `server.py`
    to control what modules and functions students can access, preventing security issues and
    enforcing pedagogical constraints
+
+---
+
+## Workspace Grading
+
+PrairieLearn workspace questions give students a full IDE (VS Code, JupyterLab, etc.) running in a
+browser. When a student clicks **Submit**, PrairieLearn copies the files listed in `gradedFiles`
+out of their workspace container and into `/grade/student/`, preserving all directory structure.
+
+The `workspace_sandbox` fixture is designed specifically for this use case. Unlike the regular
+`sandbox` fixture (which `exec`s a single file), the workspace fixture adds the student's project
+directory to `sys.path` and lets tests interact with the project using Python's normal import
+machinery — exactly the same way you would test a local Python package.
+
+### Why a separate fixture?
+
+|              | `sandbox`                          | `workspace_sandbox`                      |
+| ------------ | ---------------------------------- | ---------------------------------------- |
+| Student code | Single file                        | Multi-file project                       |
+| Startup      | `exec` the file                    | Set `sys.path`, import on demand         |
+| Querying     | Flat variable/function names       | Dotted module paths (`"models.predict"`) |
+| Use case     | `pl-file-editor`, `pl-file-upload` | Workspace questions                      |
+
+### File Structure
+
+For a PrairieLearn workspace question the grader sees this layout at runtime:
+
+```
+/grade/
+├── data/
+│   └── data.json          # question parameters
+├── student/               # gradedFiles copied from student's workspace
+│   ├── calculator.py
+│   ├── utils/
+│   │   ├── __init__.py
+│   │   └── helpers.py
+│   └── main.py
+└── tests/                 # copies of your question's tests/ directory
+    ├── setup_code.py      # (optional)
+    └── test_student.py
+```
+
+For **local development**, mirror this by creating a `student/` sub-directory next to your test
+file. The fixture finds it automatically without any configuration:
+
+```
+questions/my_workspace_question/
+├── info.json
+├── question.html
+└── tests/
+    ├── test_student.py        # your test file
+    ├── setup_code.py          # (optional)
+    └── test_student/          # ← mirrors the data directory layout
+        └── student/           # ← local stand-in for /grade/student
+            ├── calculator.py
+            └── utils/
+                ├── __init__.py
+                └── helpers.py
+```
+
+### `info.json` Configuration
+
+```json
+{
+  "uuid": "...",
+  "title": "Calculator Project",
+  "topic": "...",
+  "tags": ["..."],
+  "type": "v3",
+  "singleVariant": true,
+  "gradingMethod": "External",
+  "workspaceOptions": {
+    "image": "prairielearn/workspace-vscode-python",
+    "port": 8080,
+    "home": "/home/user",
+    "gradedFiles": ["calculator.py", "utils/*.py", "utils/__init__.py"]
+  },
+  "externalGradingOptions": {
+    "enabled": true,
+    "image": "eliotwrobson/grader-python-pytest:latest",
+    "timeout": 30
+  }
+}
+```
+
+**Key points:**
+
+- `gradedFiles` controls which files are copied from the workspace into `/grade/student/`.
+  Use glob patterns (`utils/*.py`) to capture whole directories.
+- `singleVariant: true` prevents the workspace from resetting between attempts.
+
+### Writing Tests
+
+Use `workspace_sandbox` and query student code with **dotted module paths**:
+
+```python
+from pytest_prairielearn_grader import ConfigObject
+from pytest_prairielearn_grader.fixture import WorkspaceFixture
+import pytest
+
+autograder_config = ConfigObject(
+    workspace_mode=True,
+    sandbox_timeout=10.0,
+)
+
+@pytest.mark.grading_data(name="Add two numbers", points=2)
+def test_add(workspace_sandbox: WorkspaceFixture) -> None:
+    result = workspace_sandbox.query_function("calculator.add", 3, 4)
+    assert result == 7
+
+
+@pytest.mark.grading_data(name="Clamp from sub-package", points=2)
+def test_clamp(workspace_sandbox: WorkspaceFixture) -> None:
+    result = workspace_sandbox.query_function("utils.helpers.clamp", 15, 0, 10)
+    assert result == 10
+
+
+@pytest.mark.grading_data(name="Module-level constant", points=1)
+def test_constant(workspace_sandbox: WorkspaceFixture) -> None:
+    pi = workspace_sandbox.query("calculator.PI_APPROX")
+    assert abs(pi - 3.14159) < 1e-5
+```
+
+The dotted path is split on the **last dot**: `"calculator.add"` imports the module `calculator`
+and calls `getattr(calculator, "add")`. This means:
+
+| Query string                | Module imported   | Attribute retrieved |
+| --------------------------- | ----------------- | ------------------- |
+| `"calculator.add"`          | `calculator`      | `add`               |
+| `"utils.helpers.clamp"`     | `utils.helpers`   | `clamp`             |
+| `"models.nn.Model.predict"` | `models.nn.Model` | `predict`           |
+
+### Querying Variables vs. Functions
+
+Both `query` and `query_function` understand dotted paths:
+
+```python
+# Query a module-level variable
+eps = workspace_sandbox.query("utils.helpers.EPSILON")
+
+# Query a class defined in a module
+result = workspace_sandbox.query_function("models.Classifier.predict", X_test)
+
+# query_function_raw — inspects the full response without raising
+response = workspace_sandbox.query_function_raw("calculator.divide", 1, 0)
+assert response["status"] == "exception"
+assert response["exception_name"] == "ValueError"
+```
+
+### Optional: Entry-Point Execution
+
+Some workspace questions have a `main.py` that sets up global state before tests run. Use
+`workspace_exec_entry` to `exec` it at sandbox startup:
+
+```python
+autograder_config = ConfigObject(
+    workspace_mode=True,
+    workspace_exec_entry="main.py",  # exec'd from workspace root at startup
+    sandbox_timeout=15.0,
+)
+
+# Now the sandbox namespace includes everything main.py defined at module level
+def test_global_state(workspace_sandbox: WorkspaceFixture) -> None:
+    db = workspace_sandbox.query("database")  # flat name - set by main.py via exec
+    assert db is not None
+```
+
+Without `workspace_exec_entry` (the default), no file is executed at startup and all access
+goes through the import machinery.
+
+### ConfigObject Settings for Workspaces
+
+| Parameter               | Type                | Default      | Description                                                                                                   |
+| ----------------------- | ------------------- | ------------ | ------------------------------------------------------------------------------------------------------------- |
+| `workspace_mode`        | `bool`              | `False`      | Enable workspace grading mode                                                                                 |
+| `workspace_student_dir` | `str \| None`       | `None`       | Path to student project root. Defaults to `student/` next to tests. Set to `"/grade/student"` for production. |
+| `workspace_exec_entry`  | `str \| None`       | `None`       | Relative path (from workspace root) to an entry-point file to `exec` at startup.                              |
+| `sandbox_timeout`       | `float`             | `1.0`        | Timeout for sandbox startup (increase for larger projects).                                                   |
+| `import_whitelist`      | `list[str] \| None` | `None`       | Allowed imports. `None` = allow all.                                                                          |
+| `import_blacklist`      | `list[str] \| None` | default list | Blocked imports.                                                                                              |
+
+### Production vs. Local Development
+
+The `workspace_student_dir` path differs between environments:
+
+```python
+# Production (running on PrairieLearn): set an absolute path
+autograder_config = ConfigObject(
+    workspace_mode=True,
+    workspace_student_dir="/grade/student",
+)
+
+# Local dev: omit the field — the fixture finds student/ automatically
+autograder_config = ConfigObject(
+    workspace_mode=True,
+    # workspace_student_dir defaults to student/ next to your test file
+)
+```
+
+A common pattern is to use an environment variable so one config works in both environments:
+
+```python
+import os
+
+autograder_config = ConfigObject(
+    workspace_mode=True,
+    workspace_student_dir=os.environ.get("STUDENT_DIR"),  # None → auto-detect locally
+    sandbox_timeout=10.0,
+)
+```
+
+### Security Notes
+
+- The default `import_blacklist` (`["os", "sys", "subprocess", "pathlib", "shutil"]`) is
+  applied in workspace mode too. If the student's project legitimately uses `pathlib` for
+  internal file operations, add it to `import_whitelist` explicitly.
+- `sys.path` inside the subprocess is modified to include `workspace_student_dir`, so all
+  relative imports within the project work naturally.
+- Each call to `workspace_sandbox.query_function` runs in the same subprocess, so module-level
+  state (caches, open files) persists across calls within a test — exactly like normal Python.
+
+### Complete Example
+
+**`tests/test_student.py`:**
+
+```python
+import pytest
+
+from pytest_prairielearn_grader import ConfigObject
+from pytest_prairielearn_grader.fixture import FeedbackFixture, WorkspaceFixture
+
+autograder_config = ConfigObject(
+    workspace_mode=True,
+    sandbox_timeout=10.0,
+    import_whitelist=["math", "statistics"],
+)
+
+
+@pytest.mark.grading_data(name="add() returns correct value", points=3)
+def test_add(workspace_sandbox: WorkspaceFixture, feedback: FeedbackFixture) -> None:
+    feedback.set_score(0.0)
+
+    response = workspace_sandbox.query_function_raw("calculator.add", 2, 3)
+    assert response["status"] != "not_found", "calculator.add is not defined"
+    feedback.set_score(0.5)
+
+    assert response["status"] == "success", (
+        f"calculator.add raised {response['exception_name']}: {response['exception_message']}"
+    )
+    feedback.set_score(0.8)
+
+    assert response["value"] == 5, f"Expected 5, got {response['value']}"
+    feedback.set_score(1.0)
+
+
+@pytest.mark.grading_data(name="divide() raises ValueError on zero", points=2)
+def test_divide_guard(workspace_sandbox: WorkspaceFixture) -> None:
+    response = workspace_sandbox.query_function_raw("calculator.divide", 10, 0)
+    assert response["status"] == "exception", "divide() should raise on zero denominator"
+    assert response["exception_name"] == "ValueError"
+
+
+@pytest.mark.grading_data(name="PI_APPROX constant exists", points=1)
+def test_constant(workspace_sandbox: WorkspaceFixture) -> None:
+    pi = workspace_sandbox.query("calculator.PI_APPROX")
+    assert isinstance(pi, float), "PI_APPROX should be a float"
+    assert abs(pi - 3.14) < 0.01
+```
+
+**Student workspace (`student/calculator.py`):**
+
+```python
+PI_APPROX = 3.14159
+
+def add(a, b):
+    return a + b
+
+def divide(a, b):
+    if b == 0:
+        raise ValueError("Cannot divide by zero")
+    return a / b
+```

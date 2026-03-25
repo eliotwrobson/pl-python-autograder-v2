@@ -102,6 +102,51 @@ class ConfigObject:
     Example: {"constant": 42, "data_array": [1, 2, 3]}
     """
 
+    workspace_mode: bool = False
+    """Enable workspace grading mode.
+
+    When True, the autograder uses the workspace_sandbox fixture instead of the
+    regular sandbox.  In workspace mode the student's submission is treated as a
+    multi-file Python project rooted at workspace_student_dir rather than a single
+    script.  Tests query functions and variables using dotted module paths such as
+    ``"models.classifier.predict"`` instead of bare function names.
+
+    Default is False (normal single-file mode).
+    """
+
+    workspace_student_dir: str | None = None
+    """Path to the student's workspace directory.
+
+    Interpreted according to the following rules:
+    - If an absolute path (starts with '/'): used as-is.
+    - If a relative path or None: resolved relative to the directory that contains
+      the test module (the same directory where data.json lives).  When None, the
+      fixture looks for a sub-directory named ``"student"`` next to the test file,
+      which mirrors the ``/grade/student/`` directory PrairieLearn provides during
+      autograding.
+
+    For PrairieLearn deployment, set this to ``"/grade/student"`` (or leave None and
+    ensure a ``student/`` directory exists next to your test file for local dev).
+
+    Example: "/grade/student"
+    """
+
+    workspace_exec_entry: str | None = None
+    """Optional entry-point file to execute at sandbox startup in workspace mode.
+
+    When set, the file is executed (via ``exec``) inside the sandbox after
+    ``sys.path`` has been set up and after ``setup_code.py`` has run.  This is
+    useful for questions where a student's ``main.py`` sets up global state that
+    tests depend on.
+
+    The path is relative to workspace_student_dir.
+
+    If None (default), no file is executed at startup; tests import modules
+    on-demand using dotted paths.
+
+    Example: "main.py"
+    """
+
     def __post_init__(self) -> None:
         """Validate configuration values after initialization."""
         # Validate sandbox_timeout
@@ -153,6 +198,35 @@ class ConfigObject:
         # Validate starting_vars is a dict
         if not isinstance(self.starting_vars, dict):
             raise TypeError(f"starting_vars must be a dict, got {type(self.starting_vars).__name__}")
+
+        # Validate workspace fields
+        if not isinstance(self.workspace_mode, bool):
+            raise TypeError(f"workspace_mode must be a bool, got {type(self.workspace_mode).__name__}")
+
+        if self.workspace_student_dir is not None:
+            if not isinstance(self.workspace_student_dir, str) or not self.workspace_student_dir.strip():
+                raise ValueError(f"workspace_student_dir must be a non-empty string, got: {self.workspace_student_dir!r}")
+            if not self.workspace_mode:
+                raise ValueError(
+                    "workspace_student_dir requires workspace_mode=True. "
+                    "Set workspace_mode=True or remove workspace_student_dir."
+                )
+
+        if self.workspace_exec_entry is not None:
+            if not isinstance(self.workspace_exec_entry, str) or not self.workspace_exec_entry.strip():
+                raise ValueError(f"workspace_exec_entry must be a non-empty string, got: {self.workspace_exec_entry!r}")
+            if not self.workspace_mode:
+                raise ValueError(
+                    "workspace_exec_entry requires workspace_mode=True. "
+                    "Set workspace_mode=True or remove workspace_exec_entry."
+                )
+
+        # Validate cross-mode conflicts
+        if self.workspace_mode and self.student_code_pattern != "student_code*.py":
+            raise ValueError(
+                "student_code_pattern is not applicable in workspace mode "
+                "(workspace_mode=True). Remove student_code_pattern or set workspace_mode=False."
+            )
 
     def to_dict(self) -> dict[str, Any]:
         """

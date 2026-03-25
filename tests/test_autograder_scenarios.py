@@ -1,5 +1,7 @@
 import math
 import platform
+import shutil
+import sys
 from collections import defaultdict
 from pathlib import Path
 
@@ -60,8 +62,6 @@ def test_autograder_scenario_with_pytester(pytester: pytest.Pytester, scenario_d
     3. Asserts on the pytest outcome (passed, failed, etc.) and captured stdout/stderr.
     """
     # Skip privilege_drop test on Windows since it requires Unix-specific functionality
-    import sys
-
     if sys.platform == "win32" and scenario_dir.name == "test_privilege_drop":
         pytest.skip("Privilege dropping tests only run on Unix systems")
 
@@ -92,7 +92,8 @@ def test_autograder_scenario_with_pytester(pytester: pytest.Pytester, scenario_d
                 pytester_scenario_dir.joinpath(item.name).write_text(item.read_text())  # Copy the file content
                 # print(f"Copied '{item.name}' to pytester's testdir.")
         elif item.is_dir():
-            raise ValueError("Scenario directories should not contain subdirectories. Please flatten the structure.")
+            # Copy subdirectories recursively (needed for workspace scenarios)
+            shutil.copytree(item, pytester_scenario_dir / item.name)
 
     if expected_outcome_dict is None:
         pytest.fail(f"Error: expected_outcome.json not found in scenario directory '{scenario_dir.name}'.")
@@ -120,7 +121,10 @@ def test_autograder_scenario_with_pytester(pytester: pytest.Pytester, scenario_d
         expected_output = expected_data_obj["output"]
         actual_output = results_obj["output"]
         # Check if expected output is a substring of actual output (to allow for flexibility)
-        assert expected_output in actual_output, f"Expected output '{expected_output}' not found in actual output '{actual_output}'"
+        # Normalize line endings before comparing (Windows uses \r\n, Unix uses \n)
+        assert expected_output.replace("\r\n", "\n") in actual_output.replace("\r\n", "\n"), (
+            f"Expected output '{expected_output}' not found in actual output '{actual_output}'"
+        )
 
     outcome_dict: defaultdict[str, int] = defaultdict(int)
 
@@ -138,7 +142,12 @@ def test_autograder_scenario_with_pytester(pytester: pytest.Pytester, scenario_d
         expected_message = expected_test.get("message")
 
         if expected_message is not None:
-            assert expected_message in actual_test["message"], f"Message mismatch for test '{test_id}'."
+            # Normalize line endings before comparing (Windows uses \r\n, Unix uses \n)
+            normalized_expected = expected_message.replace("\r\n", "\n")
+            normalized_actual = actual_test["message"].replace("\r\n", "\n")
+            assert normalized_expected in normalized_actual, (
+                f"Message mismatch for test '{test_id}'.\nassert {normalized_expected!r} in {normalized_actual!r}"
+            )
 
         assert actual_test["max_points"] == expected_test["max_points"], f"Max points mismatch for test '{test_id}'."
         assert math.isclose(expected_test["points_frac"], actual_test["points_frac"]), f"Points fraction mismatch for test '{test_id}'."

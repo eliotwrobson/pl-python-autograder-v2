@@ -24,7 +24,10 @@ mkdir $MERGE_DIR
 mkdir $MERGE_DIR/test_student
 mkdir $OUT_DIR
 
-mv $STUDENT_DIR/* $MERGE_DIR/test_student/
+# Move the entire student directory as 'student/' inside the data directory.
+# This preserves subdirectory structure for workspace questions (e.g. utils/, models/)
+# and keeps the student files at a predictable path for single-file questions.
+mv "$STUDENT_DIR" "$MERGE_DIR/test_student/student"
 # TODO this has some pretty hardcoded assumptions about file names. Discuss in meeting
 # what the best way to change this is
 mv $TEST_DIR/* $MERGE_DIR/test_student/
