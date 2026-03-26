@@ -52,8 +52,7 @@ def _extract_notebook_code(notebook_path: Path, cell_tag: str | None = None) -> 
         import nbformat  # type: ignore[import-untyped]
     except ImportError:
         raise ImportError(
-            "nbformat is required for Jupyter notebook grading support. "
-            "Install it with: pip install 'pytest-prairielearn-grader[notebook]'"
+            "nbformat is required for Jupyter notebook grading support. Install it with: pip install 'pytest-prairielearn-grader[notebook]'"
         ) from None
 
     with notebook_path.open(encoding="utf-8-sig") as f:

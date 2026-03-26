@@ -31,6 +31,17 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+    strategy:
+      matrix:
+        include:
+          - variant: full
+            dockerfile: Dockerfile
+            latest_tag: latest
+            version_suffix: ""
+          - variant: lite
+            dockerfile: Dockerfile.lite
+            latest_tag: lite
+            version_suffix: "-lite"
     steps:
       - uses: actions/checkout@v4
         with:
@@ -78,9 +89,10 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: ./docker
+          file: ./docker/${{ matrix.dockerfile }}
           push: true
           tags: |
-            ${{ secrets.DOCKER_USERNAME }}/grader-python-pytest:v${{ steps.version.outputs.VERSION }}
-            ${{ secrets.DOCKER_USERNAME }}/grader-python-pytest:latest
+            ${{ secrets.DOCKER_USERNAME }}/grader-python-pytest:${{ matrix.latest_tag }}
+            ${{ secrets.DOCKER_USERNAME }}/grader-python-pytest:v${{ steps.version.outputs.VERSION }}${{ matrix.version_suffix }}
           build-args: |
             PACKAGE_VERSION=${{ steps.version.outputs.VERSION }}
