@@ -1,9 +1,12 @@
 """
-Notebook grading scenario.
+Notebook grading scenario — default behavior (all code cells included).
 
-Demonstrates grading a student Jupyter notebook (.ipynb) submission.
-The student submits ``student_code.ipynb``; the autograder extracts all
-code cells and runs them in the sandbox exactly like a .py file.
+Demonstrates grading a student Jupyter notebook (.ipynb) submission when no
+``notebook_cell_tag`` is set.  All code cells in the notebook are extracted
+and concatenated, exactly as if they were a single ``.py`` file.
+
+Contrast with ``test_notebook_cell_tag``, which restricts execution to only
+the cells tagged with ``#grade``.
 """
 
 import pytest
