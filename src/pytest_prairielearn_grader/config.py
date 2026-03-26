@@ -229,8 +229,7 @@ class ConfigObject:
                 raise ValueError(f"workspace_student_dir must be a non-empty string, got: {self.workspace_student_dir!r}")
             if not self.workspace_mode:
                 raise ValueError(
-                    "workspace_student_dir requires workspace_mode=True. "
-                    "Set workspace_mode=True or remove workspace_student_dir."
+                    "workspace_student_dir requires workspace_mode=True. Set workspace_mode=True or remove workspace_student_dir."
                 )
 
         if self.workspace_exec_entry is not None:
@@ -238,8 +237,7 @@ class ConfigObject:
                 raise ValueError(f"workspace_exec_entry must be a non-empty string, got: {self.workspace_exec_entry!r}")
             if not self.workspace_mode:
                 raise ValueError(
-                    "workspace_exec_entry requires workspace_mode=True. "
-                    "Set workspace_mode=True or remove workspace_exec_entry."
+                    "workspace_exec_entry requires workspace_mode=True. Set workspace_mode=True or remove workspace_exec_entry."
                 )
 
         if self.notebook_cell_tag is not None:
@@ -247,8 +245,7 @@ class ConfigObject:
                 raise ValueError(f"notebook_cell_tag must be a non-empty string, got: {self.notebook_cell_tag!r}")
             if self.workspace_mode:
                 raise ValueError(
-                    "notebook_cell_tag is not supported in workspace mode. "
-                    "Set workspace_mode=False or remove notebook_cell_tag."
+                    "notebook_cell_tag is not supported in workspace mode. Set workspace_mode=False or remove notebook_cell_tag."
                 )
 
         # Validate cross-mode conflicts

@@ -4,7 +4,6 @@ import pytest
 
 from pytest_prairielearn_grader import ConfigObject
 
-
 # ---------------------------------------------------------------------------
 # Valid configurations
 # ---------------------------------------------------------------------------

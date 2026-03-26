@@ -848,7 +848,7 @@ To see more examples of what is possible in these test files, look at the test c
 
 ## PrairieLearn Configuration
 
-In your PrairieLearn question's `info.json`, specify the grader:
+In your PrairieLearn question's `info.json`, specify the grader image:
 
 ```json
 {
@@ -864,6 +864,29 @@ In your PrairieLearn question's `info.json`, specify the grader:
   }
 }
 ```
+
+### Choosing an Image
+
+Two image variants are published. Pick the smallest one that includes what your question needs — a smaller image means faster cold-start pull times and a reduced security surface.
+
+| Tag       | Size (approx.) | Includes                                                                                                                                                                                 | Best for                                                                                        |
+| --------- | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| `:latest` | ~400–500 MB    | Full scientific stack: `numpy`, `pandas`, `scipy`, `matplotlib` + `matplotcheck2`, `seaborn`, `bokeh`, `scikit-learn`, `scikit-image`, `sympy`, `networkx`, `nltk`, `nbformat`, and more | Any course that needs scientific computing, data science, plotting, or Jupyter notebook grading |
+| `:lite`   | ~60–80 MB      | Grader core only: `pytest-prairielearn-grader`, `Pygments`, `beautifulsoup4`, `defusedxml`, `requests`                                                                                   | Introductory CS courses where student code uses only the Python standard library                |
+
+To use the lite image, change the `image` field:
+
+```json
+"externalGradingOptions": {
+  "enabled": true,
+  "image": "eliotwrobson/grader-python-pytest:lite",
+  "timeout": 30
+}
+```
+
+> **Note:** If a student's code imports a package that isn't present in the image (e.g., `numpy` in `:lite`), it will raise an `ImportError` and the test will fail with an exception. Make sure the image you choose contains everything both your test code and the expected student solution require.
+
+Pinned version tags (e.g., `:v1.2.3` and `:v1.2.3-lite`) are also published alongside each release if you need a reproducible build.
 
 ## Tips and Best Practices
 
@@ -987,7 +1010,7 @@ never reaches the sandbox.
 
 ### Writing Tests for Notebook Submissions
 
-Tests are written the same way as for any other submission type.  There is nothing
+Tests are written the same way as for any other submission type. There is nothing
 notebook-specific in the test file beyond `student_code_pattern` (and optionally
 `notebook_cell_tag`) in the `ConfigObject`:
 
@@ -1029,11 +1052,11 @@ def test_result_variable(sandbox: StudentFixture, feedback: FeedbackFixture) -> 
 
 ### ConfigObject Settings for Notebooks
 
-| Parameter             | Type          | Default              | Description                                                                                          |
-| --------------------- | ------------- | -------------------- | ---------------------------------------------------------------------------------------------------- |
-| `student_code_pattern`| `str`         | `"student_code*.py"` | Glob pattern — change to `"*.ipynb"` or `"notebook*.ipynb"` to match notebook files.                |
-| `notebook_cell_tag`   | `str \| None` | `None`               | First-line tag for cell filtering. `None` = all cells. Cannot be used with `workspace_mode=True`.   |
-| `sandbox_timeout`     | `float`       | `1.0`                | Increase to 5–15 s for notebooks with heavy imports or large cell computations.                      |
+| Parameter              | Type          | Default              | Description                                                                                       |
+| ---------------------- | ------------- | -------------------- | ------------------------------------------------------------------------------------------------- |
+| `student_code_pattern` | `str`         | `"student_code*.py"` | Glob pattern — change to `"*.ipynb"` or `"notebook*.ipynb"` to match notebook files.              |
+| `notebook_cell_tag`    | `str \| None` | `None`               | First-line tag for cell filtering. `None` = all cells. Cannot be used with `workspace_mode=True`. |
+| `sandbox_timeout`      | `float`       | `1.0`                | Increase to 5–15 s for notebooks with heavy imports or large cell computations.                   |
 
 ### Production vs. Local Development
 
