@@ -1,0 +1,23 @@
+{
+  "expected_data_object": {
+    "score": 1.0,
+    "tests": [
+      {
+        "max_points": 2,
+        "name": "Check variable x",
+        "points_frac": 1.0,
+        "points": 2.0,
+        "test_id": "test_notebook.py::test_variable[student_code]",
+        "outcome": "passed"
+      },
+      {
+        "max_points": 3,
+        "name": "Check add function",
+        "points_frac": 1.0,
+        "points": 3.0,
+        "test_id": "test_notebook.py::test_add[student_code]",
+        "outcome": "passed"
+      }
+    ]
+  }
+}

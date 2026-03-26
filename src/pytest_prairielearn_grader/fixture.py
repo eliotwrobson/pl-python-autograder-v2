@@ -32,6 +32,47 @@ DEFAULT_TIMEOUT = 1.0
 logger = logging.getLogger(__name__)
 
 
+def _extract_notebook_code(notebook_path: Path, cell_tag: str | None = None) -> str:
+    """Extract Python source code from a Jupyter notebook (.ipynb) file.
+
+    Args:
+        notebook_path: Path to the ``.ipynb`` file.
+        cell_tag: When provided, only code cells whose first non-empty line
+            starts with this string are included.  When ``None`` all code cells
+            are included.
+
+    Returns:
+        A single Python source string containing all selected cell contents
+        joined by double newlines.
+
+    Raises:
+        ImportError: If ``nbformat`` is not installed.
+    """
+    try:
+        import nbformat  # type: ignore[import-untyped]
+    except ImportError:
+        raise ImportError(
+            "nbformat is required for Jupyter notebook grading support. "
+            "Install it with: pip install 'pytest-prairielearn-grader[notebook]'"
+        ) from None
+
+    with notebook_path.open(encoding="utf-8-sig") as f:
+        nb = nbformat.read(f, as_version=4)
+
+    code_parts: list[str] = []
+    for cell in nb.cells:
+        if cell.cell_type != "code":
+            continue
+        source: str = cell.source
+        if cell_tag is not None:
+            lines = source.strip().splitlines()
+            if not lines or not lines[0].strip().startswith(cell_tag):
+                continue
+        code_parts.append(source)
+
+    return "\n\n".join(code_parts)
+
+
 class StudentFiles(NamedTuple):
     leading_file: Path
     trailing_file: Path
@@ -268,12 +309,14 @@ class StudentFixture(_SandboxBase):
         builtin_whitelist: list[str] | None,
         names_for_user_list: list[str] | None,
         worker_username: str | None,
+        notebook_cell_tag: str | None = None,
     ) -> None:
         super().__init__(import_whitelist, import_blacklist, starting_vars, builtin_whitelist, names_for_user_list, worker_username)
         self.leading_file = file_names.leading_file
         self.trailing_file = file_names.trailing_file
         self.student_code_file = file_names.student_code_file
         self.setup_code_file = file_names.setup_code_file
+        self.notebook_cell_tag = notebook_cell_tag
 
     def start_student_code_server(self, *, initialization_timeout: float = DEFAULT_TIMEOUT) -> ProcessStartResponse:
         if self.worker_username is not None:
@@ -288,7 +331,10 @@ class StudentFixture(_SandboxBase):
             student_code += self.leading_file.read_text(encoding="utf-8")
             student_code += os.linesep
         if self.student_code_file.is_file():
-            student_code += self.student_code_file.read_text(encoding="utf-8")
+            if self.student_code_file.suffix.lower() == ".ipynb":
+                student_code += _extract_notebook_code(self.student_code_file, self.notebook_cell_tag)
+            else:
+                student_code += self.student_code_file.read_text(encoding="utf-8")
         if self.trailing_file.is_file():
             student_code += os.linesep
             student_code += self.trailing_file.read_text(encoding="utf-8")
