@@ -115,6 +115,7 @@ def _initialize_sandbox_fixture(
 
     # Check for module-level ConfigObject that overrides all other configuration
     config_dict: dict[str, Any] = {}
+    notebook_cell_tag: str | None = None
     if hasattr(request, "module") and hasattr(request.module, "autograder_config"):
         config_object = request.module.autograder_config
         if not isinstance(config_object, ConfigObject):
@@ -124,6 +125,7 @@ def _initialize_sandbox_fixture(
         # Handle timeout and starting_vars separately as they're not in to_dict()
         initialization_timeout = config_object.sandbox_timeout
         config_starting_vars = config_object.starting_vars
+        notebook_cell_tag = config_object.notebook_cell_tag
     else:
         # Check for module-level timeout variable (works for module-scoped fixtures)
         # This allows setting: sandbox_timeout = 0.5 at module level
@@ -184,6 +186,7 @@ def _initialize_sandbox_fixture(
         builtin_whitelist=builtin_whitelist,
         names_for_user_list=names_for_user_list,
         worker_username=request.config.getoption("--worker-username"),
+        notebook_cell_tag=notebook_cell_tag,
     )
 
     return fixture, initialization_timeout

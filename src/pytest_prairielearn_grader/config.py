@@ -147,6 +147,27 @@ class ConfigObject:
     Example: "main.py"
     """
 
+    notebook_cell_tag: str | None = None
+    """Tag used to filter Jupyter notebook code cells for grading.
+
+    When the student submission is a ``.ipynb`` notebook file, this tag controls
+    which code cells are extracted and executed in the sandbox.
+
+    - If ``None`` (default), **all** code cells in the notebook are included.
+    - If set to a string (e.g. ``"#grade"``), only code cells whose first
+      non-empty line starts with that string are included.  This mirrors the
+      convention used by the built-in PrairieLearn Python autograder.
+
+    To use this feature the ``student_code_pattern`` must match ``.ipynb``
+    files (e.g. ``"student_code*.ipynb"``), and ``nbformat`` must be installed
+    (``pip install pytest-prairielearn-grader[notebook]``).
+
+    This field has no effect when the student submission is a plain ``.py`` file
+    or when workspace mode is enabled.
+
+    Example: "#grade"
+    """
+
     def __post_init__(self) -> None:
         """Validate configuration values after initialization."""
         # Validate sandbox_timeout
@@ -219,6 +240,15 @@ class ConfigObject:
                 raise ValueError(
                     "workspace_exec_entry requires workspace_mode=True. "
                     "Set workspace_mode=True or remove workspace_exec_entry."
+                )
+
+        if self.notebook_cell_tag is not None:
+            if not isinstance(self.notebook_cell_tag, str) or not self.notebook_cell_tag.strip():
+                raise ValueError(f"notebook_cell_tag must be a non-empty string, got: {self.notebook_cell_tag!r}")
+            if self.workspace_mode:
+                raise ValueError(
+                    "notebook_cell_tag is not supported in workspace mode. "
+                    "Set workspace_mode=False or remove notebook_cell_tag."
                 )
 
         # Validate cross-mode conflicts

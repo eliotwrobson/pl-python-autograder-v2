@@ -16,6 +16,9 @@ classifiers = [
     "Programming Language :: Python :: 3.14",
 ]
 
+[project.optional-dependencies]
+notebook = ["nbformat>=5.0"]
+
 [project.urls]
 repository = "https://github.com/eliotwrobson/pl-python-autograder-v2"
 
@@ -33,6 +36,7 @@ dev = [
     "matplotcheck2>=0.2.1",
     "networkx",
     "types-networkx",
+    "nbformat>=5.0",
 ]
 
 [build-system]

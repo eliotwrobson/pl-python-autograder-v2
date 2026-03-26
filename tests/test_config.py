@@ -198,3 +198,33 @@ def test_module_sandbox_fixture_fails_with_workspace_mode(pytester: pytest.Pytes
     result = pytester.runpytest("-p", "prairielearn-grader", "-v")
     result.stdout.fnmatch_lines(["*module_sandbox fixture cannot be used with workspace_mode=True*"])
     assert result.ret != 0
+
+
+# ---------------------------------------------------------------------------
+# notebook_cell_tag field
+# ---------------------------------------------------------------------------
+
+
+def test_notebook_cell_tag_valid() -> None:
+    config = ConfigObject(notebook_cell_tag="#grade")
+    assert config.notebook_cell_tag == "#grade"
+
+
+def test_notebook_cell_tag_none_default() -> None:
+    config = ConfigObject()
+    assert config.notebook_cell_tag is None
+
+
+def test_notebook_cell_tag_blank_raises() -> None:
+    with pytest.raises(ValueError, match="notebook_cell_tag must be a non-empty string"):
+        ConfigObject(notebook_cell_tag="")
+
+
+def test_notebook_cell_tag_whitespace_raises() -> None:
+    with pytest.raises(ValueError, match="notebook_cell_tag must be a non-empty string"):
+        ConfigObject(notebook_cell_tag="   ")
+
+
+def test_notebook_cell_tag_with_workspace_mode_raises() -> None:
+    with pytest.raises(ValueError, match="notebook_cell_tag is not supported in workspace mode"):
+        ConfigObject(workspace_mode=True, notebook_cell_tag="#grade")

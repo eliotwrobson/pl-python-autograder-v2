@@ -882,6 +882,175 @@ In your PrairieLearn question's `info.json`, specify the grader:
 
 ---
 
+## Jupyter Notebook Grading
+
+PrairieLearn supports JupyterLab as a workspace environment
+(`prairielearn/workspace-jupyterlab-python`), and students commonly submit `.ipynb` files from
+other IDE-based workspaces too. The autograder handles notebooks natively: it extracts the Python
+source from the relevant code cells, concatenates them into a single script, and executes that
+script in the sandbox exactly like a normal `.py` submission. Every fixture, query method, and
+partial credit feature works identically — no special test-writing API is needed.
+
+> **Optional dependency**: Notebook support requires `nbformat`.
+> Install it with `pip install 'pytest-prairielearn-grader[notebook]'`.
+> The core package deliberately does **not** depend on `nbformat` so that grader images without
+> Jupyter installed remain lightweight.
+
+### Telling the Grader to Look for Notebooks
+
+The only required change is updating `student_code_pattern` in your `ConfigObject` to match
+`.ipynb` files:
+
+```python
+from pytest_prairielearn_grader import ConfigObject
+
+autograder_config = ConfigObject(
+    student_code_pattern="student_code*.ipynb",
+    sandbox_timeout=5.0,
+)
+```
+
+All code cells are extracted in notebook order and concatenated, so functions and variables
+defined in earlier cells are available in later ones — exactly as they are when the notebook is
+executed top-to-bottom in JupyterLab.
+
+### Filtering Cells with `notebook_cell_tag`
+
+Real student notebooks often contain scratch work, exploratory plots, and print statements that
+you don't want to run during grading. Use `notebook_cell_tag` to restrict extraction to only the
+cells the student intended to submit:
+
+```python
+autograder_config = ConfigObject(
+    student_code_pattern="student_code*.ipynb",
+    notebook_cell_tag="#grade",   # only cells whose first line starts with "#grade"
+    sandbox_timeout=5.0,
+)
+```
+
+A code cell is included if and only if its **first non-empty line starts with the tag string**.
+All other cells — including cells that would raise errors or produce unwanted side effects — are
+silently skipped.
+
+**Student notebook example:**
+
+```python
+# Cell 1 — scratch work (NOT included, no tag)
+import matplotlib.pyplot as plt
+plt.plot([1, 2, 3])
+plt.show()
+
+# Cell 2 — graded solution (included, starts with #grade)
+#grade
+def solve(A, b):
+    import numpy as np
+    return np.linalg.solve(A, b)
+
+# Cell 3 — another graded cell (included, starts with #grade)
+#grade
+x = solve([[1, 0], [0, 2]], [3, 8])
+```
+
+Only cells 2 and 3 are extracted and run. Cell 1 is completely ignored, so the `plt.show()` call
+never reaches the sandbox.
+
+> `notebook_cell_tag=None` (the default) includes **all** code cells. Use this when you control
+> the notebook template and don't need students to tag their answers.
+
+### `info.json` for a JupyterLab Notebook Question
+
+```json
+{
+  "uuid": "...",
+  "title": "Linear Algebra — Notebook Submission",
+  "topic": "...",
+  "tags": ["..."],
+  "type": "v3",
+  "singleVariant": true,
+  "gradingMethod": "External",
+  "workspaceOptions": {
+    "image": "prairielearn/workspace-jupyterlab-python",
+    "port": 8080,
+    "home": "/home/user",
+    "gradedFiles": ["notebook.ipynb"]
+  },
+  "externalGradingOptions": {
+    "enabled": true,
+    "image": "eliotwrobson/grader-python-pytest:latest",
+    "timeout": 60
+  }
+}
+```
+
+> Set `singleVariant: true` so the workspace — and any work saved in it — persists across
+> multiple submission attempts.
+
+### Writing Tests for Notebook Submissions
+
+Tests are written the same way as for any other submission type.  There is nothing
+notebook-specific in the test file beyond `student_code_pattern` (and optionally
+`notebook_cell_tag`) in the `ConfigObject`:
+
+```python
+import pytest
+import numpy as np
+
+from pytest_prairielearn_grader import ConfigObject
+from pytest_prairielearn_grader.fixture import FeedbackFixture, StudentFixture
+
+autograder_config = ConfigObject(
+    student_code_pattern="notebook*.ipynb",
+    notebook_cell_tag="#grade",
+    sandbox_timeout=10.0,
+)
+
+
+@pytest.mark.grading_data(name="solve() is correct", points=5)
+def test_solve(sandbox: StudentFixture, feedback: FeedbackFixture) -> None:
+    A = [[2, 1], [1, 3]]
+    b = [5, 10]
+    feedback.set_score(0.0)
+
+    result = sandbox.query_function("solve", A, b)
+    feedback.set_score(0.5)
+
+    expected = np.linalg.solve(A, b)
+    assert np.allclose(result, expected), f"Expected {expected}, got {result}"
+    feedback.set_score(1.0)
+
+
+@pytest.mark.grading_data(name="result variable is set", points=2)
+def test_result_variable(sandbox: StudentFixture, feedback: FeedbackFixture) -> None:
+    feedback.set_score(0.0)
+    x = sandbox.query("x")
+    assert x is not None, "Variable 'x' was not defined"
+    feedback.set_score(1.0)
+```
+
+### ConfigObject Settings for Notebooks
+
+| Parameter             | Type          | Default              | Description                                                                                          |
+| --------------------- | ------------- | -------------------- | ---------------------------------------------------------------------------------------------------- |
+| `student_code_pattern`| `str`         | `"student_code*.py"` | Glob pattern — change to `"*.ipynb"` or `"notebook*.ipynb"` to match notebook files.                |
+| `notebook_cell_tag`   | `str \| None` | `None`               | First-line tag for cell filtering. `None` = all cells. Cannot be used with `workspace_mode=True`.   |
+| `sandbox_timeout`     | `float`       | `1.0`                | Increase to 5–15 s for notebooks with heavy imports or large cell computations.                      |
+
+### Production vs. Local Development
+
+In production PrairieLearn, the submitted `gradedFiles` end up in `/grade/student/`. The grader
+searches for matching files there automatically. For local development, place the notebook in the
+scenario data directory next to your test file:
+
+```
+questions/my_notebook_question/
+└── tests/
+    ├── test_student.py
+    └── test_student/
+        └── notebook.ipynb     # local stand-in for the student's submission
+```
+
+---
+
 ## Workspace Grading
 
 PrairieLearn workspace questions give students a full IDE (VS Code, JupyterLab, etc.) running in a

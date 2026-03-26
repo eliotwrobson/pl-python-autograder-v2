@@ -1,0 +1,23 @@
+{
+  "expected_data_object": {
+    "score": 1.0,
+    "tests": [
+      {
+        "max_points": 2,
+        "name": "Check tagged variable x",
+        "points_frac": 1.0,
+        "points": 2.0,
+        "test_id": "test_notebook_cell_tag.py::test_variable[student_code]",
+        "outcome": "passed"
+      },
+      {
+        "max_points": 3,
+        "name": "Check tagged multiply function",
+        "points_frac": 1.0,
+        "points": 3.0,
+        "test_id": "test_notebook_cell_tag.py::test_multiply[student_code]",
+        "outcome": "passed"
+      }
+    ]
+  }
+}
