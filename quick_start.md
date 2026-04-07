@@ -800,6 +800,132 @@ def test_output_manually(sandbox: StudentFixture) -> None:
     assert "Hello, Alice!" in output, "Greeting message not found in output"
 ```
 
+### Student-Friendly Feedback Mode
+
+By default, when a test fails, students see the Python exception class name, a "failed with an
+exception:" prefix, and (depending on the output level) a full traceback. This is useful for
+debugging but can be intimidating for introductory-level students.
+
+The **friendly** output level suppresses all traceback noise and shows only the human-readable
+assertion message. Combine it with the built-in assertion helpers to produce clean, structured
+feedback like:
+
+```
+Checking: add(2, 3)
+Expected output: 5
+Your code output: -1
+The expected and actual output do not match.
+```
+
+#### Enabling Friendly Output
+
+Apply `@pytest.mark.output(level="friendly")` to individual tests:
+
+```python
+import pytest
+from pytest_prairielearn_grader.fixture import StudentFixture
+from pytest_prairielearn_grader.assertions import assert_fn_equal, assert_equal
+
+@pytest.mark.output(level="friendly")
+@pytest.mark.grading_data(name="Test addition", points=5)
+def test_add(sandbox: StudentFixture) -> None:
+    assert_fn_equal(sandbox, "add", args=(2, 3), expected=5)
+```
+
+Or apply it to every test in a file with a module-level `pytestmark`:
+
+```python
+import pytest
+
+pytestmark = pytest.mark.output(level="friendly")
+```
+
+#### Assertion Helpers
+
+The `pytest_prairielearn_grader.assertions` module provides helpers that produce the
+structured "Checking / Expected / Your output" messages. They raise `AssertionError`
+with the formatted message, which the friendly output level then shows as-is.
+
+**`assert_equal(actual, expected, *, msg=None, description=None)`**
+
+Compare two values for equality:
+
+```python
+value = sandbox.query("x")
+assert_equal(value, 42, description="variable 'x'")
+# On failure:
+#   Checking: variable 'x'
+#   Expected output: 42
+#   Your code output: 99
+#   The expected and actual output do not match.
+```
+
+**`assert_approx_equal(actual, expected, *, rtol=1e-5, atol=1e-8, msg=None, description=None)`**
+
+Compare numeric values with tolerance:
+
+```python
+result = sandbox.query_function("compute_pi")
+assert_approx_equal(result, 3.14159, rtol=1e-3, description="compute_pi()")
+```
+
+**`assert_true(condition, *, msg=None)` / `assert_false(condition, *, msg=None)`**
+
+Check boolean conditions with a clean message:
+
+```python
+result = sandbox.query_function("is_valid", data)
+assert_true(result, msg="Expected is_valid() to return True for valid input.")
+```
+
+**`assert_fn_equal(sandbox, func_name, *, args=(), kwargs=None, expected, msg=None, query_timeout=1.0)`**
+
+Call a student function and compare its return value — the most common helper. It
+automatically generates the description from the function call:
+
+```python
+assert_fn_equal(sandbox, "add", args=(2, 3), expected=5)
+# On failure:
+#   Checking: add(2, 3)
+#   Expected output: 5
+#   Your code output: -1
+#   The expected and actual output do not match.
+```
+
+**`assert_fn_approx_equal(sandbox, func_name, *, args=(), kwargs=None, expected, rtol=1e-5, atol=1e-8, msg=None, query_timeout=1.0)`**
+
+Same as `assert_fn_equal` but uses approximate comparison:
+
+```python
+assert_fn_approx_equal(sandbox, "compute_area", args=(3.0,), expected=28.274, rtol=1e-2)
+```
+
+#### Combining with Partial Credit
+
+Friendly mode works seamlessly with `FeedbackFixture`:
+
+```python
+@pytest.mark.output(level="friendly")
+@pytest.mark.grading_data(name="Multi-step", points=10)
+def test_multi_step(sandbox: StudentFixture, feedback: FeedbackFixture) -> None:
+    # Step 1: basic check
+    assert_fn_equal(sandbox, "initialize", expected=0)
+    feedback.set_score(0.5)
+
+    # Step 2: harder check — if this fails, student keeps 50%
+    assert_fn_equal(sandbox, "compute", args=(10,), expected=100)
+    feedback.set_score(1.0)
+```
+
+#### When to Use Friendly Mode
+
+- **Introductory courses**: Students who haven't seen Python tracebacks benefit from simpler messages.
+- **Lite image questions**: Pairs well with the `:lite` Docker image for intro CS courses.
+- **Standardized feedback**: When you want all failure messages to follow a consistent format.
+
+For advanced courses, the default output levels (`message` or `traceback`) may be more appropriate
+since students can learn from reading full tracebacks.
+
 ### Testing Matplotlib Plots
 
 The grader supports automatic serialization and deserialization of matplotlib figures:

@@ -1,0 +1,107 @@
+{
+  "expected_data_object": {
+    "score": 0.725,
+    "tests": [
+      {
+        "max_points": 2,
+        "name": "Test add function",
+        "points_frac": 1.0,
+        "points": 2.0,
+        "test_id": "test_friendly_feedback.py::test_fn_equal[student_code]",
+        "outcome": "passed"
+      },
+      {
+        "max_points": 2,
+        "message": "Checking: add(2, 3)\nExpected output: 5\nYour code output: -1\nThe expected and actual output do not match.",
+        "name": "Test add function",
+        "points_frac": 0.0,
+        "points": 0.0,
+        "test_id": "test_friendly_feedback.py::test_fn_equal[student_code_wrong]",
+        "outcome": "failed"
+      },
+      {
+        "max_points": 1,
+        "name": "Test variable x",
+        "points_frac": 1.0,
+        "points": 1.0,
+        "test_id": "test_friendly_feedback.py::test_equal_variable[student_code]",
+        "outcome": "passed"
+      },
+      {
+        "max_points": 1,
+        "message": "Checking: variable 'x'\nExpected output: 42\nYour code output: 99\nThe expected and actual output do not match.",
+        "name": "Test variable x",
+        "points_frac": 0.0,
+        "points": 0.0,
+        "test_id": "test_friendly_feedback.py::test_equal_variable[student_code_wrong]",
+        "outcome": "failed"
+      },
+      {
+        "max_points": 2,
+        "name": "Test multiply function",
+        "points_frac": 1.0,
+        "points": 2.0,
+        "test_id": "test_friendly_feedback.py::test_fn_equal_passes[student_code]",
+        "outcome": "passed"
+      },
+      {
+        "max_points": 2,
+        "name": "Test multiply function",
+        "points_frac": 1.0,
+        "points": 2.0,
+        "test_id": "test_friendly_feedback.py::test_fn_equal_passes[student_code_wrong]",
+        "outcome": "passed"
+      },
+      {
+        "max_points": 1,
+        "name": "Test greeting",
+        "points_frac": 1.0,
+        "points": 1.0,
+        "test_id": "test_friendly_feedback.py::test_equal_string[student_code]",
+        "outcome": "passed"
+      },
+      {
+        "max_points": 1,
+        "message": "Checking: greet('Alice')\nExpected output: 'Hello, Alice!'\nYour code output: 'Hi, Alice'\nGreeting format is incorrect.",
+        "name": "Test greeting",
+        "points_frac": 0.0,
+        "points": 0.0,
+        "test_id": "test_friendly_feedback.py::test_equal_string[student_code_wrong]",
+        "outcome": "failed"
+      },
+      {
+        "max_points": 1,
+        "name": "Test approx",
+        "points_frac": 1.0,
+        "points": 1.0,
+        "test_id": "test_friendly_feedback.py::test_approx_equal[student_code]",
+        "outcome": "passed"
+      },
+      {
+        "max_points": 1,
+        "name": "Test approx",
+        "points_frac": 1.0,
+        "points": 1.0,
+        "test_id": "test_friendly_feedback.py::test_approx_equal[student_code_wrong]",
+        "outcome": "passed"
+      },
+      {
+        "max_points": 3,
+        "name": "Test partial credit with friendly",
+        "points_frac": 1.0,
+        "points": 3.0,
+        "test_id": "test_friendly_feedback.py::test_partial_credit_friendly[student_code]",
+        "outcome": "passed"
+      },
+      {
+        "max_points": 3,
+        "message": "Checking: add(10, 5)\nExpected output: 15\nYour code output: 5\nThe expected and actual output do not match.",
+        "name": "Test partial credit with friendly",
+        "points_frac": 0.5,
+        "points": 1.5,
+        "test_id": "test_friendly_feedback.py::test_partial_credit_friendly[student_code_wrong]",
+        "outcome": "failed"
+      }
+    ]
+  }
+}

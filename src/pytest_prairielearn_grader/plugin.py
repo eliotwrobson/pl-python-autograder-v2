@@ -208,12 +208,13 @@ def _handle_sandbox_startup_errors(
 
         logger.debug(f"Grading output level set to: {output_level}")
         exception_name = response.get("execution_error", "Unknown error")
+
+        if output_level == GradingOutputLevel.Friendly:
+            exception_message = response.get("execution_message", "") or ""
+            pytest.fail(exception_message or str(exception_name), pytrace=False)
+
         fail_message = f"Student code execution failed with an exception: {exception_name}"
-
-        if output_level == GradingOutputLevel.ExceptionName:
-            pytest.fail(fail_message, pytrace=False)
-
-        exception_message = response.get("execution_message", "")
+        exception_message = response.get("execution_message", "") or ""
         fail_message += f"{os.linesep}Exception Message: {exception_message}"
 
         if output_level == GradingOutputLevel.ExceptionMessage:
@@ -837,29 +838,36 @@ class ResultCollectorPlugin:
 
                 logger.debug(f"Grading output level set to: {output_level}")
 
-                # Customize the message based on the failure phase
-                if report.when == "setup":
-                    phase_message = "Student code execution failed with an exception"
-                elif report.when == "teardown":
-                    phase_message = "Student code teardown failed with an exception"
+                if output_level == GradingOutputLevel.Friendly:
+                    # Friendly mode: show only the exception message text with
+                    # no exception class name, traceback, or "failed with" prefix.
+                    exception_message = str(call.excinfo.value)
+                    feedback_obj.add_message(exception_message)
+
                 else:
-                    phase_message = "Student code grading failed with an exception"
+                    # Customize the message based on the failure phase
+                    if report.when == "setup":
+                        phase_message = "Student code execution failed with an exception"
+                    elif report.when == "teardown":
+                        phase_message = "Student code teardown failed with an exception"
+                    else:
+                        phase_message = "Student code grading failed with an exception"
 
-                if output_level == GradingOutputLevel.ExceptionName:
-                    exception_name = call.excinfo.type.__name__
-                    fail_message = f"{phase_message}: {exception_name}"
-                    feedback_obj.add_message(fail_message)
+                    if output_level == GradingOutputLevel.ExceptionName:
+                        exception_name = call.excinfo.type.__name__
+                        fail_message = f"{phase_message}: {exception_name}"
+                        feedback_obj.add_message(fail_message)
 
-                elif output_level == GradingOutputLevel.ExceptionMessage:
-                    exception_name = call.excinfo.type.__name__
-                    # TODO make this work with multiline messages somehow?
-                    exception_message = str(call.excinfo.value).split(os.linesep)[0]
-                    fail_message = f"{phase_message}: {exception_name}{os.linesep}Exception Message: {exception_message}"
-                    feedback_obj.add_message(fail_message)
+                    elif output_level == GradingOutputLevel.ExceptionMessage:
+                        exception_name = call.excinfo.type.__name__
+                        # TODO make this work with multiline messages somehow?
+                        exception_message = str(call.excinfo.value).split(os.linesep)[0]
+                        fail_message = f"{phase_message}: {exception_name}{os.linesep}Exception Message: {exception_message}"
+                        feedback_obj.add_message(fail_message)
 
-                # If showing more than the exception name, show the message + full traceback
-                else:
-                    feedback_obj.add_message(str(call.excinfo.getrepr(style="no")))
+                    # If showing more than the exception name, show the message + full traceback
+                    else:
+                        feedback_obj.add_message(str(call.excinfo.getrepr(style="no")))
 
             # Check if stdout feedback should be included (default True)
             include_stdout_feedback = grading_data.get("include_stdout_feedback", True)

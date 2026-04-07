@@ -15,6 +15,7 @@ class GradingOutputLevel(StrEnum):
     ExceptionName = "none"
     ExceptionMessage = "message"
     FullTraceback = "traceback"
+    Friendly = "friendly"
 
 
 class QueryStatusCode(StrEnum):
