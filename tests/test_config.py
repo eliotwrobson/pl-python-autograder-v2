@@ -227,3 +227,29 @@ def test_notebook_cell_tag_whitespace_raises() -> None:
 def test_notebook_cell_tag_with_workspace_mode_raises() -> None:
     with pytest.raises(ValueError, match="notebook_cell_tag is not supported in workspace mode"):
         ConfigObject(workspace_mode=True, notebook_cell_tag="#grade")
+
+
+# ---------------------------------------------------------------------------
+# output_level field
+# ---------------------------------------------------------------------------
+
+
+def test_output_level_friendly() -> None:
+    config = ConfigObject(output_level="friendly")
+    assert config.output_level == "friendly"
+
+
+def test_output_level_none_default() -> None:
+    config = ConfigObject()
+    assert config.output_level is None
+
+
+def test_output_level_all_valid_values() -> None:
+    for level in ("none", "message", "traceback", "friendly"):
+        config = ConfigObject(output_level=level)
+        assert config.output_level == level
+
+
+def test_output_level_invalid_raises() -> None:
+    with pytest.raises(ValueError, match="output_level must be one of"):
+        ConfigObject(output_level="verbose")  # type: ignore[arg-type]

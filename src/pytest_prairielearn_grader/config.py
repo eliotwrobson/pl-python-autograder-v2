@@ -3,6 +3,7 @@
 from dataclasses import dataclass
 from dataclasses import field
 from typing import Any
+from typing import Literal
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -185,6 +186,27 @@ class ConfigObject:
     Example: True
     """
 
+    output_level: Literal["none", "message", "traceback", "friendly"] | None = None
+    """Default output level for test failure messages shown to students.
+
+    Controls how much information from exceptions is displayed in the grading
+    feedback. This sets the *global* default for all tests in the module.
+    Individual tests can override this with ``@pytest.mark.output(level="...")``.
+
+    Levels:
+    - ``"none"``: Show only the exception class name (e.g., ``AssertionError``).
+    - ``"message"``: Show exception name + first line of message (default when None).
+    - ``"traceback"``: Show exception name + message + full traceback.
+    - ``"friendly"``: Show only the exception message text with no traceback or
+      class name. Designed for use with the ``assert_equal`` / ``assert_fn_equal``
+      helpers to produce clean, student-readable output.
+
+    When None, the plugin default of ``"message"`` is used unless overridden
+    by a per-test ``@pytest.mark.output(level=...)`` marker.
+
+    Example: "friendly"
+    """
+
     def __post_init__(self) -> None:
         """Validate configuration values after initialization."""
         # Validate sandbox_timeout
@@ -270,6 +292,13 @@ class ConfigObject:
             raise ValueError(
                 "student_code_pattern is not applicable in workspace mode "
                 "(workspace_mode=True). Remove student_code_pattern or set workspace_mode=False."
+            )
+
+        # Validate output_level
+        valid_output_levels = ("none", "message", "traceback", "friendly")
+        if self.output_level is not None and self.output_level not in valid_output_levels:
+            raise ValueError(
+                f"output_level must be one of {valid_output_levels} or None, got: {self.output_level!r}"
             )
 
     def to_dict(self) -> dict[str, Any]:

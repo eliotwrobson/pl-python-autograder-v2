@@ -192,6 +192,19 @@ def _initialize_sandbox_fixture(
     return fixture, initialization_timeout
 
 
+def _get_config_output_level(module: ModuleType | None) -> str | None:
+    """Get the output_level from module-level config (ConfigObject or variable)."""
+    if module is None:
+        return None
+    if hasattr(module, "autograder_config"):
+        config_obj = module.autograder_config
+        if isinstance(config_obj, ConfigObject):
+            return config_obj.output_level
+    elif hasattr(module, "output_level"):
+        return str(module.output_level)
+    return None
+
+
 def _handle_sandbox_startup_errors(
     request: pytest.FixtureRequest,
     response: ProcessStartResponse,
@@ -208,7 +221,8 @@ def _handle_sandbox_startup_errors(
     response_status = response["status"]
 
     if response_status == ProcessStatusCode.EXCEPTION:
-        output_level: GradingOutputLevel = get_output_level_marker(request.node.get_closest_marker("output"))
+        config_level = _get_config_output_level(request.module)
+        output_level: GradingOutputLevel = get_output_level_marker(request.node.get_closest_marker("output"), config_level)
 
         logger.debug(f"Grading output level set to: {output_level}")
         exception_name = response.get("execution_error", "Unknown error")
@@ -889,7 +903,8 @@ class ResultCollectorPlugin:
 
             # If the test failed (in any phase), add the exception message to the feedback
             if report.outcome == "failed" and call.excinfo is not None:
-                output_level: GradingOutputLevel = get_output_level_marker(item.get_closest_marker("output"))
+                config_level = _get_config_output_level(getattr(item, "module", None))
+                output_level: GradingOutputLevel = get_output_level_marker(item.get_closest_marker("output"), config_level)
 
                 logger.debug(f"Grading output level set to: {output_level}")
 
@@ -932,6 +947,11 @@ class ResultCollectorPlugin:
             res_obj = feedback_obj.to_dict()
             res_obj["name"] = grading_data.get("name", nodeid)
             res_obj["max_points"] = grading_data.get("points", 1)
+
+            # Forward the visibility field if specified (for platform-level rendering)
+            visibility = grading_data.get("visibility")
+            if visibility is not None:
+                res_obj["visibility"] = visibility
 
             if report.when in ["setup", "teardown"] and report.outcome == "failed":
                 res_obj["outcome"] = "error"
