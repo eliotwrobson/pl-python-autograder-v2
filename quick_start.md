@@ -1080,7 +1080,10 @@ student code). Instead of failing all tests with 0%, it produces:
 ```
 
 PrairieLearn's external grading framework handles the `"gradable": false` field — the student's
-submission panel shows the format errors without consuming an attempt.
+submission is marked as "invalid, not gradable", no points are awarded or lost, and the student
+is not penalized an attempt. See the
+[PrairieLearn external grading docs](https://docs.prairielearn.com/externalGrading/#grading-results)
+for full details on the `results.json` format.
 
 ### Disabling Ungradable Detection
 
@@ -1099,44 +1102,6 @@ autograder_config = ConfigObject(
 The grader also detects when **test files themselves** fail to collect (e.g., import errors in
 your test code, missing dependencies). These are marked as ungradable with a message directing
 course staff to check the logs — students are never penalized for grader bugs.
-
----
-
-## Test Case Visibility
-
-You can mark individual test cases with a `visibility` field that is forwarded to the results JSON.
-This allows the PrairieLearn platform element to decide what to show students based on timing or
-instructor preference.
-
-```python
-@pytest.mark.grading_data(name="Basic test", points=2, visibility="visible")
-def test_basic(sandbox: StudentFixture) -> None:
-    assert_fn_equal(sandbox, "add", args=(1, 2), expected=3)
-
-
-@pytest.mark.grading_data(name="Hidden edge case", points=3, visibility="hidden")
-def test_edge_case(sandbox: StudentFixture) -> None:
-    """Student won't see this test's result."""
-    assert_fn_equal(sandbox, "add", args=(-1, -2), expected=-3)
-
-
-@pytest.mark.grading_data(name="Post-deadline test", points=5, visibility="after_due_date")
-def test_advanced(sandbox: StudentFixture) -> None:
-    """Only shown after the assignment deadline."""
-    assert_fn_equal(sandbox, "solve", args=(complex_input,), expected=complex_output)
-```
-
-**Supported visibility values** (aligned with [Gradescope conventions](https://gradescope-autograders.readthedocs.io/en/latest/specs/)):
-
-| Value | Behavior |
-|-------|----------|
-| `"visible"` | Always shown *(default when omitted)* |
-| `"hidden"` | Never shown to students |
-| `"after_due_date"` | Shown after the assignment's due date |
-| `"after_published"` | Shown when grades are explicitly published |
-
-> **Note:** The grader simply forwards the `visibility` field in the per-test results JSON.
-> Rendering logic (hiding/showing) is handled by the PrairieLearn platform element, not the grader.
 
 ---
 

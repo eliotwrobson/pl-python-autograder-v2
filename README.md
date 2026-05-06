@@ -92,25 +92,6 @@ autograder_config = ConfigObject(
 
 The grader also detects test collection failures (grader-side errors) and marks those as ungradable with a message for course staff.
 
-### Test Case Visibility
-
-Forward-compatible support for controlling which test results are shown to students. Add a `visibility` field to `grading_data`:
-
-```python
-@pytest.mark.grading_data(name="Hidden edge case", points=3, visibility="hidden")
-def test_edge_case(sandbox: StudentFixture) -> None:
-    result = sandbox.query_function("solve", edge_input)
-    assert result == expected
-```
-
-The `visibility` value is passed through to the results JSON per test. Supported values (aligned with [Gradescope conventions](https://gradescope-autograders.readthedocs.io/en/latest/specs/)):
-- `"visible"` — always shown (default behavior when omitted)
-- `"hidden"` — never shown to students
-- `"after_due_date"` — shown after the due date
-- `"after_published"` — shown when grades are published
-
-> **Note:** Rendering of visibility is handled by the PrairieLearn platform element, not the grader itself. The grader simply forwards the field.
-
 ### ConfigObject
 
 Type-safe, immutable configuration for all autograder settings:

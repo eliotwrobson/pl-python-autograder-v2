@@ -948,11 +948,6 @@ class ResultCollectorPlugin:
             res_obj["name"] = grading_data.get("name", nodeid)
             res_obj["max_points"] = grading_data.get("points", 1)
 
-            # Forward the visibility field if specified (for platform-level rendering)
-            visibility = grading_data.get("visibility")
-            if visibility is not None:
-                res_obj["visibility"] = visibility
-
             if report.when in ["setup", "teardown"] and report.outcome == "failed":
                 res_obj["outcome"] = "error"
             else:
