@@ -840,6 +840,28 @@ import pytest
 pytestmark = pytest.mark.output(level="friendly")
 ```
 
+Or set it globally via `ConfigObject` (recommended for intro courses):
+
+```python
+from pytest_prairielearn_grader import ConfigObject
+
+autograder_config = ConfigObject(
+    output_level="friendly",  # All tests use friendly output by default
+)
+```
+
+With the `ConfigObject` approach, individual tests can still override with
+`@pytest.mark.output(level="traceback")` if needed.
+
+**All output levels:**
+
+| Level | Shows to student |
+|-------|-----------------|
+| `"none"` | Exception class name only (e.g., `AssertionError`) |
+| `"message"` | Exception name + first line of message *(default when unset)* |
+| `"traceback"` | Exception name + message + full traceback |
+| `"friendly"` | Only the exception message text — no class name, no traceback |
+
 #### Assertion Helpers
 
 The `pytest_prairielearn_grader.assertions` module provides helpers that produce the
@@ -1028,6 +1050,93 @@ Pinned version tags (e.g., `:v1.2.3` and `:v1.2.3-lite`) are also published alon
 8. **Configure security restrictions**: Use `import_whitelist` and `builtin_whitelist` in `server.py`
    to control what modules and functions students can access, preventing security issues and
    enforcing pedagogical constraints
+
+---
+
+## Ungradable Submission Detection
+
+When student code has a **SyntaxError** (e.g., missing colons, unmatched brackets, bad indentation),
+the grader automatically marks the submission as **ungradable**. This means:
+
+- The student does **not** lose a grading attempt
+- They see a clear message: *"Your code could not be parsed. Please fix the syntax errors and resubmit."*
+- The `format_errors` field in results contains the specific error
+
+This is especially useful for introductory courses where students may accidentally submit code
+with trivial syntax mistakes.
+
+### How It Works
+
+The grader detects `SyntaxError` during sandbox initialization (when `compile()` is called on
+student code). Instead of failing all tests with 0%, it produces:
+
+```json
+{
+  "gradable": false,
+  "format_errors": ["SyntaxError: invalid syntax (student_code.py, line 3)"],
+  "message": "Your code could not be parsed. Please fix the syntax errors and resubmit.",
+  "tests": [...]
+}
+```
+
+PrairieLearn's external grading framework handles the `"gradable": false` field — the student's
+submission panel shows the format errors without consuming an attempt.
+
+### Disabling Ungradable Detection
+
+If you prefer syntax errors to score 0% (counting as a normal attempt), opt out in your config:
+
+```python
+from pytest_prairielearn_grader import ConfigObject
+
+autograder_config = ConfigObject(
+    syntax_errors_ungradable=False,  # SyntaxError → 0% instead of ungradable
+)
+```
+
+### Grader-Side Errors
+
+The grader also detects when **test files themselves** fail to collect (e.g., import errors in
+your test code, missing dependencies). These are marked as ungradable with a message directing
+course staff to check the logs — students are never penalized for grader bugs.
+
+---
+
+## Test Case Visibility
+
+You can mark individual test cases with a `visibility` field that is forwarded to the results JSON.
+This allows the PrairieLearn platform element to decide what to show students based on timing or
+instructor preference.
+
+```python
+@pytest.mark.grading_data(name="Basic test", points=2, visibility="visible")
+def test_basic(sandbox: StudentFixture) -> None:
+    assert_fn_equal(sandbox, "add", args=(1, 2), expected=3)
+
+
+@pytest.mark.grading_data(name="Hidden edge case", points=3, visibility="hidden")
+def test_edge_case(sandbox: StudentFixture) -> None:
+    """Student won't see this test's result."""
+    assert_fn_equal(sandbox, "add", args=(-1, -2), expected=-3)
+
+
+@pytest.mark.grading_data(name="Post-deadline test", points=5, visibility="after_due_date")
+def test_advanced(sandbox: StudentFixture) -> None:
+    """Only shown after the assignment deadline."""
+    assert_fn_equal(sandbox, "solve", args=(complex_input,), expected=complex_output)
+```
+
+**Supported visibility values** (aligned with [Gradescope conventions](https://gradescope-autograders.readthedocs.io/en/latest/specs/)):
+
+| Value | Behavior |
+|-------|----------|
+| `"visible"` | Always shown *(default when omitted)* |
+| `"hidden"` | Never shown to students |
+| `"after_due_date"` | Shown after the assignment's due date |
+| `"after_published"` | Shown when grades are explicitly published |
+
+> **Note:** The grader simply forwards the `visibility` field in the per-test results JSON.
+> Rendering logic (hiding/showing) is handled by the PrairieLearn platform element, not the grader.
 
 ---
 
