@@ -160,7 +160,7 @@ def test_autograder_scenario_with_pytester(pytester: pytest.Pytester, scenario_d
             f"Expected output '{expected_output}' not found in actual output '{actual_output}'"
         )
 
-    outcome_dict: defaultdict[str, int] = defaultdict(int)
+    outcome_dict = defaultdict(int)
 
     # TODO add tests for the tests object
     test_results_obj = {test_result["test_id"]: test_result for test_result in results_obj["tests"]}
