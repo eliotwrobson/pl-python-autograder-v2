@@ -955,7 +955,7 @@ class ResultCollectorPlugin:
 
             # Check if this test failed due to a module initialization error
             # If so, clear the message since it will be shown in the top-level output
-            for (module_name, file_path), error_msg in self.module_init_errors.items():
+            for (module_name, _file_path), _error_msg in self.module_init_errors.items():
                 if nodeid.startswith(module_name.split(".")[-1]):
                     # This test is from a module with an init error, clear the repetitive message
                     res_obj["message"] = ""
@@ -1028,7 +1028,7 @@ class ResultCollectorPlugin:
         # Add top-level output message if there were any module initialization errors
         if self.module_init_errors:
             error_messages = []
-            for (module_name, file_path), error_msg in self.module_init_errors.items():
+            for (_module_name, _file_path), error_msg in self.module_init_errors.items():
                 error_messages.append(error_msg)
             res_dict["output"] = "Module initialization errors:\n" + "\n".join(error_messages)
 
