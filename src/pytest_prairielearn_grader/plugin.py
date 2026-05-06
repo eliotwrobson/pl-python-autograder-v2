@@ -200,6 +200,10 @@ def _handle_sandbox_startup_errors(
     """
     Common error handling logic for sandbox fixture startup failures.
     Handles exceptions, timeouts, and other error conditions.
+
+    When a SyntaxError is detected and `syntax_errors_ungradable` is enabled,
+    the error is recorded as a format error, making the submission ungradable
+    (student does not lose an attempt).
     """
     response_status = response["status"]
 
@@ -208,6 +212,10 @@ def _handle_sandbox_startup_errors(
 
         logger.debug(f"Grading output level set to: {output_level}")
         exception_name = response.get("execution_error", "Unknown error")
+
+        # Check if this is a SyntaxError and if we should mark as ungradable
+        if exception_name == "SyntaxError":
+            _record_syntax_error_as_ungradable(request, response)
 
         if output_level == GradingOutputLevel.Friendly:
             exception_message = response.get("execution_message", "") or ""
@@ -236,6 +244,38 @@ def _handle_sandbox_startup_errors(
     elif response_status != ProcessStatusCode.SUCCESS:
         logger.warning(f"Unexpected status in response from student code server: {response}")
         pytest.fail(f"Unexpected status from student code server: {response_status}", pytrace=False)
+
+
+def _record_syntax_error_as_ungradable(
+    request: pytest.FixtureRequest,
+    response: ProcessStartResponse,
+) -> None:
+    """
+    Record a SyntaxError as a format error if `syntax_errors_ungradable` is enabled.
+    This makes the submission ungradable so the student doesn't lose an attempt.
+    """
+    # Check if syntax_errors_ungradable is enabled (default: True)
+    syntax_errors_ungradable = True
+    test_module = request.module
+    if hasattr(test_module, "autograder_config"):
+        config_obj = test_module.autograder_config
+        if isinstance(config_obj, ConfigObject):
+            syntax_errors_ungradable = config_obj.syntax_errors_ungradable
+    elif hasattr(test_module, "syntax_errors_ungradable"):
+        syntax_errors_ungradable = bool(test_module.syntax_errors_ungradable)
+
+    if not syntax_errors_ungradable:
+        return
+
+    # Build a student-readable format error message
+    exception_message = response.get("execution_message", "") or "Unknown syntax error"
+    error_msg = f"SyntaxError: {exception_message}"
+
+    # Access the plugin to record the format error
+    plugin: ResultCollectorPlugin = request.config.result_collector_plugin  # type: ignore[attr-defined]
+    if error_msg not in plugin.format_errors:
+        plugin.format_errors.append(error_msg)
+        logger.info(f"Recorded format error (submission will be marked ungradable): {error_msg}")
 
 
 def _start_and_yield_sandbox(
@@ -700,6 +740,8 @@ class ResultCollectorPlugin:
     grading_data: dict[str, Any]
     module_sandbox_cache: dict[tuple[str, str], StudentFixture]
     module_init_errors: dict[tuple[str, str], str]  # Stores initialization errors by (module_name, file_path)
+    format_errors: list[str]  # Stores format errors (e.g., SyntaxError) that make a submission ungradable
+    collection_errors: list[str]  # Stores test collection errors (grader-side failures)
 
     def __init__(self) -> None:
         self.collected_results = {}
@@ -707,6 +749,8 @@ class ResultCollectorPlugin:
         self.grading_data = {}
         self.module_sandbox_cache = {}
         self.module_init_errors = {}
+        self.format_errors = []
+        self.collection_errors = []
 
     def pytest_configure(self, config: Config) -> None:
         """
@@ -715,6 +759,17 @@ class ResultCollectorPlugin:
         config.addinivalue_line(
             "markers", "grading_data(name, points, include_stdout_feedback=True): Mark a test with custom data that can be injected."
         )
+
+    def pytest_collectreport(self, report: pytest.CollectReport) -> None:
+        """
+        Hook to detect test collection failures (grader-side errors).
+        When test files cannot be imported or collected, it indicates a grader
+        environment problem — not a student code issue.
+        """
+        if report.outcome == "failed" and report.longrepr:
+            error_text = str(report.longrepr)
+            self.collection_errors.append(error_text)
+            logger.warning(f"Test collection error detected: {report.nodeid}")
 
     @pytest.hookimpl(hookwrapper=True)
     def pytest_runtest_makereport(self, item: pytest.Item, call: pytest.CallInfo) -> Iterable[None]:
@@ -911,18 +966,49 @@ class ResultCollectorPlugin:
 
             res_obj["points"] = res_obj["points_frac"] * res_obj["max_points"]
             final_results.append(res_obj)
-        # TODO add gradable property
-        # https://prairielearn.readthedocs.io/en/latest/externalGrading/#grading-results
+
+        # Determine if the submission is gradable
+        is_gradable = True
+        all_format_errors: list[str] = []
+
+        # Check for test collection errors (grader-side failures)
+        if self.collection_errors:
+            is_gradable = False
+            logger.info("Submission marked ungradable due to test collection errors")
+
+        # Check for format errors (e.g., SyntaxError in student code)
+        if self.format_errors:
+            is_gradable = False
+            all_format_errors.extend(self.format_errors)
+            logger.info(f"Submission marked ungradable due to format errors: {self.format_errors}")
+
+        # Check if no tests were collected at all (possible grader misconfiguration)
+        if not final_results and not self.collection_errors:
+            is_gradable = False
+            logger.info("Submission marked ungradable: no tests were collected or run")
 
         total_score = sum(res["points_frac"] * res["max_points"] for res in final_results)
-
-        # TODO should probably just raise an exception if this is zero bc it's almost certainly a mistake
         total_possible_score = sum(res["max_points"] for res in final_results)
 
-        res_dict = {
-            "score": total_score / total_possible_score if total_possible_score > 0 else 0,
-            "tests": final_results,
-        }
+        res_dict: dict[str, Any] = {}
+
+        if is_gradable:
+            res_dict["gradable"] = True
+            res_dict["score"] = total_score / total_possible_score if total_possible_score > 0 else 0
+        else:
+            res_dict["gradable"] = False
+            if all_format_errors:
+                res_dict["format_errors"] = all_format_errors
+            # Include a message explaining why the submission is ungradable
+            if self.collection_errors:
+                res_dict["message"] = (
+                    "The autograder encountered an internal error. "
+                    "Please contact course staff and have them check the logs for this submission."
+                )
+            elif all_format_errors:
+                res_dict["message"] = "Your code could not be parsed. Please fix the syntax errors and resubmit."
+
+        res_dict["tests"] = final_results
 
         # Add top-level output message if there were any module initialization errors
         if self.module_init_errors:

@@ -1,0 +1,17 @@
+{
+  "expected_data_object": {
+    "gradable": false,
+    "format_errors": ["SyntaxError"],
+    "message": "Your code could not be parsed. Please fix the syntax errors and resubmit.",
+    "tests": [
+      {
+        "test_id": "test_syntax_error_ungradable.py::test_query_variable[student_code]",
+        "outcome": "error"
+      },
+      {
+        "test_id": "test_syntax_error_ungradable.py::test_add_function[student_code]",
+        "outcome": "error"
+      }
+    ]
+  }
+}

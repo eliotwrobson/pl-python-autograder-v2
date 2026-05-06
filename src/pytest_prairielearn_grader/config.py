@@ -168,6 +168,23 @@ class ConfigObject:
     Example: "#grade"
     """
 
+    syntax_errors_ungradable: bool = True
+    """Whether to mark submissions as ungradable when student code has a SyntaxError.
+
+    When True (default), if student code fails to parse due to a SyntaxError,
+    the submission is marked as ungradable (``"gradable": false``) in the
+    results JSON. This means the student will NOT be penalized an attempt
+    on the question, and will see a clear error message about the syntax issue.
+
+    When False, syntax errors are treated like any other exception — the
+    student receives a score of 0 and the attempt is counted.
+
+    This is especially useful for introductory courses where students may
+    accidentally submit code with indentation or bracket errors.
+
+    Example: True
+    """
+
     def __post_init__(self) -> None:
         """Validate configuration values after initialization."""
         # Validate sandbox_timeout
