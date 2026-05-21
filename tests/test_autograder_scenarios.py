@@ -113,6 +113,40 @@ def test_autograder_scenario_with_pytester(pytester: pytest.Pytester, scenario_d
 
     expected_data_obj = expected_outcome_dict["expected_data_object"]
 
+    # Check gradable field
+    expected_gradable = expected_data_obj.get("gradable", True)
+    actual_gradable = results_obj.get("gradable", True)
+    assert expected_gradable == actual_gradable, (
+        f"Gradable mismatch: expected {expected_gradable}, got {actual_gradable}"
+    )
+
+    # If submission is ungradable, check format_errors and message but skip score/test checks
+    if not expected_gradable:
+        if "format_errors" in expected_data_obj:
+            assert "format_errors" in results_obj, "Expected 'format_errors' field in ungradable results"
+            for expected_err in expected_data_obj["format_errors"]:
+                found = any(expected_err in actual_err for actual_err in results_obj["format_errors"])
+                assert found, f"Expected format error '{expected_err}' not found in {results_obj['format_errors']}"
+
+        if "message" in expected_data_obj:
+            assert "message" in results_obj, "Expected 'message' field in results"
+            assert expected_data_obj["message"] in results_obj["message"], (
+                f"Message mismatch: expected '{expected_data_obj['message']}' in '{results_obj['message']}'"
+            )
+
+        # For ungradable submissions, we only check pytest outcomes if specified
+        if "tests" in expected_data_obj:
+            outcome_dict: defaultdict[str, int] = defaultdict(int)
+            test_results_obj = {test_result["test_id"]: test_result for test_result in results_obj["tests"]}
+            for expected_test in expected_data_obj["tests"]:
+                test_id = expected_test["test_id"]
+                assert test_id in test_results_obj, f"Test '{test_id}' not found in results."
+                actual_test = test_results_obj[test_id]
+                assert actual_test["outcome"] == expected_test["outcome"], f"Outcome mismatch for test '{test_id}'."
+                outcome_dict[CONVERSION_DICT[actual_test["outcome"]]] += 1
+            result.assert_outcomes(**outcome_dict)
+        return
+
     assert math.isclose(expected_data_obj["score"], results_obj["score"])
 
     # Check for the output field if it exists in expected outcome
@@ -126,7 +160,7 @@ def test_autograder_scenario_with_pytester(pytester: pytest.Pytester, scenario_d
             f"Expected output '{expected_output}' not found in actual output '{actual_output}'"
         )
 
-    outcome_dict: defaultdict[str, int] = defaultdict(int)
+    outcome_dict = defaultdict(int)
 
     # TODO add tests for the tests object
     test_results_obj = {test_result["test_id"]: test_result for test_result in results_obj["tests"]}

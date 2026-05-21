@@ -313,7 +313,7 @@ def drop_privileges(user_name: str) -> None:
     os.seteuid(target_uid)
 
 
-def get_output_level_marker(marker: pytest.Mark | None) -> GradingOutputLevel:
+def get_output_level_marker(marker: pytest.Mark | None, config_level: str | None = None) -> GradingOutputLevel:
     if marker and marker.kwargs and "level" in marker.kwargs:
         try:
             # 2. Attempt to convert the marker value to the Enum member
@@ -329,5 +329,12 @@ def get_output_level_marker(marker: pytest.Mark | None) -> GradingOutputLevel:
                 f"Invalid 'level' value '{marker.kwargs['level']}' in the 'output_level' marker. "
                 f"Must be one of the following: {', '.join(valid_levels)}"
             ) from e
+
+    # Fall back to config-level default if provided
+    if config_level is not None:
+        try:
+            return GradingOutputLevel(config_level)
+        except ValueError:
+            pass
 
     return GradingOutputLevel.ExceptionMessage
